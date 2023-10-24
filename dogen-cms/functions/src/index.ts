@@ -1,26 +1,20 @@
-/*
- * This template contains a HTTP function that responds
- * with a greeting when called
- *
- * Reference PARAMETERS in your functions code with:
- * `process.env.<parameter-name>`
- * Learn more about building extensions in the docs:
- * https://firebase.google.com/docs/extensions/publishers
- */
+/* eslint-disable max-len */
+import * as admin from "firebase-admin";
+import onUserCreate from "./user/onUserCreate";
+import onUserDelete from "./user/onUserDelete";
+import backfillExistingUsers from "./user/backfillExistingUsers";
+import onAccountsUpdate from "./user/onAccountsUpdate";
+import onConfigParameterUpdateWrite from "./config/onConfigParameterUpdateWrite";
 
-import * as functions from "firebase-functions";
+admin.initializeApp();
 
-exports.greetTheWorld = functions.https.onRequest(
-  (req: functions.Request, res: functions.Response) => {
-    // Here we reference a user-provided parameter
-    // (its value is provided by the user during installation)
-    const consumerProvidedGreeting = process.env.GREETING;
+// Auth triggers
+export {onUserCreate};
+export {onUserDelete};
 
-    // And here we reference an auto-populated parameter
-    // (its value is provided by Firebase after installation)
-    const instanceId = process.env.EXT_INSTANCE_ID;
+// Firestore triggers
+export {onAccountsUpdate};
+export {onConfigParameterUpdateWrite};
 
-    const greeting = `${consumerProvidedGreeting} World from ${instanceId}`;
-
-    res.send(greeting);
-  });
+// Extension lifecycle events
+export {backfillExistingUsers};

@@ -12,14 +12,7 @@ https://firebase.google.com/docs/extensions/publishers/user-documentation#writin
 
 # See it in action
 
-You can test out this extension right away!
-
-Visit the following URL:
-${function:greetTheWorld.url}
-
-# Using the extension
-
-When triggered by an HTTP request, this extension responds with the following specified greeting: "${param:GREETING} World from ${param:EXT_INSTANCE_ID}".
+Launch your Dogen Firestore CMS to see it in action!
 
 To learn more about HTTP functions, visit the [functions documentation](https://firebase.google.com/docs/functions/http-events).
 

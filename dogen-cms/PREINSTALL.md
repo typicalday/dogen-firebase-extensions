@@ -7,9 +7,13 @@ Learn more about writing a PREINSTALL.md file in the docs:
 https://firebase.google.com/docs/extensions/publishers/user-documentation#writing-preinstall
 -->
 
-Use this extension to send a friendly greeting.
+Use this extension to integrate Dogen's Firestore CMS.  
 
-When triggered by an HTTP request, this extension responds with your specified friendly greeting.
+This extension provides support for:
+ - Allowing you to list and modify Auth users in the accounts section.
+ - Allowing you to modify remote config parameters.
+
+For more information, visit the [Dogen website](https://dogen.io).
 
 <!-- We recommend keeping the following section to explain how billing for Firebase Extensions works -->
 # Billing
