@@ -56,6 +56,7 @@ resources:
       Auth triggered function that deletes an existing accounts collection document from the deleted user.
     properties:
       location: ${LOCATION}
+      eventTrigger:
         eventType: providers/firebase.auth/eventTypes/user.delete
         resource: projects/${PROJECT_ID}
       runtime: "nodejs16"
@@ -64,7 +65,7 @@ resources:
     description: >-
       Cloud task triggered function which backfills existing users in batches into the accounts collection.
     properties:
-      location: ${param:LOCATION}
+      location: ${LOCATION}
       taskQueueTrigger: {}
   - name: onAccountsUpdate
     type: firebaseextensions.v1beta.function
@@ -75,6 +76,16 @@ resources:
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.write
         resource: projects/${PROJECT_ID}/databases/(default)/documents/accounts/{documentID}
+      runtime: "nodejs16"
+  - name: onGenerationsCreate
+    type: firebaseextensions.v1beta.function
+    description: >-
+      Firestore triggered function which triggers a Dogen CMS Generation.
+    properties:
+      location: ${LOCATION}
+      eventTrigger:
+        eventType: providers/cloud.firestore/eventTypes/document.create
+        resource: projects/${PROJECT_ID}/databases/(default)/documents/generations/{documentID}
       runtime: "nodejs16"
 
 # In the `params` field, set up your extension's user-configured parameters.
