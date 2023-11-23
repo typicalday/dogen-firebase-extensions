@@ -72,7 +72,7 @@ export default firestore
       // 1. Build JSON of Blueprints data.
       // 2. Archive the current state of the Blueprints under the generation.
       const jsonData = {
-        "generationId": generationId,
+        "generation_id": generationId,
         [objectEntitiesCollection]: await processCollection(
           batchManager,
           objectEntitiesCollection,
