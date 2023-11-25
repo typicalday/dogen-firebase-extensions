@@ -4,12 +4,16 @@ import {firestore, logger} from "firebase-functions";
 export default firestore
   .document("accounts/{userId}")
   .onUpdate(async (change, context) => {
+    // Must match extension.yaml resource definition
     const userId = context.params.userId;
+
     const accountData = change.after.exists ? change.after.data() : null;
     try {
       if (accountData) {
         const role = accountData.role ?? "registered";
+        
         const user = await admin.auth().getUser(userId);
+        
         const {customClaims} = user;
         // Check if the user already has the desired role claim
         if (customClaims && customClaims.role === role) {

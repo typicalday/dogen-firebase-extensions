@@ -59,6 +59,7 @@ export default firestore
 
     const dogenServiceUrl = process.env.DOGEN_TRIGGER_GENERATION_URL || "https://dogen.io/foo";
 
+    // Must match extension.yaml resource definition
     const generationId = context.params.generationId;
 
     const objectEntitiesCollection = "object_entities";
