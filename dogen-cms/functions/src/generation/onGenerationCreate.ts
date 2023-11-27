@@ -2,10 +2,11 @@ import * as admin from "firebase-admin";
 import axios from "axios";
 import {createGzip} from "zlib";
 import {firestore, logger} from "firebase-functions";
+import config from "../config";
 
 const db = admin.firestore();
 
-export default firestore
+export const onGenerationsCreate = firestore
   .document("generations/{generationId}")
   .onCreate(async (snapshot, context) => {
     /**
@@ -50,8 +51,11 @@ export default firestore
 
       return documents;
     }
+    
+    const projectId = admin.instanceId().app.options.projectId;
 
-    const dogenServiceUrl = process.env.DOGEN_TRIGGER_GENERATION_URL || "https://dogen.io/foo";
+    const dogenServiceUrl = process.env.DOGEN_TRIGGER_GENERATION_URL || "https://dogen.io/generate";
+    const webhookBaseUrl = process.env.GENERATION_WEBHOOK_BASE_URL || `https://${config.location}-${projectId}.cloudfunctions.net/`;
 
     // Must match extension.yaml resource definition
     const generationId = context.params.generationId;
@@ -64,10 +68,22 @@ export default firestore
     try {
       const batchManager = new BatchManager(db);
 
+      // Generate a random webhook key for the generation.
+      const webhookKey = Math.random().toString(36).substring(2, 15); 
+
+      // Update the generation document with the webhook key.
+      await snapshot.ref
+        .set({
+          webhookKey: webhookKey,
+        }, 
+        {merge: true}
+      );
+
       // 1. Build JSON of Blueprints data.
       // 2. Archive the current state of the Blueprints under the generation.
       const jsonData = {
         "generation_id": generationId,
+        "webhook_url": `${webhookBaseUrl}ext-dogen-cms-updateGenerationWebhook?key=${webhookKey}`,
         [objectEntitiesCollection]: await processCollection(
           batchManager,
           objectEntitiesCollection,
@@ -101,6 +117,15 @@ export default firestore
       });
 
       logger.info("Request sent successfully:", response.data);
+
+      await snapshot.ref
+        .set({
+          status: "requested",
+          webhookKey: webhookKey,
+        }, {merge: true})
+        .catch((updateError) => console.error(
+          "Error updating status:", updateError
+        ));
     } catch (error) {
       logger.error("Error:", error);
 

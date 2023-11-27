@@ -1,7 +1,7 @@
 import * as admin from "firebase-admin";
 import {firestore, logger} from "firebase-functions";
 
-export default firestore
+export const onConfigParameterUpdateWrite = firestore
   .document("config_parameter_updates/{documentId}")
   .onWrite(async (change, context) => {
     // If the document is deleted, there's nothing to do

@@ -2,7 +2,7 @@ import * as admin from "firebase-admin";
 import {auth, logger} from "firebase-functions";
 import {FieldValue} from "firebase-admin/firestore";
 
-export default auth.user().onCreate(async (user) => {
+export const onUserCreate = auth.user().onCreate(async (user) => {
   const firestore = admin.firestore();
   try {
     const accountsRef = firestore.collection("accounts").doc(user.uid);

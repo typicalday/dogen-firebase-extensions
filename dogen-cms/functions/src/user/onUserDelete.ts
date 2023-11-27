@@ -2,7 +2,7 @@
 import * as admin from "firebase-admin";
 import {auth, logger} from "firebase-functions";
 
-export default auth.user().onDelete(async (user) => {
+export const onUserDelete = auth.user().onDelete(async (user) => {
   const uid = user.uid;
   const firestore = admin.firestore();
   try {

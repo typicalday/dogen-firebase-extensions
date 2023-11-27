@@ -3,21 +3,17 @@ import * as admin from "firebase-admin";
 
 admin.initializeApp();
 
-import onUserCreate from "./user/onUserCreate";
-import onUserDelete from "./user/onUserDelete";
-import backfillExistingUsers from "./user/backfillExistingUsers";
-import onAccountsUpdate from "./user/onAccountsUpdate";
-import onConfigParameterUpdateWrite from "./config/onConfigParameterUpdateWrite";
-import onGenerationsCreate from "./generation/onGenerationCreate";
-
 // Auth triggers
-export {onUserCreate};
-export {onUserDelete};
+export * from "./user/onUserCreate";
+export * from "./user/onUserDelete";
 
 // Firestore triggers
-export {onAccountsUpdate};
-export {onConfigParameterUpdateWrite};
-export {onGenerationsCreate};
+export * from "./user/onAccountsUpdate";
+export * from "./config/onConfigParameterUpdateWrite";
+export * from "./generation/onGenerationCreate";
 
 // Extension lifecycle events
-export {backfillExistingUsers};
+export * from "./user/backfillExistingUsers";
+
+// HTTP triggers
+export * from "./generation/updateGenerationWebhook";

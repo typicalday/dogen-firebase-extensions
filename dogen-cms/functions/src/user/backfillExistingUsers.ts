@@ -11,7 +11,7 @@ const BATCH_SIZE = 500;
 const auth = admin.auth();
 const db = admin.firestore();
 
-export default tasks
+export const backfillExistingUsers = tasks
   .taskQueue({
     retryConfig: {
       maxAttempts: 5,
