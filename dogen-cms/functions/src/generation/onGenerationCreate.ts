@@ -2,18 +2,12 @@ import * as admin from "firebase-admin";
 import axios from "axios";
 import {createGzip} from "zlib";
 import {firestore, logger} from "firebase-functions";
-// import * as fs from "fs";
 
 const db = admin.firestore();
 
 export default firestore
   .document("generations/{generationId}")
   .onCreate(async (snapshot, context) => {
-    /**
-     * Compresses the given data using gzip.
-     * @param {string} data - The data to compress.
-     * @return {Promise<Buffer>} - A promise of compressed data.
-     */
     /**
      * Compresses the given data using gzip.
      * @param {string} data - The data to compress.
@@ -98,17 +92,15 @@ export default firestore
       const jsonString = JSON.stringify(jsonData);
       const compressedData = await compressData(jsonString);
 
-      // write compressed data to foo.json file
-      // fs.writeFileSync("foo.json", compressedData);
-
       const response = await axios.post(dogenServiceUrl, compressedData, {
         headers: {
           "Content-Encoding": "gzip",
           "Content-Type": "application/json",
+          "x-api-key": process.env.DOGEN_API_KEY,
         },
       });
 
-      logger.info("Data sent successfully:", response.data);
+      logger.info("Request sent successfully:", response.data);
     } catch (error) {
       logger.error("Error:", error);
 

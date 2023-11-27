@@ -89,6 +89,13 @@ resources:
 # Learn more in the docs:
 # https://firebase.google.com/docs/extensions/reference/extension-yaml#params-field
 params:
+  - params: DOGEN_API_KEY
+    label: Dogen API Key
+    description: >-
+      You can find your API key in the Dogen dashboard.
+    type: string
+    required: true
+    
   - param: BACKFILL_EXISTING_USERS
     label: Backfill existing users
     description: >-
