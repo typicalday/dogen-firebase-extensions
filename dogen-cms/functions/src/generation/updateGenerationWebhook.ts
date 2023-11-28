@@ -15,6 +15,7 @@ export const updateGenerationWebhook = functions.https.onRequest(async (req, res
 
         // Validate the required fields
         if (!generationId || !key || !status) {
+            functions.logger.error('Missing required fields:', { generationId, key, status });
             res.status(400).send('Missing required fields');
             return;
         }
@@ -24,6 +25,7 @@ export const updateGenerationWebhook = functions.https.onRequest(async (req, res
         const generationDoc = await generationRef.get();
 
         if (!generationDoc.exists) {
+            functions.logger.error('Generation not found:', { generationId });
             res.status(404).send('Generation not found');
             return;
         }
@@ -32,6 +34,7 @@ export const updateGenerationWebhook = functions.https.onRequest(async (req, res
         const generationData = generationDoc.data();
 
         if (generationData?.webhookKey !== key) {
+            functions.logger.error('Invalid webhook key:', { generationId, key });
             res.status(403).send('Invalid webhook key!');
             return;
         }
@@ -46,9 +49,11 @@ export const updateGenerationWebhook = functions.https.onRequest(async (req, res
         // Update the Firestore document
         await generationRef.update(updateData);
 
+        functions.logger.info('Generation updated successfully!', { id: generationId });
+
         res.status(200).send('Generation updated successfully!');
     } catch (error) {
-        console.error('Error updating document:', error);
+        functions.logger.error('Error updating document:', error);
         res.status(500).send('Internal Server Error');
     }
 });
