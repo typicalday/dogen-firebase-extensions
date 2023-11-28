@@ -54,7 +54,7 @@ export const onGenerationsCreate = firestore
     
     const projectId = admin.instanceId().app.options.projectId;
 
-    const dogenServiceUrl = process.env.DOGEN_TRIGGER_GENERATION_URL || "https://dogen.io/generate";
+    const dogenServiceUrl = process.env.DOGEN_TRIGGER_GENERATION_URL || "https://api.dogen.io/generate";
     const webhookBaseUrl = process.env.GENERATION_WEBHOOK_BASE_URL || `https://${config.location}-${projectId}.cloudfunctions.net/`;
 
     // Must match extension.yaml resource definition
