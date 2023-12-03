@@ -76,14 +76,14 @@ resources:
         eventType: providers/cloud.firestore/eventTypes/document.write
         resource: projects/${PROJECT_ID}/databases/(default)/documents/accounts/{userId}
       runtime: "nodejs16"
-  - name: onGenerationsCreate
+  - name: onGenerationWrite
     type: firebaseextensions.v1beta.function
     description: >-
       Firestore triggered function which triggers a Dogen CMS Generation.
     properties:
       location: ${LOCATION}
       eventTrigger:
-        eventType: providers/cloud.firestore/eventTypes/document.create
+        eventType: providers/cloud.firestore/eventTypes/document.write
         resource: projects/${PROJECT_ID}/databases/(default)/documents/generations/{generationId}
       runtime: "nodejs16"
   - name: onConfigParameterUpdateWrite

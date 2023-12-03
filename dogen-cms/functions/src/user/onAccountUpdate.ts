@@ -1,7 +1,7 @@
 import * as admin from "firebase-admin";
 import {firestore, logger} from "firebase-functions";
 
-export const onAccountsUpdate = firestore
+export const onAccountUpdate = firestore
   .document("accounts/{userId}")
   .onUpdate(async (change, context) => {
     // Must match extension.yaml resource definition

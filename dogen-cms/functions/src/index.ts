@@ -8,9 +8,9 @@ export * from "./user/onUserCreate";
 export * from "./user/onUserDelete";
 
 // Firestore triggers
-export * from "./user/onAccountsUpdate";
+export * from "./user/onAccountUpdate";
 export * from "./config/onConfigParameterUpdateWrite";
-export * from "./generation/onGenerationCreate";
+export * from "./generation/onGenerationWrite";
 
 // Extension lifecycle events
 export * from "./user/backfillExistingUsers";
