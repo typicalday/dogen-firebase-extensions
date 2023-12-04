@@ -243,9 +243,38 @@ async function handlePromotionDemotionEvent(
 
   } catch (error) {
     logger.error("Error:", error);
+
     await snapshot.after.ref
-      .set({ status: statusFailed, output: error}, { merge: true })
+      .set({ 
+        status: statusFailed, 
+        output: getErrorString(error),
+      }, { merge: true })
       .catch((updateError) => console.error("Error updating status:", updateError));
+  }
+
+  function getErrorString(error: unknown) {
+    let errorInfo: { message?: string; name?: string; statusCode?: number; statusText?: string; data?: any; };
+
+    if (axios.isAxiosError(error)) {
+      errorInfo = {
+        message: error.message,
+        name: error.name,
+        statusCode: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+      };
+    } else if (error instanceof Error) {
+      errorInfo = {
+        message: error.message,
+        name: error.name,
+      };
+    } else {
+      errorInfo = {
+        message: String(error),
+      };
+    }
+
+    return JSON.stringify(errorInfo);
   }
 }
 
