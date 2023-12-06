@@ -32,8 +32,8 @@ billingRequired: false
 roles:
   - role: datastore.owner
     reason: Allows the extension to create the user document in Firestore.
-  - role: cloudconfig.admin
-    reason: Allows the extension to update remote config.
+  # - role: cloudconfig.admin
+  #   reason: Allows the extension to update remote config.
       
 # In the `resources` field, list each of your extension's functions, including the trigger for each function.
 # Learn more in the docs:
