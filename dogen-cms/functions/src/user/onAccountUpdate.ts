@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import {firestore, logger} from "firebase-functions";
+import { firestore, logger } from "firebase-functions";
 
 export const onAccountUpdate = firestore
   .document("accounts/{userId}")
@@ -8,24 +8,48 @@ export const onAccountUpdate = firestore
     const userId = context.params.userId;
 
     const accountData = change.after.exists ? change.after.data() : null;
+
+    if (!accountData) {
+      logger.error("No account data available.");
+      return;
+    }
+
+    const disabled = accountData.disabled;
+
+    // Allow a temporary (insecure plaintext) password to be set
+    const password = accountData.temporaryPassword;
+
+    const role = accountData.role ?? "registered";
+
     try {
-      if (accountData) {
-        const role = accountData.role ?? "registered";
-        
-        const user = await admin.auth().getUser(userId);
-        
-        const {customClaims} = user;
-        // Check if the user already has the desired role claim
-        if (customClaims && customClaims.role === role) {
-          logger.info("User already has the same role claim.", {uid: userId});
-          return;
-        }
+      const user = await admin.auth().getUser(userId);
+
+      const updateRequest = {
+        ...(password != null ? { password: password } : {}),
+        ...(disabled != null ? { disabled: disabled } : {}),
+      };
+
+      if (Object.keys(updateRequest).length > 0) {
+        await admin.auth().updateUser(userId, updateRequest);
+      }
+
+      const { customClaims } = user;
+
+      if (customClaims && customClaims.role != role) {
         await admin.auth().setCustomUserClaims(userId, {
           role,
         });
-        logger.info("Role claim updated for user.", {uid: userId});
+        logger.info("Role claim updated for user.", { uid: userId });
       }
+
+      logger.info("Updated user.", { uid: userId });
     } catch (error) {
-      logger.info("Error updating role claim.", {error});
+      logger.info("Error updating auth user from account.", { error });
+    } finally {
+      if (password != null) {
+        await change.after.ref.update({
+          temporaryPassword: admin.firestore.FieldValue.delete(),
+        });
+      }
     }
   });

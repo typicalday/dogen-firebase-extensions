@@ -2,7 +2,7 @@
 # https://firebase.google.com/docs/extensions/reference/extension-yaml
 
 name: dogen-cms  # Identifier for your extension
-version: 0.0.1  # Follow semver versioning
+version: 0.0.2  # Follow semver versioning
 specVersion: v1beta  # Version of the Firebase Extensions specification
 
 # Friendly display name for your extension (~3-5 words)
@@ -31,7 +31,7 @@ billingRequired: false
 # https://firebase.google.com/docs/extensions/reference/extension-yaml#roles-field
 roles:
   - role: datastore.owner
-    reason: Allows the extension to create the user document in Firestore.
+    reason: Allows the extension to read and create documents in Firestore.
   # - role: cloudconfig.admin
   #   reason: Allows the extension to update remote config.
       
@@ -66,6 +66,16 @@ resources:
     properties:
       location: ${LOCATION}
       taskQueueTrigger: {}
+  - name: onAccountCreate
+    type: firebaseextensions.v1beta.function
+    description: >-
+      Firestore triggered function which creates an Auth user from the corresponding accounts document.
+    properties:
+      location: ${LOCATION}
+      eventTrigger:
+        eventType: providers/cloud.firestore/eventTypes/document.create
+        resource: projects/${PROJECT_ID}/databases/(default)/documents/accounts/{userId}
+      runtime: "nodejs16"
   - name: onAccountUpdate
     type: firebaseextensions.v1beta.function
     description: >-
@@ -73,7 +83,7 @@ resources:
     properties:
       location: ${LOCATION}
       eventTrigger:
-        eventType: providers/cloud.firestore/eventTypes/document.write
+        eventType: providers/cloud.firestore/eventTypes/document.update
         resource: projects/${PROJECT_ID}/databases/(default)/documents/accounts/{userId}
       runtime: "nodejs16"
   - name: onGenerationWrite
