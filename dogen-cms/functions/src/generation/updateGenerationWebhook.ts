@@ -9,7 +9,7 @@ export const updateGenerationWebhook = functions.https.onRequest(async (req, res
     }
 
     try {
-        const { generationId, status, output } = req.body;
+        const { generationId, status, templateVersion, outputMessage, } = req.body;
 
         const key = req.query.key as string;
 
@@ -40,10 +40,18 @@ export const updateGenerationWebhook = functions.https.onRequest(async (req, res
         }
 
         // Prepare the update object
-        const updateData: { status: string; output?: string } = { status };
+        const updateData: { 
+            status: string, 
+            outputMessage?: string, 
+            templateVersion?: string 
+        } = { status };
 
-        if (output !== undefined) {
-            updateData.output = output;
+        if (outputMessage !== undefined) {
+            updateData.outputMessage = outputMessage;
+        }
+
+        if (templateVersion != undefined) {
+            updateData.templateVersion = templateVersion;
         }
 
         // Update the Firestore document

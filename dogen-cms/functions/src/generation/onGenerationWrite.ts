@@ -7,6 +7,7 @@ import config from "../config";
 const db = admin.firestore();
 
 const defaultDogenServiceUrl = "https://api.dogen.io/";
+const generationApiVersion = "1";
 
 const actionGenerate = "generate";
 const actionPublish = "publish";
@@ -90,6 +91,11 @@ async function handleCreatedEvent(
   const enumEntitiesCollection = "enum_entities";
   const configParametersCollection = "config_parameters";
 
+  const objectEntitiesKey = "objectEntities";
+  const embeddedEntitiesKey = "embeddedEntities";
+  const enumEntitiesKey = "enumEntities";
+  const configParametersKey = "configParameters";
+
   try {
     const batchManager = new BatchManager(db);
 
@@ -99,33 +105,38 @@ async function handleCreatedEvent(
     // Update the generation document with the webhook key.
     await snapshot.after.ref
       .set({
+        apiVersion: generationApiVersion,
         status: statusInitialized,
         webhookKey: webhookKey,
       }, 
       {merge: true}
     );
 
+    const snapshotData = snapshot.after.data();
+
     // 1. Build JSON of Blueprints data.
     // 2. Archive the current state of the Blueprint collections under the generation.
     const jsonData = {
-      "generation_id": generationId,
-      "webhook_url": getWebhookUrl(webhookKey),
-      [objectEntitiesCollection]: await processCollection(
+      "generationId": generationId,
+      "generationApiVersion": generationApiVersion,
+      "generationTemplateVersion": snapshotData?.templateVersion,
+      "webhookUrl": getWebhookUrl(webhookKey),
+      [objectEntitiesKey]: await processCollection(
         batchManager,
         objectEntitiesCollection,
         generationId,
       ),
-      [embeddedEntitiesCollection]: await processCollection(
+      [embeddedEntitiesKey]: await processCollection(
         batchManager,
         embeddedEntitiesCollection,
         generationId,
       ),
-      [enumEntitiesCollection]: await processCollection(
+      [enumEntitiesKey]: await processCollection(
         batchManager,
         enumEntitiesCollection,
         generationId,
       ),
-      [configParametersCollection]: await processCollection(
+      [configParametersKey]: await processCollection(
         batchManager,
         configParametersCollection,
         generationId,
@@ -221,7 +232,7 @@ async function handlePromotionDemotionEvent(
 
   try {
     const body = {
-      "generation_id": generationId,
+      "generationId": generationId,
     };
 
     const response = await axios.post(serviceUrl, body, {
@@ -247,7 +258,7 @@ async function handlePromotionDemotionEvent(
     await snapshot.after.ref
       .set({ 
         status: statusFailed, 
-        output: getErrorString(error),
+        outputMessage: getErrorString(error),
       }, { merge: true })
       .catch((updateError) => console.error("Error updating status:", updateError));
   }
