@@ -120,6 +120,7 @@ async function handleCreatedEvent(
       "generationId": generationId,
       "generationApiVersion": generationApiVersion,
       "generationTemplateVersion": snapshotData?.templateVersion,
+      "noCache": snapshotData?.noCache ?? true,
       "webhookUrl": getWebhookUrl(webhookKey),
       [objectEntitiesKey]: await processCollection(
         batchManager,
