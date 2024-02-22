@@ -6,7 +6,7 @@ version: 0.0.2  # Follow semver versioning
 specVersion: v1beta  # Version of the Firebase Extensions specification
 
 # Friendly display name for your extension (~3-5 words)
-displayName: Generate a FREE custom Firestore CMS
+displayName: Generate a custom Firestore CMS
 
 # Brief description of the task your extension performs (~1 sentence)
 description: >-
@@ -32,8 +32,6 @@ billingRequired: false
 roles:
   - role: datastore.owner
     reason: Allows the extension to read and create documents in Firestore.
-  # - role: cloudconfig.admin
-  #   reason: Allows the extension to update remote config.
       
 # In the `resources` field, list each of your extension's functions, including the trigger for each function.
 # Learn more in the docs:
@@ -95,16 +93,6 @@ resources:
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.write
         resource: projects/${PROJECT_ID}/databases/(default)/documents/generations/{generationId}
-      runtime: "nodejs16"
-  - name: onConfigParameterUpdateWrite
-    type: firebaseextensions.v1beta.function
-    description: >-
-      Firestore triggered function which updates remote config.
-    properties:
-      location: ${LOCATION}
-      eventTrigger:
-        eventType: providers/cloud.firestore/eventTypes/document.write
-        resource: projects/${PROJECT_ID}/databases/(default)/documents/config_parameter_updates/{documentId}
       runtime: "nodejs16"
   - name: updateGenerationWebhook
     type: firebaseextensions.v1beta.function

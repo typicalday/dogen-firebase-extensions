@@ -10,7 +10,6 @@ export * from "./user/onUserDelete";
 // Firestore triggers
 export * from "./user/onAccountCreate";
 export * from "./user/onAccountUpdate";
-export * from "./config/onConfigParameterUpdateWrite";
 export * from "./generation/onGenerationWrite";
 
 // Extension lifecycle events
