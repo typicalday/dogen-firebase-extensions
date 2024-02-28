@@ -88,11 +88,13 @@ async function handleCreatedEvent(
 
   const objectEntitiesCollection = "object_entities";
   const embeddedEntitiesCollection = "embedded_entities";
+  const variantEntitiesCollection = "variant_entities";
   const enumEntitiesCollection = "enum_entities";
   const configParametersCollection = "config_parameters";
 
   const objectEntitiesKey = "objectEntities";
   const embeddedEntitiesKey = "embeddedEntities";
+  const variantEntitiesKey = "variantEntities";
   const enumEntitiesKey = "enumEntities";
   const configParametersKey = "configParameters";
 
@@ -130,6 +132,11 @@ async function handleCreatedEvent(
       [embeddedEntitiesKey]: await processCollection(
         batchManager,
         embeddedEntitiesCollection,
+        generationId,
+      ),
+      [variantEntitiesKey]: await processCollection(
+        batchManager,
+        variantEntitiesCollection,
         generationId,
       ),
       [enumEntitiesKey]: await processCollection(
