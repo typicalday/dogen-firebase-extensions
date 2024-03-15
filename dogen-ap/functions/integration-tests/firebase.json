@@ -15,6 +15,6 @@
     "singleProjectMode": true
   },
   "extensions": {
-    "dogen-cms": "../.."
+    "dogen-ap": "../.."
   }
 }

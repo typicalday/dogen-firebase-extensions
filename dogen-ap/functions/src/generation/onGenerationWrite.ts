@@ -75,7 +75,7 @@ function getWebhookBaseUrl() {
 }
 
 function getWebhookUrl(webhookKey: any) {
-  return `${getWebhookBaseUrl()}ext-dogen-cms-updateGenerationWebhook?key=${webhookKey}`;
+  return `${getWebhookBaseUrl()}ext-dogen-ap-updateGenerationWebhook?key=${webhookKey}`;
 }
 
 async function handleCreatedEvent(

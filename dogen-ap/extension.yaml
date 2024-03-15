@@ -1,21 +1,21 @@
 # Learn detailed information about the fields of an extension.yaml file in the docs:
 # https://firebase.google.com/docs/extensions/reference/extension-yaml
 
-name: dogen-cms  # Identifier for your extension
-version: 0.0.2  # Follow semver versioning
+name: dogen-ap  # Identifier for your extension
+version: 0.0.3  # Follow semver versioning
 specVersion: v1beta  # Version of the Firebase Extensions specification
 
 # Friendly display name for your extension (~3-5 words)
-displayName: Generate a custom Firestore CMS
+displayName: Generate a custom Firestore Application Platform
 
 # Brief description of the task your extension performs (~1 sentence)
 description: >-
-  Adds support for Dogen CMS, which allows you to define schemas and validation rules for all your collections. It supports nested objects, arrays, maps, and references.  For more information visit https://www.dogen.io
+  Adds support for Dogen Application Platform, which allows you to define schemas and validation rules for all your collections. For more information visit https://www.dogen.io
 
 license: Apache-2.0  # https://spdx.org/licenses/
 
 # Public URL for the source code of your extension
-sourceUrl: https://github.com/typicalday/dogen-firebase-extensions/dogen-cms
+sourceUrl: https://github.com/typicalday/dogen-firebase-extensions/dogen-ap
 
 # Specify whether a paid-tier billing plan is required to use your extension.
 # Learn more in the docs: https://firebase.google.com/docs/extensions/reference/extension-yaml#billing-required-field
@@ -87,7 +87,7 @@ resources:
   - name: onGenerationWrite
     type: firebaseextensions.v1beta.function
     description: >-
-      Firestore triggered function which triggers a Dogen CMS Generation.
+      Firestore triggered function which triggers a Dogen AP Generation.
     properties:
       location: ${LOCATION}
       eventTrigger:

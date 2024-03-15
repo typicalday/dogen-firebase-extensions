@@ -12,7 +12,7 @@ https://firebase.google.com/docs/extensions/publishers/user-documentation#writin
 
 # See it in action
 
-Launch your Dogen Firestore CMS to see it in action!
+Launch your Dogen Firestore Application Platform to see it in action!
 
 To learn more about HTTP functions, visit the [functions documentation](https://firebase.google.com/docs/functions/http-events).
 

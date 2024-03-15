@@ -7,11 +7,13 @@ Learn more about writing a PREINSTALL.md file in the docs:
 https://firebase.google.com/docs/extensions/publishers/user-documentation#writing-preinstall
 -->
 
-Use this extension to integrate Dogen's Firestore CMS.  
+Use this extension to integrate Dogen's Firestore Application Platform.  
 
 This extension provides support for:
+ - Allowing you to create schemas for all your entities.
+ - Allowing you to manage and validate the data for all your entities.
  - Allowing you to list and modify Auth users in the accounts section.
- - Allowing you to modify remote config parameters.
+ - Allowing you to modify parameters.
 
 For more information, visit the [Dogen website](https://dogen.io).
 
