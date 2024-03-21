@@ -94,6 +94,14 @@ resources:
         eventType: providers/cloud.firestore/eventTypes/document.write
         resource: projects/${PROJECT_ID}/databases/(default)/documents/generations/{generationId}
       runtime: "nodejs16"
+  - name: processTasks
+    type: firebaseextensions.v1beta.function
+    description: >-
+      Https triggered function which runs background tasks for the client.
+    properties:
+      location: ${LOCATION}
+      httpsTrigger: {}
+      runtime: "nodejs16"
   - name: updateGenerationWebhook
     type: firebaseextensions.v1beta.function
     description: >-

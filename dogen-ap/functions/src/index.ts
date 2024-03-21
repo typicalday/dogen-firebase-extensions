@@ -17,3 +17,4 @@ export * from "./user/backfillExistingUsers";
 
 // HTTP triggers
 export * from "./generation/updateGenerationWebhook";
+export * from "./task/processTasks";
