@@ -1,9 +1,9 @@
-import { FirebaseTask } from "../firebaseTask";
+import { JobTask } from "../jobTask";
 import * as admin from "firebase-admin";
 
 const db = admin.firestore();
 
-export async function handleDeletePath(task: FirebaseTask): Promise<Record<string, any>> {
+export async function handleDeletePath(task: JobTask): Promise<Record<string, any>> {
   const path = task.input?.path;
 
   if (!path) {

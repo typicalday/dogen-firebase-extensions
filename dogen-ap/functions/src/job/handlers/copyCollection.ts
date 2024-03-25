@@ -1,11 +1,11 @@
 import { BatchManager } from "../../utils/batchManager";
-import { FirebaseTask } from "../firebaseTask";
+import { JobTask } from "../jobTask";
 import * as admin from "firebase-admin";
 
 const db = admin.firestore();
 
 export async function handleCopyCollection(
-  task: FirebaseTask
+  task: JobTask
 ): Promise<Record<string, any>> {
   const sourcePath = task.input?.sourcePath;
   const destinationPath = task.input?.destinationPath;
@@ -18,7 +18,7 @@ export async function handleCopyCollection(
 
   await copyCollection(sourcePath, destinationPath);
 
-  return { done: true };
+  return {};
 }
 
 async function copyCollection(

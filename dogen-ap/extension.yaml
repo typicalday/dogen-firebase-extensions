@@ -94,10 +94,10 @@ resources:
         eventType: providers/cloud.firestore/eventTypes/document.write
         resource: projects/${PROJECT_ID}/databases/(default)/documents/generations/{generationId}
       runtime: "nodejs16"
-  - name: processTasks
+  - name: processJob
     type: firebaseextensions.v1beta.function
     description: >-
-      Https triggered function which runs background tasks for the client.
+      Https triggered function which runs background jobs for the client.
     properties:
       location: ${LOCATION}
       httpsTrigger: {}
