@@ -4,7 +4,10 @@ import { FirebaseTaskStatus, JobTask } from "./jobTask";
 import { handleCopyCollection } from "./handlers/copyCollection";
 import { handleDeletePath } from "./handlers/deletePath";
 import { handleDeleteDocuments } from "./handlers/deleteDocuments";
-import { Job } from "./job";
+import { Job, JobStatus } from "./job";
+import { handleListCollections } from "./handlers/listCollections";
+import { handleCreateDocument } from "./handlers/createDocument";
+import { handleCopyDocument } from "./handlers/copyDocument";
 
 const persistIntervalDuration = 10000;
 
@@ -14,6 +17,7 @@ export const processJob = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("permission-denied", "Unauthorized");
   }
 
+  const persistMode = data.persist ?? false;
   const abortOnFailure = data.abortOnFailure ?? true;
   const tasksData = data.tasks;
 
@@ -47,12 +51,15 @@ export const processJob = functions.https.onCall(async (data, context) => {
     await job.persist();
   };
 
-  const persistInterval = setInterval(persistJobState, persistIntervalDuration);
+  const persistInterval = persistMode 
+    ? setInterval(persistJobState, persistIntervalDuration)
+    : undefined;
 
   let failedTask = false;
+  let errorMessage: string | undefined = undefined;
 
   try {
-    for (const task of job.tasks) {
+    for (let task of job.tasks) {
       try {
         if (task.status === FirebaseTaskStatus.Failed) {
           failedTask = true;
@@ -98,8 +105,13 @@ export const processJob = functions.https.onCall(async (data, context) => {
       }
     }
 
+    job.update({
+      status: failedTask ? JobStatus.Failed : JobStatus.Succeeded,
+      updatedAt: new Date(),
+    });
+
     return {
-      id: job.ref.id,
+      id: persistMode ? job.ref.id : null,
       name: job.name,
       status: job.status,
       tasks: job.tasks.map((task) => ({
@@ -113,16 +125,25 @@ export const processJob = functions.https.onCall(async (data, context) => {
       createdAt: job.createdAt,
       updatedAt: job.updatedAt,
     };
-  } catch (error: any) {
-    console.error("Error processing tasks:", error);
+  } catch (e: any) {
+    console.error("Error processing tasks:", e);
+    errorMessage = e.message;
 
     throw new functions.https.HttpsError(
       "internal",
-      error?.message ?? "An error occurred during task processing!"
+      e?.message ?? "An error occurred during task processing!"
     );
   } finally {
-    clearInterval(persistInterval);
-    await persistJobState();
+    if (persistMode) {
+      job.update({
+        status: failedTask || errorMessage ? JobStatus.Failed : JobStatus.Succeeded,
+        outputMessage: errorMessage,
+        updatedAt: new Date(),
+      });
+
+      clearInterval(persistInterval);
+      await persistJobState();
+    }
   }
 });
 
@@ -141,14 +162,19 @@ async function processTask(task: JobTask): Promise<Record<string, any>> {
       switch (task.command) {
         case "copy-collection":
           return await handleCopyCollection(task);
+        case "copy-document":
+          return await handleCopyDocument(task);
+        case "create-document":
+          return await handleCreateDocument(task);
         case "delete-path":
           return await handleDeletePath(task);
         case "delete-documents":
           return await handleDeleteDocuments(task);
+        case "list-collections":
+          return await handleListCollections(task);
         default:
           throw new Error(`Unsupported Firestore command: ${task.command}`);
       }
-      break;
     default:
       throw new Error(`Unsupported service: ${task.service}`);
   }

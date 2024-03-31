@@ -18,10 +18,13 @@ export async function handleCopyCollection(
 
   await copyCollection(sourcePath, destinationPath);
 
-  return {};
+  return {
+    copied: sourcePath,
+    to: destinationPath,
+  };
 }
 
-async function copyCollection(
+export async function copyCollection(
   sourceCollectionPath: string,
   destinationCollectionPath: string
 ) {

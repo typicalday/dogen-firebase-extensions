@@ -12,7 +12,9 @@ export async function handleDeletePath(task: JobTask): Promise<Record<string, an
 
   await deletePath(path);
 
-  return {};
+  return {
+    deleted: path,
+  };
 }
 
 async function deletePath(path: string) {

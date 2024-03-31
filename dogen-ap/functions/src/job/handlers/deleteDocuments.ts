@@ -15,7 +15,9 @@ export async function handleDeleteDocuments(task: JobTask) : Promise<Record<stri
 
   await deleteDocuments(documentPaths);
 
-  return {};
+  return {
+    deleted: documentPaths,
+  };
 }
 
 async function deleteDocuments(documentPaths: string[]): Promise<void> {
