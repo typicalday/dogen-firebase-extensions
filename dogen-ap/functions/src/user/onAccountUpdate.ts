@@ -2,7 +2,7 @@ import * as admin from "firebase-admin";
 import { firestore, logger } from "firebase-functions";
 
 export const onAccountUpdate = firestore
-  .document("accounts/{userId}")
+  .document("dogen_application_accounts/{userId}")
   .onUpdate(async (change, context) => {
     // Must match extension.yaml resource definition
     const userId = context.params.userId;

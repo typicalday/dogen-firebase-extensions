@@ -5,7 +5,7 @@ import {FieldValue} from "firebase-admin/firestore";
 export const onUserCreate = auth.user().onCreate(async (user) => {
   const firestore = admin.firestore();
   try {
-    const accountsRef = firestore.collection("accounts").doc(user.uid);
+    const accountsRef = firestore.collection("dogen_application_accounts").doc(user.uid);
     const accountsSnapshot = await accountsRef.get();
     if (!accountsSnapshot.exists) {
       const data = getUserData(user);

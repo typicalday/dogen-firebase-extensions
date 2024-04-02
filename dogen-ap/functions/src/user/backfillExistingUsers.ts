@@ -51,7 +51,7 @@ export const backfillExistingUsers = tasks
 
       // For each one create a Firestore document in the accounts collection.
       for (const user of users) {
-        const userDocumentRef = db.collection("accounts").doc(user.uid);
+        const userDocumentRef = db.collection("dogen_application_accounts").doc(user.uid);
         batch.set(userDocumentRef, getUserData(user), {merge: true});
       }
 

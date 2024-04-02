@@ -2,7 +2,7 @@ import * as admin from "firebase-admin";
 import { firestore, logger } from "firebase-functions";
 
 export const onAccountCreate = firestore
-  .document("accounts/{userId}")
+  .document("dogen_application_accounts/{userId}")
   .onCreate(async (snapshot, context) => {
     const accountData = snapshot.data();
     const userId = context.params.userId;

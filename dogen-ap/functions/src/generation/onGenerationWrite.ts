@@ -87,11 +87,11 @@ async function handleCreatedEvent(
 
   const dogenServiceUrl = getDogenGenerateServiceUrl();
 
-  const objectEntitiesCollection = "object_entities";
-  const embeddedEntitiesCollection = "embedded_entities";
-  const variantEntitiesCollection = "variant_entities";
-  const enumEntitiesCollection = "enum_entities";
-  const configParametersCollection = "config_parameters";
+  const objectEntitiesCollection = "dogen_blueprint_object_entities";
+  const embeddedEntitiesCollection = "dogen_blueprint_embedded_entities";
+  const variantEntitiesCollection = "dogen_blueprint_variant_entities";
+  const enumEntitiesCollection = "dogen_blueprint_enum_entities";
+  const configParametersCollection = "dogen_blueprint_config_parameters";
 
   const objectEntitiesKey = "objectEntities";
   const embeddedEntitiesKey = "embeddedEntities";
