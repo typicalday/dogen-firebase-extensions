@@ -100,12 +100,14 @@ async function handleCreatedEvent(
 
   const objectEntitiesCollection = "dogen_blueprint_object_entities";
   const embeddedEntitiesCollection = "dogen_blueprint_embedded_entities";
+  const adapterEntitiesCollection = "dogen_blueprint_adapter_entities";
   const variantEntitiesCollection = "dogen_blueprint_variant_entities";
   const enumEntitiesCollection = "dogen_blueprint_enum_entities";
   const configParametersCollection = "dogen_blueprint_config_parameters";
 
   const objectEntitiesKey = "objectEntities";
   const embeddedEntitiesKey = "embeddedEntities";
+  const adapterEntitiesKey = "adapterEntities";
   const variantEntitiesKey = "variantEntities";
   const enumEntitiesKey = "enumEntities";
   const configParametersKey = "configParameters";
@@ -144,6 +146,11 @@ async function handleCreatedEvent(
       [embeddedEntitiesKey]: await processCollection(
         batchManager,
         embeddedEntitiesCollection,
+        generationId
+      ),
+      [adapterEntitiesKey]: await processCollection(
+        batchManager,
+        adapterEntitiesCollection,
         generationId
       ),
       [variantEntitiesKey]: await processCollection(
