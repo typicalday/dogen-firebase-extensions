@@ -23,7 +23,7 @@ export const onAccountCreate = firestore
       }
 
       const email = accountData.email;
-      const role = accountData.role ?? "registered";
+      const roles = accountData.roles ?? ["registered"];
 
       // Allow a temporary (insecure plaintext) password to be set
       let password = accountData.temporaryPassword;
@@ -40,7 +40,7 @@ export const onAccountCreate = firestore
       });
 
       await admin.auth().setCustomUserClaims(userRecord.uid, {
-        role,
+        dogenRoles: roles,
       });
 
       if (accountData.temporaryPassword != null) {
@@ -49,7 +49,7 @@ export const onAccountCreate = firestore
         });
       }
 
-      logger.info("Created new user with role.", { uid: userId, role });
+      logger.info("Created new user with roles.", { uid: userId, roles });
     } catch (error) {
       logger.error("Error creating new user.", { error });
     }

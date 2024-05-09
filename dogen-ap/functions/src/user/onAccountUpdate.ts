@@ -19,7 +19,7 @@ export const onAccountUpdate = firestore
     // Allow a temporary (insecure plaintext) password to be set
     const password = accountData.temporaryPassword;
 
-    const role = accountData.role ?? "registered";
+    const roles = accountData.roles ?? ["registered"];
 
     try {
       const user = await admin.auth().getUser(userId);
@@ -35,11 +35,11 @@ export const onAccountUpdate = firestore
 
       const { customClaims } = user;
 
-      if (customClaims && customClaims.role != role) {
+      if (customClaims && customClaims.dogenRoles != roles) {
         await admin.auth().setCustomUserClaims(userId, {
-          role,
+          dogenRoles: roles,
         });
-        logger.info("Role claim updated for user.", { uid: userId });
+        logger.info("Role claims updated for user.", { uid: userId });
       }
 
       logger.info("Updated user.", { uid: userId });

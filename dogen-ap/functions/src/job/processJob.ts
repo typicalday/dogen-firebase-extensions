@@ -149,7 +149,11 @@ export const processJob = functions.https.onCall(async (data, context) => {
 
 const verifyAdmin = async (authToken: DecodedIdToken) => {
   try {
-    return authToken.role === "admin";
+    if (!Array.isArray(authToken.dogenRoles)) {
+      return false;
+    }
+    
+    return authToken.dogenRoles.includes("admin");
   } catch (error) {
     console.error("Error verifying auth token:", error);
     return false;

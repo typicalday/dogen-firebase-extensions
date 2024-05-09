@@ -25,7 +25,7 @@ export const onUserCreate = auth.user().onCreate(async (user) => {
 export const getUserData = (user: admin.auth.UserRecord) => {
   return {
     id: user.uid,
-    role: "registered",
+    roles: ["registered"],
     email: user.email,
     displayName: user.displayName,
     createdAt: FieldValue.serverTimestamp(),
