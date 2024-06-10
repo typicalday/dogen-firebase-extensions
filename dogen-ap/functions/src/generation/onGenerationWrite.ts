@@ -324,14 +324,17 @@ async function processCollection(
 ): Promise<Array<FirebaseFirestore.DocumentData>> {
   // Read all documents
   const snapshot = await db.collection(collectionName).get();
-  const documents = snapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
+  
+  const documents: FirebaseFirestore.DocumentData[] = [];
 
   // Copy documents to generation document sub-collection
-  for (const doc of documents) {
+  for (const doc of snapshot.docs) {
     const docRef = db.doc(
       `dogen_application_generations/${generationId}/${collectionName}/${doc.id}`
     );
-    await batchManager.add(docRef, doc);
+    const docData = doc.data();
+    documents.push(docData);
+    await batchManager.add(docRef, docData);
   }
 
   return documents;
