@@ -33,16 +33,16 @@ export const onAccountUpdate = firestore
         await admin.auth().updateUser(userId, updateRequest);
       }
 
-      const { customClaims } = user;
+      const currentClaims = user.customClaims || {};
 
-      if (customClaims && customClaims.dogenRoles != roles) {
-        await admin.auth().setCustomUserClaims(userId, {
+      // Merge the dogen claims with the existing claims
+      const updatedClaims = { ...currentClaims, ...{
           dogenRoles: roles,
-        });
-        logger.info("Role claims updated for user.", { uid: userId });
-      }
+        },
+      };
 
-      logger.info("Updated user.", { uid: userId });
+      await admin.auth().setCustomUserClaims(userId, updatedClaims);
+      logger.info("Role claims updated for user.", { uid: userId });
     } catch (error) {
       logger.info("Error updating auth user from account.", { error });
     } finally {
