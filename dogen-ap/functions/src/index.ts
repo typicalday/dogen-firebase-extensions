@@ -13,7 +13,7 @@ export * from "./user/onAccountUpdate";
 export * from "./generation/onGenerationWrite";
 
 // Extension lifecycle events
-export * from "./user/backfillExistingUsers";
+export * from "./install/runInstall";
 
 // HTTP triggers
 export * from "./generation/updateGenerationWebhook";

@@ -22,12 +22,11 @@ export const onUserCreate = auth.user().onCreate(async (user) => {
   }
 });
 
-export const getUserData = (user: admin.auth.UserRecord) => {
+export const getUserData = (user: admin.auth.UserRecord, roles: string[] = ["registered"]) => {
   return {
-    id: user.uid,
-    roles: ["registered"],
+    roles: roles,
     email: user.email,
-    displayName: user.displayName,
+    displayName: user.displayName ?? null,
     createdAt: FieldValue.serverTimestamp(),
   };
 };

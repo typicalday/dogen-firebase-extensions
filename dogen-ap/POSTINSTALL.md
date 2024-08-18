@@ -1,22 +1,13 @@
-<!-- 
-This file provides your users an overview of how to use your extension after they've installed it. All content is optional, but this is the recommended format. Your users will see the contents of this file in the Firebase console after they install the extension.
+# We're on it!
 
-Include instructions for using the extension and any important functional details. Also include **detailed descriptions** for any additional post-installation setup required by the user.
+We are setting up your Dogen Application Platform. You will receive an email shortly with detailed instructions on how to proceed.
 
-Reference values for the extension instance using the ${param:PARAMETER_NAME} or ${function:VARIABLE_NAME} syntax.
-Learn more in the docs: https://firebase.google.com/docs/extensions/publishers/user-documentation#reference-in-postinstall
+# Additional Details
 
-Learn more about writing a POSTINSTALL.md file in the docs:
-https://firebase.google.com/docs/extensions/publishers/user-documentation#writing-postinstall
--->
+In the meantime, you may notice a `dogen_application` collection in your Firestore database. This collection is used to store basic installation details, including a temporary (unsecure) API key for convenience purposes to get you started.  You should never need to modify this collection.  
 
-# See it in action
+When we provide you an official Dogen API key, please ensure it is stored in the extension configuration under the `Dogen API Key` parameter.  This parameter uses Google Secret Manager for enhanced security.
 
-Launch your Dogen Firestore Application Platform to see it in action!
-
-To learn more about HTTP functions, visit the [functions documentation](https://firebase.google.com/docs/functions/http-events).
-
-<!-- We recommend keeping the following section to explain how to monitor extensions with Firebase -->
 # Monitoring
 
 As a best practice, you can [monitor the activity](https://firebase.google.com/docs/extensions/manage-installed-extensions#monitor) of your installed extension, including checks on its health, usage, and logs.

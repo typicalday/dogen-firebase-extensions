@@ -1,18 +1,14 @@
 import * as admin from "firebase-admin";
+import * as utils from "../utils/utils";
 import axios from "axios";
 import { createGzip } from "zlib";
 import { firestore, logger, EventContext, Change } from "firebase-functions";
-import config from "../config";
 import { BatchManager } from "../utils/batchManager";
 
 const db = admin.firestore();
 
-const defaultDogenServiceUrl = "https://api.dogen.io/";
-const generationApiVersion = "1";
 
-const actionGenerate = "generate";
-const actionPublish = "publish";
-const actionUnpublish = "unpublish";
+const generationApiVersion = "1";
 
 const statusCreated = "created";
 const statusInitialized = "initialized";
@@ -57,38 +53,6 @@ function getGenerationId(context: EventContext) {
   return context.params.generationId;
 }
 
-function getDogenGenerateServiceUrl() {
-  return (
-    process.env.DOGEN_TRIGGER_GENERATION_URL ||
-    defaultDogenServiceUrl + actionGenerate
-  );
-}
-
-function getDogenPublishServiceUrl() {
-  return (
-    process.env.DOGEN_TRIGGER_PUBLISH_URL ||
-    defaultDogenServiceUrl + actionPublish
-  );
-}
-
-function getDogenUnpublishServiceUrl() {
-  return (
-    process.env.DOGEN_TRIGGER_UNPUBLISH_URL ||
-    defaultDogenServiceUrl + actionUnpublish
-  );
-}
-
-function getWebhookBaseUrl() {
-  const projectId = admin.instanceId().app.options.projectId;
-  return (
-    process.env.GENERATION_WEBHOOK_BASE_URL ||
-    `https://${config.location}-${projectId}.cloudfunctions.net/`
-  );
-}
-
-function getWebhookUrl(webhookKey: any) {
-  return `${getWebhookBaseUrl()}ext-dogen-ap-updateGenerationWebhook?key=${webhookKey}`;
-}
 
 async function handleCreatedEvent(
   snapshot: Change<firestore.DocumentSnapshot>,
@@ -96,7 +60,7 @@ async function handleCreatedEvent(
 ) {
   const generationId = getGenerationId(context);
 
-  const dogenServiceUrl = getDogenGenerateServiceUrl();
+  const dogenServiceUrl = utils.getDogenGenerateServiceUrl();
 
   const objectEntitiesCollection = "dogen_blueprint_object_entities";
   const embeddedEntitiesCollection = "dogen_blueprint_embedded_entities";
@@ -137,7 +101,7 @@ async function handleCreatedEvent(
       generationApiVersion,
       generationTemplateVersion: snapshotData?.templateVersion,
       ignoreCache: snapshotData?.ignoreCache ?? true,
-      webhookUrl: getWebhookUrl(webhookKey),
+      webhookUrl: utils.getWebhookUrl(webhookKey),
       [objectEntitiesKey]: await processCollection(
         batchManager,
         objectEntitiesCollection,
@@ -180,7 +144,7 @@ async function handleCreatedEvent(
       headers: {
         "Content-Encoding": "gzip",
         "Content-Type": "application/json",
-        "x-api-key": process.env.DOGEN_API_KEY,
+        "x-api-key": await utils.getApiKey(),
       },
       validateStatus: (_) => true,
     });
@@ -233,7 +197,7 @@ async function handlePromotedEvent(
     documentData,
     statusPromoted,
     statusPublished,
-    getDogenPublishServiceUrl
+    utils.getDogenPublishServiceUrl
   );
 }
 
@@ -248,7 +212,7 @@ async function handleDemotedEvent(
     documentData,
     statusDemoted,
     statusUnpublished,
-    getDogenUnpublishServiceUrl
+    utils.getDogenUnpublishServiceUrl
   );
 }
 
@@ -283,7 +247,7 @@ async function handlePromotionDemotionEvent(
     const response = await axios.post(serviceUrl, body, {
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": process.env.DOGEN_API_KEY,
+        "x-api-key": await utils.getApiKey(),
       },
     });
 

@@ -2,15 +2,16 @@
 # https://firebase.google.com/docs/extensions/reference/extension-yaml
 
 name: dogen-ap  # Identifier for your extension
-version: 0.0.3  # Follow semver versioning
+version: 0.0.4  # Follow semver versioning
 specVersion: v1beta  # Version of the Firebase Extensions specification
 
 # Friendly display name for your extension (~3-5 words)
-displayName: Generate a custom Firestore Application Platform
+displayName: Dogen Application Platform
 
 # Brief description of the task your extension performs (~1 sentence)
 description: >-
-  Adds support for Dogen Application Platform, which allows you to define schemas and validation rules for all your collections. For more information visit https://www.dogen.io
+  Installs the Dogen Application Platform, allowing you to manage your data like a pro! 
+  For more information visit https://www.dogen.io.
 
 license: Apache-2.0  # https://spdx.org/licenses/
 
@@ -19,7 +20,7 @@ sourceUrl: https://github.com/typicalday/dogen-firebase-extensions/dogen-ap
 
 # Specify whether a paid-tier billing plan is required to use your extension.
 # Learn more in the docs: https://firebase.google.com/docs/extensions/reference/extension-yaml#billing-required-field
-billingRequired: false
+billingRequired: true
 
 # In an `apis` field, list any Google APIs (like Cloud Translation, BigQuery, etc.)
 # required for your extension to operate.
@@ -57,10 +58,10 @@ resources:
         eventType: providers/firebase.auth/eventTypes/user.delete
         resource: projects/${PROJECT_ID}
       runtime: "nodejs18"
-  - name: backfillExistingUsers
+  - name: runInstall
     type: firebaseextensions.v1beta.function
     description: >-
-      Cloud task triggered function which backfills existing users in batches into the accounts collection.
+      Cloud task triggered function which handles registration and backfilling of users.
     properties:
       location: ${LOCATION}
       taskQueueTrigger: {}
@@ -116,29 +117,35 @@ resources:
 # Learn more in the docs:
 # https://firebase.google.com/docs/extensions/reference/extension-yaml#params-field
 params:
-  - param: DOGEN_API_KEY
-    label: Dogen API Key
+  - param: DOGEN_ACCOUNT_EMAIL
+    label: Registration Email / Dogen Account Email (Required)
     description: >-
-      You can find your API key in the Dogen dashboard.
+      The email address associated with your Dogen account.  If you do not have an 
+      existing Dogen account, provide the registration email address.
     type: string
     required: true
 
-  - param: BACKFILL_EXISTING_USERS
-    label: Backfill existing users
+  - param: DOGEN_INVITATION_CODE
+    label: Dogen Invitation Code (Optional)
     description: >-
-      If you enable this option, the extension will create Firestore user
-      documents for all existing users right after installation is complete.
-    type: select
-    options:
-      - label: Yes
-        value: true
-      - label: No
-        value: false
-    default: true
-    required: true
+      Dogen is in private alpha. If you do not provide an invitation code, you will be
+      added to the waitlist.  We will send you a confirmation email shortly, and another once 
+      we are ready to onboard you.
+    type: string
+    required: false
+
+  - param: DOGEN_API_KEY
+    label: Dogen API Key (Optional)
+    description: >-
+      The API Key to use when communicating with the Dogen service.  You can
+      leave it blank if you're just trying the service.  Once we issue you an API 
+      key in the future, you can update the extension configuration.  This uses
+      secret manager for storage, it may have its own costs.
+    type: secret
+    required: false
 
   - param: LOCATION
-    label: Cloud Functions location
+    label: Cloud Location (Required)
     description: >-
       Where do you want to deploy the functions created for this extension?
       For help selecting a location, refer to the [location selection
@@ -188,7 +195,71 @@ params:
     required: true
     immutable: true
 
+  - param: ADMIN_USER_EMAIL
+    label: Admin User Email (Required)
+    description: >-
+      The email address for an existing Firebase Auth User which will be granted 
+      the 'admin' Dogen role. This is essentially your first Dogen application 
+      user.
+    type: string
+    required: true
+
+  - param: BACKFILL_EXISTING_USERS
+    label: Backfill Existing Firebase Authentication Users (Optional)
+    description: >-
+      Creates a Dogen Application Platform account document for each existing user.  
+      This facilitates user management.  By default each user will receive a role of 
+      'registered'.  If you're not sure, leave this as "No".
+    type: select
+    options:
+      - label: Yes
+        value: true
+      - label: No
+        value: false
+    default: false
+    required: false
+
+  - param: FIREBASE_CONFIG_API_KEY
+    label: Firebase Config API Key (Required)
+    description: >-
+      The API Key for the Dogen app to connect to your Firebase project.  (You 
+      will need to create a new Web App in your Firebase project to obtain one.)
+    type: string
+    required: true
+
+  - param: FIREBASE_CONFIG_APP_ID
+    label: Firebase Config App ID (Required)
+    description: >-
+      The App ID for the Dogen app connecting to your Firebase project.  (You 
+      will need to create a new Web App under your Firebase project to obtain one.)
+    type: string
+    required: true
+
+  - param: FIREBASE_CONFIG_MESSAGING_SENDER_ID
+    label: Firebase Config Messaging Sender ID (Required)
+    description: >-
+      The Messenger Sender ID for the Dogen app to connect to your Firebase 
+      project.  (You will need to create a new Web App in your Firebase project to 
+      obtain one.)
+    type: string
+    required: true
+
+  - param: FIREBASE_CONFIG_AUTH_DOMAIN
+    label: Firebase Config Auth Domain (Required)
+    description: >-
+      The Auth Domain for the Dogen app to connect to your Firebase project.  (You 
+      will need to create a new Web App in your Firebase project to obtain one.)
+    type: string
+    required: true
+
 lifecycleEvents:
   onInstall:
-    function: backfillExistingUsers
-    processingMessage: Processing Auth users into accounts collection...
+    function: runInstall
+    processingMessage: Running installation script...
+  onUpdate:
+    function: runInstall
+    processingMessage: Updating extension...
+  onConfigure:
+    function: runInstall
+    processingMessage: Updating extension configuration...
+  

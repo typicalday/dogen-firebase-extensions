@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import { firestore, logger } from "firebase-functions";
+import { updateUserClaims } from "../utils/utils";
 
 export const onAccountCreate = firestore
   .document("dogen_application_accounts/{userId}")
@@ -13,17 +14,21 @@ export const onAccountCreate = firestore
       return;
     }
 
+    const email = accountData.email;
+    const roles = accountData.roles ?? ["registered"];
+
     try {
       try {
-        await admin.auth().getUser(userId);
-        logger.info("User already exists.", { uid: userId });
+        let user = await admin.auth().getUser(userId);
+        logger.info("User already exists, skipping creation.", { uid: userId });
+
+        await updateUserClaims(user, roles);
+        logger.info("Dogen role claims updated for user.", { uid: userId });
+
         return;
       } catch (userNotFoundError) {
         // User does not exist, proceed with creation
       }
-
-      const email = accountData.email;
-      const roles = accountData.roles ?? ["registered"];
 
       // Allow a temporary (insecure plaintext) password to be set
       let password = accountData.temporaryPassword;
@@ -39,9 +44,7 @@ export const onAccountCreate = firestore
         disabled: disabled,
       });
 
-      await admin.auth().setCustomUserClaims(userRecord.uid, {
-        dogenRoles: roles,
-      });
+      await updateUserClaims(userRecord, roles);
 
       if (accountData.temporaryPassword != null) {
         await snapshot.ref.update({
