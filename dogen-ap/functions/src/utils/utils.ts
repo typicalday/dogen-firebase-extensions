@@ -13,31 +13,39 @@ export const applicationCollectionId = "dogen_application";
 export const registrationDocId = "registration";
 
 export function getDogenRegisterServiceUrl() {
-  return (
-    process.env.DOGEN_REGISTRATION_URL ||
-    defaultDogenServiceUrl + actionRegister
-  );
+  if (isDevEnvironment() && process.env.DOGEN_REGISTRATION_URL) {
+    return process.env.DOGEN_REGISTRATION_URL;
+  } else {
+    return defaultDogenServiceUrl + actionRegister;
+  }
 }
 
 export function getDogenGenerateServiceUrl() {
-  return (
-    process.env.DOGEN_TRIGGER_GENERATION_URL ||
-    defaultDogenServiceUrl + actionGenerate
-  );
+  if (isDevEnvironment() && process.env.DOGEN_TRIGGER_GENERATION_URL) {
+    return process.env.DOGEN_TRIGGER_GENERATION_URL;
+  } else {
+    return defaultDogenServiceUrl + actionGenerate;
+  }
 }
 
 export function getDogenPublishServiceUrl() {
-  return (
-    process.env.DOGEN_TRIGGER_PUBLISH_URL ||
-    defaultDogenServiceUrl + actionPublish
-  );
+  if (isDevEnvironment() && process.env.DOGEN_TRIGGER_PUBLISH_URL) {
+    return process.env.DOGEN_TRIGGER_PUBLISH_URL;
+  } else {
+    return defaultDogenServiceUrl + actionPublish;
+  }
 }
 
 export function getDogenUnpublishServiceUrl() {
-  return (
-    process.env.DOGEN_TRIGGER_UNPUBLISH_URL ||
-    defaultDogenServiceUrl + actionUnpublish
-  );
+  if (isDevEnvironment() && process.env.DOGEN_TRIGGER_UNPUBLISH_URL) {
+    return process.env.DOGEN_TRIGGER_UNPUBLISH_URL;
+  } else {
+    return defaultDogenServiceUrl + actionUnpublish;
+  }
+}
+
+export function isDevEnvironment() {
+  return process.env.FUNCTIONS_EMULATOR === "true";
 }
 
 export function getWebhookBaseUrl() {
