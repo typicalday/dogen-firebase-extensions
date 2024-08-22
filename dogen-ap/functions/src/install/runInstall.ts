@@ -13,8 +13,6 @@ const BATCH_SIZE = 500;
 const auth = admin.auth();
 const db = admin.firestore();
 
-const accountsCollectionId = "dogen_application_accounts";
-
 export const runInstall = tasks
   .taskQueue({
     retryConfig: {
@@ -26,7 +24,7 @@ export const runInstall = tasks
     },
   })
   .onDispatch(async (data) => {
-    const accountsCollection = db.collection(accountsCollectionId);
+    const accountsCollection = db.collection(utils.accountsCollectionId);
     const runtime = getExtensions().runtime();
     const offset = data.offset ?? 0;
 

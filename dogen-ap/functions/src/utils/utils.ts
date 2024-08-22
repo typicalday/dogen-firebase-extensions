@@ -9,7 +9,10 @@ const actionGenerate = "generate";
 const actionPublish = "publish";
 const actionUnpublish = "unpublish";
 
+export const accountsCollectionId = "dogen_application_accounts";
 export const applicationCollectionId = "dogen_application";
+export const generationCollectionId = "dogen_application_generations";
+
 export const registrationDocId = "registration";
 
 export function getDogenRegisterServiceUrl() {

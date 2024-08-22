@@ -20,7 +20,7 @@ const statusUnpublished = "unpublished";
 const statusFailed = "failed";
 
 export const onGenerationWrite = firestore
-  .document("generations/{generationId}")
+  .document(`${utils.generationCollectionId}/{generationId}`)
   .onWrite(async (change, context) => {
     const document = change.after.exists ? change.after : change.before;
 
@@ -294,7 +294,7 @@ async function processCollection(
   // Copy documents to generation document sub-collection
   for (const doc of snapshot.docs) {
     const docRef = db.doc(
-      `dogen_application_generations/${generationId}/${collectionName}/${doc.id}`
+      `${utils.generationCollectionId}/${generationId}/${collectionName}/${doc.id}`
     );
     const docData = doc.data();
     documents.push(docData);
