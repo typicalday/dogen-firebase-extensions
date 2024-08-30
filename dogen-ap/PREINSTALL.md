@@ -17,7 +17,8 @@
 - [Table of Contents](#table-of-contents)
 - [What does it do?](#what-does-it-do)
 - [Who Is It For?](#who-is-it-for)
-- [Aren't NoSQL Databases Schema-less?](#arent-nosql-databases-schema-less)
+- [Pricing](#pricing)
+- [Waitlist](#waitlist)
 - [How do I get started?](#how-do-i-get-started)
 - [How does it work?](#how-does-it-work)
 - [How do I ensure data integrity with Dogen?](#how-do-i-ensure-data-integrity-with-dogen)
@@ -31,29 +32,32 @@ Use this extension to integrate with Dogen's Application Platform, which is a to
 ||CMS|Firestore Clients|Dogen AP|
 |--- |--- |--- |--- |
 |Entity Schemas & Validations|&check;|&cross;|&check;|
-|Natively Manage **Any** Firestore Data|&cross;|&check;|&check;|
+|User Firendly Data Management|&check;|&cross;|&check;|
 |Compatible with Firestore Types & Paths|&cross;|&check;|&check;|
+|Natively Management of Complex Data|&cross;|&check;|&check;|
+|Application Layer Context|&cross;|&check;|&check;|
 |Intuitive Relationship Management & Navigation|&cross;|&cross;|&check;|
 |Cascading Configurations & Validations|&cross;|&cross;|&check;|
-|JSON Diff View|&cross;|&cross;|&check;|
 
 # Who Is It For?<a name="who-is-it-for" />
 
-This extension is for developers building awesome applications.  The thing is, truly awesome applications typically leverage complex data structures such as arrays of maps, maps of objects, nested objects, and so on. If your go-to data management solution cannot natively handle these complex data structures it can lead to challenges and negative outcomes for your dev team.  Have you ever flattened a complex data structure just to make it easier to manage that data?  Have you ever substituted a map with one or two arrays?  Have you ever had to write custom code to manage a complex data structure?  These are all very real compromises that can lead to data integrity issues.
+This extension is for developers building awesome applications.  The thing is, truly awesome applications typically leverage complex data structures such as arrays of maps, maps of objects, nested objects, and so on. If your go-to data management solution cannot natively handle these complex data structures it can lead to challenges and negative outcomes for your dev team. 
 
-With Dogen we hope to eliminate data management compromises so you can focus on things that truly matter.  If you can store it in the database, we'll give you a way to manage it out of the box, its that simple.
+With Dogen we hope to eliminate data management compromises so you can focus on things that truly matter.
 
-# Aren't NoSQL Databases Schema-less?<a name="arent-nosql-databases-schema-less" />
+# Pricing<a name="pricing" />
 
-Yes, NoSQL database engines are schema-less. This is what makes them fast, flexible, and incredibly powerful. However, this doesn't mean your application data should be unstructured. It simply means the database engine is deferring this responsibility to the application layer (aka.. "You deal with it").
+Dogen is currently in its alpha testing phase and is free to use for a limited time.  We will be introducing a pricing model in the near future.  We will provide more information on pricing as we get closer to the next release phase.
 
-NoSQL database clients subscribe to the same ideology. They only care that your input can be stored properly in the database engine. They do not care about the quality of your input. By default, these tools **trust user input**. As developers, we know we should never trust user input, yet we do it all the time by using NoSQL DB clients for data management. Dogen's Application Platform is designed to address this potentially disastrous validation gap. It's an added safety net to help you maintain the quality of your data.  There is a popular saying: "Data is the new gold", but in reality, its reliable data that is the new gold.
+# Waitlist<a name="waitlist" />
+
+There is a waitlist to join the alpha testing phase of Dogen.  If you have an invitation code, you can use it to bypass the waitlist.  If you don't have an invitation code, you can still install the extension and this will prepare your project for Dogen and register you in our waitlist.
 
 # How do I get started?<a name="how-do-i-get-started" />
 
 1. **Accept the Terms of Service**
    - **Important**: Dogen is currently in its alpha testing phase and is provided "as is" without any warranties. We advise using it with caution, regularly backing up your data, and reviewing your Firebase billing to avoid unexpected charges.
-   - By installing this extension and using Dogen services, you agree to our [Terms of Service](https://dogen.io/terms-of-service).
+   - By installing this extension and using Dogen services, you agree to our [Terms of Service](https://dogen.io/tos) and [Privacy Policy](https://dogen.io/privacy).
 2. **Enable the Blaze Billing plan**
    - **Note**: In order to use Firebase Extensions, you must enable the Blaze plan for your Firebase project.  This is a Firebase requirement, not a Dogen one.
    - To enable the Blaze plan, go to the Firebase console and click on the cog next to Project Overview.  
@@ -62,10 +66,10 @@ NoSQL database clients subscribe to the same ideology. They only care that your 
    - Enable the Blaze plan.
   
 3. **Create a Firestore Database**
-   - Set up a Firestore database in your Firebase project.
+   - Set up a Firestore database in your Firebase project. [Learn more](https://firebase.google.com/docs/firestore/quickstart).
   
 4. **Enable Authentication**
-   - Enable Firebase Authentication in your Firebase project.
+   - Enable Firebase Authentication in your Firebase project. [Learn more](https://firebase.google.com/docs/auth).
    - Enable the **Email/Password** sign-in method.
    - Create a new user account if you don't have one so that you can administer your project.
 
@@ -87,7 +91,7 @@ NoSQL database clients subscribe to the same ideology. They only care that your 
    - Finalize the installation and wait for it to complete. We will send you an email with further instructions.
    - **Note:** API keys and invitation codes work on a per project basis. If you have multiple Firebase projects, each one will need its own separate extension installation, API key, and invitation code (or waitlist entry if left blank).
 7. **Update your Firestore Rules**
-   - Dogen AP is a Firebase client application like any other. It facilitates access to your Firestore data, but the underlying logged in user must have the appropriate permissions to access the data. You can use the following Firestore rules to grant global access to Dogen AP admins or you can create more granular rules to suit your needs.
+   - Dogen AP is a Firebase client application. It facilitates access to your Firestore data, but the underlying logged in user must have the appropriate permissions to access the data. You can use the following Firestore rules to grant global access to Dogen AP admins or you can create more granular rules to suit your needs.
      ```plaintext
         rules_version = '2';
         service cloud.firestore {
@@ -107,9 +111,7 @@ NoSQL database clients subscribe to the same ideology. They only care that your 
 
 The Dogen Application Platform is a data management solution unlike any you've likely encountered in the past. This is because your Dogen AP is custom-made for you through code generation. This in itself is not novel, however, we've made the code generation process iterative.  This means each version of your application is a stepping stone to the next version.
 
-We achieve iteration by allowing each version of your application to act as a blueprint editor where you can define exactly what you need for the next version.  When you're ready, you create a generation in the Dogen AP and this Firestore change triggers a request to our API (containing your blueprints).  We build the application to your specifications, and when its ready, your previous version will notify you that a new version is available.  You can then seamlessly load the new version from within the UI and carry on.  The end result is a custom made application which addresseses your needs.  
-
-The iterative process mirrors a development workflow. It allows you to define exactly what you need, preview it, and if you're happy you keep it, if not you can try again (Or you can load a previous version and carry on from there!).
+We achieve iteration by allowing each version of your application to act as a blueprint editor where you can define exactly what you need from the next version.  When you're ready, you create a new generation in the Dogen AP.  This action will cause the extension to request a new generated application from our service.  We build the application to your specifications, and when its ready, your existing application will notify you there is an update available.  You can then seamlessly load the new version from within the UI and carry on.  The end result is a custom made application which addresseses your needs.  
 
 # How do I ensure data integrity with Dogen?<a name="how-do-i-ensure-data-integrity-with-dogen" />
 
@@ -121,19 +123,21 @@ While we plan to introduce more advanced data backup features in the future, we 
 
 # Will Dogen have access to my data?<a name="will-dogen-have-access-to-my-data" />
 
-In short, Dogen's services and team will never have direct access to your project resources or application data.  Information flows from the open source extension you install (which provides Firestore triggers to communicate **only blueprint data** to Dogen's API).  The API then generates a Firebase web application.  This application requires a logged in user to gain access to your database.  Its this logged in user who has the access, not the application itself.  
+In short, Dogen's services and team will never have direct access to your project resources or application data.  Information flows in one direction from the open source extension you install (which communicates **only blueprint data** to Dogen's API).  The API then generates a Firebase web application.  This application requires a logged in user to gain access to your database.  Its this logged in user who has the access, not the application itself.  
 
-The biggest takeaway here is the application platform only communicates with your Firebase project.  This means the data only flows in one direction.  The end result is we only receive blueprint data and we have no way to access your application data, and thats the best kind of privacy there is!
+The biggest takeaway here is your custom application platform only communicates with your Firebase project.  This means the data only flows in one direction.  The end result is we only receive blueprint data and we have no way to access your application data, and thats the best kind of privacy there is!
 
 # How will this affect my Google billing?<a name="how-will-this-affect-my-google-billing" />
 
+**Important**: Dogen is currently in its alpha testing phase and is provided "as is" without any warranties. We advise using it with caution, regularly backing up your data, and reviewing your Firebase billing to avoid unexpected charges.
+
 This extension uses Firebase and Google Cloud Platform services which may have associated charges:
 
-- Firestore Database
-- Cloud Functions
-- Secret Manager to store Dogen's official API key
-- Task Queues
+- Firestore Database to store your application data.
+- Cloud Functions for reacting to changes in your Firestore database.
+- Secret Manager to store Dogen's official API key.
+- Task Queues to manage batch processes.
 
-Dogen provides advanced administrative capabilities, allowing you to perform complex actions on these cloud resources. With great power comes great responsibility. Be aware and take care when using these features to avoid incurring unexpected charges. It is recommended to frequently monitor the usage of the extension in the Firebase console.
+Dogen provides advanced administrative capabilities, allowing you to perform complex actions on these cloud resources. Be aware and take care when using these features to avoid incurring unexpected charges. It is recommended to frequently monitor the usage of the extension in the Firebase console.
 
 When you use Firebase Extensions, you're only charged for the underlying resources that you use. A paid-tier billing plan is only required if the extension uses a service that requires a paid-tier plan, for example, calling a Google Cloud Platform API or making outbound network requests to non-Google services. All Firebase services offer a free tier of usage. [Learn more about Firebase billing.](https://firebase.google.com/pricing)
