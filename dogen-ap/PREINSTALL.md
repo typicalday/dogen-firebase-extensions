@@ -35,13 +35,13 @@ Use this extension to integrate with Dogen's Application Platform, which is a to
 |User Firendly Data Management|&check;|&cross;|&check;|
 |Compatible with Firestore Types & Paths|&cross;|&check;|&check;|
 |Natively Management of Complex Data|&cross;|&check;|&check;|
-|Application Layer Context|&cross;|&check;|&check;|
+|Application Layer Context|&cross;|&cross;|&check;|
 |Intuitive Relationship Management & Navigation|&cross;|&cross;|&check;|
 |Cascading Configurations & Validations|&cross;|&cross;|&check;|
 
 # Who Is It For?<a name="who-is-it-for" />
 
-This extension is for developers building awesome applications.  The thing is, truly awesome applications typically leverage complex data structures such as arrays of maps, maps of objects, nested objects, and so on. If your go-to data management solution cannot natively handle these complex data structures it can lead to challenges and negative outcomes for your dev team. 
+This extension is for developers building awesome applications.  The thing is, truly awesome applications typically leverage complex data structures such as arrays, maps, arrays of maps, nested maps, and so on. If your go-to data management solution cannot natively handle these complex data structures it can lead to challenges and negative outcomes for your dev team. 
 
 With Dogen we hope to eliminate data management compromises so you can focus on things that truly matter.
 
