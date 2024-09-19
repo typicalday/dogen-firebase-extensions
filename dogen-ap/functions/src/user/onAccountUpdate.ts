@@ -1,13 +1,11 @@
-import * as admin from "firebase-admin";
 import { firestore, logger } from "firebase-functions";
-import { updateUserClaims } from "../utils/utils";
+import { createOrUpdateUser } from "./userManagement";
+import * as admin from "firebase-admin";
 
 export const onAccountUpdate = firestore
-  .document("dogen_application_accounts/{userId}")
+  .document("dogen_application_accounts/{accountId}")
   .onUpdate(async (change, context) => {
-    // Must match extension.yaml resource definition
-    const userId = context.params.userId;
-
+    const accountId = context.params.accountId;
     const accountData = change.after.exists ? change.after.data() : null;
 
     if (!accountData) {
@@ -15,34 +13,31 @@ export const onAccountUpdate = firestore
       return;
     }
 
-    const disabled = accountData.disabled;
-
-    // Allow a temporary (insecure plaintext) password to be set
-    const password = accountData.temporaryPassword;
-
-    const roles = accountData.roles ?? ["registered"];
-
     try {
-      const user = await admin.auth().getUser(userId);
+      const { user, isNewUser, needsNewAccount } = await createOrUpdateUser(accountId, accountData);
 
-      const updateRequest = {
-        ...(password != null ? { password: password } : {}),
-        ...(disabled != null ? { disabled: disabled } : {}),
-      };
+      if (needsNewAccount) {
+        // Delete the old account document
+        await change.after.ref.delete();
 
-      if (Object.keys(updateRequest).length > 0) {
-        await admin.auth().updateUser(userId, updateRequest);
-      }
-
-      await updateUserClaims(user, roles);
-      logger.info("Dogen role claims updated for user.", { uid: userId });
-    } catch (error) {
-      logger.info("Error updating auth user from account.", { error });
-    } finally {
-      if (password != null) {
-        await change.after.ref.update({
-          temporaryPassword: admin.firestore.FieldValue.delete(),
+        // Create a new account document with the correct ID
+        const newAccountRef = admin.firestore().collection('dogen_application_accounts').doc(user.uid);
+        await newAccountRef.set({
+          ...accountData,
+          uid: user.uid,  // Ensure the UID in the document matches the auth UID
         });
+
+        logger.info(`Created new account document for user`, { uid: user.uid, oldAccountId: accountId });
+      } else {
+        if (accountData.temporaryPassword != null) {
+          await change.after.ref.update({
+            temporaryPassword: admin.firestore.FieldValue.delete(),
+          });
+        }
       }
+
+      logger.info(`${isNewUser ? 'Created' : 'Updated'} user and account`, { uid: user.uid, isNewUser, needsNewAccount });
+    } catch (error) {
+      logger.error("Error processing account update.", { error, accountId });
     }
   });
