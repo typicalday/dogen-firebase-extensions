@@ -10,13 +10,18 @@ export const updateGenerationWebhook = functions.https.onRequest(async (req, res
     }
 
     try {
-        const { generationId, status, templateVersion, outputMessage, } = req.body;
+        const { generationId, generationAppVersion, status, templateVersion, outputMessage, } = req.body;
 
         const key = req.query.key as string;
 
         // Validate the required fields
-        if (!generationId || !key || !status) {
-            functions.logger.error('Missing required fields:', { generationId, key, status });
+        if (!generationId || !generationAppVersion || !key || !status) {
+            functions.logger.error('Missing required fields:', {
+                generationId, 
+                generationAppVersion, 
+                key, 
+                status 
+            });
             res.status(400).send('Missing required fields');
             return;
         }
@@ -42,10 +47,11 @@ export const updateGenerationWebhook = functions.https.onRequest(async (req, res
 
         // Prepare the update object
         const updateData: { 
-            status: string, 
+            status: string,
+            appVersion: string, 
             outputMessage?: string, 
             templateVersion?: string 
-        } = { status };
+        } = { status, appVersion: generationAppVersion };
 
         if (outputMessage !== undefined) {
             updateData.outputMessage = outputMessage;
