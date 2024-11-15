@@ -178,6 +178,7 @@ async function processRegistration(config: IConfig) {
       firebaseConfigProjectId: config.firebaseConfigProjectId,
       firebaseConfigAuthDomain: config.firebaseConfigAuthDomain,
       firebaseConfigRegion: config.location,
+      firebaseExtensionInstanceId: config.firebaseExtensionInstanceId
     };
 
     const response = await axios.post(serviceUrl, body, {

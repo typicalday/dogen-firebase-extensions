@@ -1,16 +1,17 @@
 interface IConfig {
-    dogenAccountEmail: string;
-    dogenInvitationCode?: string;
-    dogenApiKey?: string;
-    location: string;
-    backfillExistingUsers: boolean;
-    adminUserEmail: string;
-    firebaseConfigApiKey: string;
-    firebaseConfigAppId: string;
-    firebaseConfigMessagingSenderId: string;
-    firebaseConfigAuthDomain: string;
-    firebaseConfigStorageBucket: string;
-    firebaseConfigProjectId: string;
+  dogenAccountEmail: string;
+  dogenInvitationCode?: string;
+  dogenApiKey?: string;
+  location: string;
+  backfillExistingUsers: boolean;
+  adminUserEmail: string;
+  firebaseConfigApiKey: string;
+  firebaseConfigAppId: string;
+  firebaseConfigMessagingSenderId: string;
+  firebaseConfigAuthDomain: string;
+  firebaseConfigStorageBucket: string;
+  firebaseConfigProjectId: string;
+  firebaseExtensionInstanceId: string;
   }
 
 const config: IConfig = {
@@ -22,10 +23,11 @@ const config: IConfig = {
   adminUserEmail: process.env.ADMIN_USER_EMAIL!,
   firebaseConfigApiKey: process.env.FIREBASE_CONFIG_API_KEY!,
   firebaseConfigAppId: process.env.FIREBASE_CONFIG_APP_ID!,
-  firebaseConfigMessagingSenderId: process.env.FIREBASE_CONFIG_MESSAGING_SENDER_ID!,
-  firebaseConfigAuthDomain: process.env.FIREBASE_CONFIG_AUTH_DOMAIN!,
+  firebaseConfigMessagingSenderId: process.env.FIREBASE_CONFIG_APP_ID?.split(':')[1]|| "0000000000",
+  firebaseConfigAuthDomain: `${process.env.PROJECT_ID!}.firebaseapp.com`,
   firebaseConfigStorageBucket: process.env.STORAGE_BUCKET!,
   firebaseConfigProjectId: process.env.PROJECT_ID!,
+  firebaseExtensionInstanceId: process.env.EXT_INSTANCE_ID || "dogen-ap",
 };
 
 export {IConfig};

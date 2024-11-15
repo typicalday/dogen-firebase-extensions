@@ -2,7 +2,7 @@
 # https://firebase.google.com/docs/extensions/reference/extension-yaml
 
 name: dogen-ap  # Identifier for your extension
-version: 0.0.6  # Follow semver versioning
+version: 0.0.7  # Follow semver versioning
 specVersion: v1beta  # Version of the Firebase Extensions specification
 
 # Friendly display name for your extension (~3-5 words)
@@ -10,7 +10,7 @@ displayName: Dogen Application Platform
 
 # Brief description of the task your extension performs (~1 sentence)
 description: >-
-  Installs the Dogen Application Platform, allowing you to manage your data like a pro! 
+  Installs the Dogen Application Platform, allowing you to manage data like a pro! 
   For more information visit https://www.dogen.io.
 
 license: Apache-2.0  # https://spdx.org/licenses/
@@ -128,7 +128,7 @@ params:
     required: true
 
   - param: DOGEN_INVITATION_CODE
-    label: Dogen Invitation Code (Optional)
+    label: Dogen Invitation Code
     description: >-
       Dogen is in private alpha. If you do not provide an invitation code, you will be
       added to the waitlist.  We will send you a confirmation email shortly, and another once 
@@ -137,7 +137,7 @@ params:
     required: false
 
   - param: DOGEN_API_KEY
-    label: Dogen API Key (Optional)
+    label: Dogen API Key
     description: >-
       The API Key to use when communicating with the Dogen service.  You can
       leave it blank if you're just trying the service.  Once we issue you an API 
@@ -207,7 +207,7 @@ params:
     required: true
 
   - param: BACKFILL_EXISTING_USERS
-    label: Backfill Existing Firebase Authentication Users (Optional)
+    label: Backfill Existing Firebase Authentication Users
     description: >-
       Creates a Dogen Application Platform account document for each existing user.  
       This facilitates user management.  By default each user will receive a role of 
@@ -234,23 +234,6 @@ params:
     description: >-
       The App ID for the Dogen app connecting to your Firebase project.  (You 
       will need to create a new Web App under your Firebase project to obtain one.)
-    type: string
-    required: true
-
-  - param: FIREBASE_CONFIG_MESSAGING_SENDER_ID
-    label: Firebase Config Messaging Sender ID (Required)
-    description: >-
-      The Messenger Sender ID for the Dogen app to connect to your Firebase 
-      project.  (You will need to create a new Web App in your Firebase project to 
-      obtain one.)
-    type: string
-    required: true
-
-  - param: FIREBASE_CONFIG_AUTH_DOMAIN
-    label: Firebase Config Auth Domain (Required)
-    description: >-
-      The Auth Domain for the Dogen app to connect to your Firebase project.  (You 
-      will need to create a new Web App in your Firebase project to obtain one.)
     type: string
     required: true
 
