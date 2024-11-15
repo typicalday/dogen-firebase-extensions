@@ -50,8 +50,13 @@ export const updateGenerationWebhook = functions.https.onRequest(async (req, res
             status: string,
             appVersion: string, 
             outputMessage?: string, 
-            templateVersion?: string 
-        } = { status, appVersion: generationAppVersion };
+            templateVersion?: string,
+            updatedAt: admin.firestore.FieldValue
+        } = { 
+            status, 
+            appVersion: generationAppVersion,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        };
 
         if (outputMessage !== undefined) {
             updateData.outputMessage = outputMessage;

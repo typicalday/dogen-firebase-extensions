@@ -82,20 +82,26 @@ async function handleCreatedEvent(
     // Generate a random webhook key for the generation.
     const webhookKey = Math.random().toString(36).substring(2, 15);
 
-    // Update the generation document with the webhook key.
+    const currentData = snapshot.after.data() || {};
+    const now = admin.firestore.FieldValue.serverTimestamp();
+
+    // Update the generation document with the webhook key and timestamps.
     await snapshot.after.ref.set(
       {
         apiVersion: generationApiVersion,
         status: statusInitialized,
         webhookKey: webhookKey,
+        description: currentData.description || "New Generation",
+        ignoreCache: currentData.ignoreCache ?? true,
+        createdAt: currentData.createdAt || now,
+        updatedAt: now
       },
       { merge: true }
     );
 
     const snapshotData = snapshot.after.data();
 
-    // 1. Build JSON of Blueprints data.
-    // 2. Archive the current state of the Blueprint collections under the generation.
+    // Rest of the code remains the same...
     const jsonData = {
       generationId,
       generationApiVersion,
@@ -136,7 +142,6 @@ async function handleCreatedEvent(
 
     await batchManager.commit();
 
-    // 3. Compress and send JSON of Blueprints data to Dogen service.
     const jsonString = JSON.stringify(jsonData);
     const compressedData = await compressData(jsonString);
 
@@ -162,6 +167,7 @@ async function handleCreatedEvent(
         {
           status: statusRequested,
           webhookKey: webhookKey,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
         },
         { merge: true }
       )
@@ -177,6 +183,7 @@ async function handleCreatedEvent(
         {
           status: statusFailed,
           outputMessage: errorMessage,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp()
         },
         { merge: true }
       )
