@@ -60,7 +60,7 @@ export function getWebhookBaseUrl() {
 }
 
 export function getWebhookUrl(webhookKey: any) {
-  return `${getWebhookBaseUrl()}ext-dogen-ap-updateGenerationWebhook?key=${webhookKey}`;
+  return `${getWebhookBaseUrl()}ext-${process.env.EXT_INSTANCE_ID || "dogen-ap"}-updateGenerationWebhook?key=${webhookKey}`;
 }
 
 export async function getApiKey() : Promise<string> {
