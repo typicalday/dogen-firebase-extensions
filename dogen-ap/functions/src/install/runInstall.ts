@@ -155,13 +155,61 @@ async function processRegistration(config: IConfig) {
     .doc(utils.registrationDocId)
     .get();
 
+  
+
   if (registrationDoc.exists && registrationDoc.data()?.temporaryApiKey != null) {
-    logger.info(
-      "Skipping registration process because it has already been completed."
-    );
-    return;
+    return await processRegistrationUpdate(config);
   }
 
+  await processNewRegistration(config, applicationMetadataCollection);
+}
+
+async function processRegistrationUpdate(
+  config: IConfig,
+) {
+  const serviceUrl = utils.getDogenRegisterServiceUrl();
+
+  try {
+    const body = {
+      firebaseConfigApiKey: config.firebaseConfigApiKey,
+      firebaseConfigAppId: config.firebaseConfigAppId,
+      firebaseConfigMessagingSenderId: config.firebaseConfigMessagingSenderId,
+      firebaseConfigRegion: config.location,
+      firebaseExtensionInstanceId: config.firebaseExtensionInstanceId
+    };
+
+    const response = await axios.patch(serviceUrl, body, {
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": await utils.getApiKey(),
+      },
+      validateStatus: (_) => true,
+    });
+
+    if (response.status !== 200) {
+      throw new Error(
+        `
+          Status Code: ${response.status}
+          Body: ${response.data}
+          
+          Please uninstall the extension and try again later.
+          `
+      );
+    }
+
+    logger.info("Registration update response received successfully:", response.data);
+  } catch (error) {
+    const errorMessage = (error as Error).message;
+    logger.error("Error:\n", errorMessage);
+  } finally {
+    logger.info("Registration update process completed.");
+  }
+}
+
+async function processNewRegistration(
+  config: IConfig,
+  applicationMetadataCollection: FirebaseFirestore.CollectionReference
+) {
   const serviceUrl = utils.getDogenRegisterServiceUrl();
   let registrationTemporaryApiKey;
   let registrationStatus;
@@ -185,9 +233,10 @@ async function processRegistration(config: IConfig) {
       headers: {
         "Content-Type": "application/json",
       },
+      validateStatus: (_) => true,
     });
 
-    logger.info("Registration response received successfully:", response.data);
+    logger.info("Registration response received:", response.data);
 
     if (response.status !== 200) {
       throw new Error(

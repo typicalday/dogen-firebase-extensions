@@ -12,3 +12,6 @@
 - Make all fields optional when a generation is created.
 - Update updatedAt when a generation is updated.
 - Take extension instance into account when building webhook URL.
+
+## Version 0.1.0
+- Added support for registration updates in case the extension instance id changes after the initial registration.
