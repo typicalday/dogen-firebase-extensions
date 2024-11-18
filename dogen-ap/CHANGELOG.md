@@ -15,3 +15,6 @@
 
 ## Version 0.1.0
 - Added support for registration updates in case the extension instance id changes after the initial registration.
+
+## Version 0.1.1
+- Fix issue with Firestore serverTimestamps.
