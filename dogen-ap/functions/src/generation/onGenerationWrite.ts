@@ -1,4 +1,5 @@
 import * as admin from "firebase-admin";
+import { FieldValue } from 'firebase-admin/firestore';
 import * as utils from "../utils/utils";
 import axios from "axios";
 import { createGzip } from "zlib";
@@ -83,7 +84,7 @@ async function handleCreatedEvent(
     const webhookKey = Math.random().toString(36).substring(2, 15);
 
     const currentData = snapshot.after.data() || {};
-    const now = admin.firestore.FieldValue.serverTimestamp();
+    const now = FieldValue.serverTimestamp();
 
     // Update the generation document with the webhook key and timestamps.
     await snapshot.after.ref.set(
@@ -167,7 +168,7 @@ async function handleCreatedEvent(
         {
           status: statusRequested,
           webhookKey: webhookKey,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true }
       )
@@ -183,7 +184,7 @@ async function handleCreatedEvent(
         {
           status: statusFailed,
           outputMessage: errorMessage,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp()
+          updatedAt: FieldValue.serverTimestamp()
         },
         { merge: true }
       )

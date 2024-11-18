@@ -7,6 +7,7 @@ import { logger, tasks } from "firebase-functions";
 import { getUserData } from "../user/onUserCreate";
 import config, { IConfig } from "../config";
 import axios from "axios";
+import { FieldValue } from "firebase-admin/firestore";
 
 const BATCH_SIZE = 500;
 
@@ -277,8 +278,8 @@ async function processNewRegistration(
           status: registrationStatus,
           message: registrationMessage,
           temporaryApiKey: registrationTemporaryApiKey,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          createdAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true }
       )

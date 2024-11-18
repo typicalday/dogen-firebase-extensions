@@ -1,6 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import * as utils from "../utils/utils";
+import { FieldValue } from 'firebase-admin/firestore';
 
 export const updateGenerationWebhook = functions.https.onRequest(async (req, res) => {
     // Only allow POST requests
@@ -55,7 +56,7 @@ export const updateGenerationWebhook = functions.https.onRequest(async (req, res
         } = { 
             status, 
             appVersion: generationAppVersion,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            updatedAt: FieldValue.serverTimestamp()
         };
 
         if (outputMessage !== undefined) {
