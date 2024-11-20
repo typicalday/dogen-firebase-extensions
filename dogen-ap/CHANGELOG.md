@@ -18,3 +18,6 @@
 
 ## Version 0.1.1
 - Fix issue with Firestore serverTimestamps.
+
+## Version 0.1.2
+- Minor refactoring of Generation handlers and statuses.
