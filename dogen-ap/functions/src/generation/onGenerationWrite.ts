@@ -36,13 +36,13 @@ export const onGenerationWrite = firestore
 
     switch (status) {
       case statusCreated:
-        handleCreatedEvent(change, context);
+        await handleCreatedEvent(change, context);
         break;
       case statusPromoted:
-        handlePromotedEvent(change, context, documentData);
+        await handlePromotedEvent(change, context, documentData);
         break;
       case statusDemoted:
-        handleDemotedEvent(change, context, documentData);
+        await handleDemotedEvent(change, context, documentData);
         break;
     }
 
