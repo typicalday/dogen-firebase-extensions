@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue } from "firebase-admin/firestore";
 import * as utils from "../utils/utils";
 import axios from "axios";
 import { createGzip } from "zlib";
@@ -8,17 +8,7 @@ import { BatchManager } from "../utils/batchManager";
 
 const db = admin.firestore();
 
-
 const generationApiVersion = "1";
-
-const statusCreated = "created";
-const statusInitialized = "initialized";
-const statusRequested = "requested";
-const statusPromoted = "promoted";
-const statusPublished = "published";
-const statusDemoted = "demoted";
-const statusUnpublished = "unpublished";
-const statusFailed = "failed";
 
 export const onGenerationWrite = firestore
   .document(`${utils.generationCollectionId}/{generationId}`)
@@ -32,16 +22,16 @@ export const onGenerationWrite = firestore
 
     const documentData = document.data() || {};
 
-    const status = documentData?.status || statusCreated;
+    const status = documentData?.status || utils.GenerationStatus.CREATED;
 
     switch (status) {
-      case statusCreated:
+      case utils.GenerationStatus.CREATED:
         await handleCreatedEvent(change, context);
         break;
-      case statusPromoted:
+      case utils.GenerationStatus.PROMOTED:
         await handlePromotedEvent(change, context, documentData);
         break;
-      case statusDemoted:
+      case utils.GenerationStatus.DEMOTED:
         await handleDemotedEvent(change, context, documentData);
         break;
     }
@@ -53,7 +43,6 @@ function getGenerationId(context: EventContext) {
   // Must match extension.yaml resource definition
   return context.params.generationId;
 }
-
 
 async function handleCreatedEvent(
   snapshot: Change<firestore.DocumentSnapshot>,
@@ -90,12 +79,12 @@ async function handleCreatedEvent(
     await snapshot.after.ref.set(
       {
         apiVersion: generationApiVersion,
-        status: statusInitialized,
+        status: utils.GenerationStatus.INITIALIZED,
         webhookKey: webhookKey,
         description: currentData.description || "New Generation",
         ignoreCache: currentData.ignoreCache ?? true,
         createdAt: currentData.createdAt || now,
-        updatedAt: now
+        updatedAt: now,
       },
       { merge: true }
     );
@@ -166,14 +155,14 @@ async function handleCreatedEvent(
     await snapshot.after.ref
       .set(
         {
-          status: statusRequested,
+          status: utils.GenerationStatus.REQUESTED,
           webhookKey: webhookKey,
           updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true }
       )
       .catch((updateError) =>
-        console.error("Error updating status:\n", updateError)
+        logger.error("Error updating status:\n", updateError)
       );
   } catch (error) {
     const errorMessage = getErrorString(error);
@@ -182,14 +171,14 @@ async function handleCreatedEvent(
     await snapshot.after.ref
       .set(
         {
-          status: statusFailed,
+          status: utils.GenerationStatus.FAILED,
           outputMessage: errorMessage,
-          updatedAt: FieldValue.serverTimestamp()
+          updatedAt: FieldValue.serverTimestamp(),
         },
         { merge: true }
       )
       .catch((updateError) =>
-        console.error("Error updating status:\n", updateError)
+        logger.error("Error updating status:\n", updateError)
       );
   }
 }
@@ -203,8 +192,8 @@ async function handlePromotedEvent(
     snapshot,
     context,
     documentData,
-    statusPromoted,
-    statusPublished,
+    utils.GenerationStatus.PROMOTED,
+    utils.GenerationStatus.PUBLISHED,
     utils.getDogenPublishServiceUrl
   );
 }
@@ -218,8 +207,8 @@ async function handleDemotedEvent(
     snapshot,
     context,
     documentData,
-    statusDemoted,
-    statusUnpublished,
+    utils.GenerationStatus.DEMOTED,
+    utils.GenerationStatus.UNPUBLISHED,
     utils.getDogenUnpublishServiceUrl
   );
 }
@@ -270,7 +259,7 @@ async function handlePromotionDemotionEvent(
     await snapshot.after.ref
       .set({ status: successStatus }, { merge: true })
       .catch((updateError) =>
-        console.error("Error updating status:\n", updateError)
+        logger.error("Error updating status:\n", updateError)
       );
   } catch (error) {
     logger.error("Error:\n", error);
@@ -278,13 +267,13 @@ async function handlePromotionDemotionEvent(
     await snapshot.after.ref
       .set(
         {
-          status: statusFailed,
+          status: utils.GenerationStatus.FAILED,
           outputMessage: getErrorString(error),
         },
         { merge: true }
       )
       .catch((updateError) =>
-        console.error("Error updating status:", updateError)
+        logger.error("Error updating status:", updateError)
       );
   }
 }
@@ -296,7 +285,7 @@ async function processCollection(
 ): Promise<Array<FirebaseFirestore.DocumentData>> {
   // Read all documents
   const snapshot = await db.collection(collectionName).get();
-  
+
   const documents: FirebaseFirestore.DocumentData[] = [];
 
   // Copy documents to generation document sub-collection
@@ -329,7 +318,7 @@ function getErrorString(error: unknown) {
     return "[AxiosError]\n" + error.message;
   } else if (error instanceof Error) {
     return "[Error]\n" + error.message;
-  } 
-  
+  }
+
   return "[Generic Error]\n" + String(error);
 }
