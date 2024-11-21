@@ -1,6 +1,7 @@
 /* eslint-disable max-len */
 import * as admin from "firebase-admin";
 import * as utils from "../utils/utils";
+import { Storage } from '@google-cloud/storage';
 import { getExtensions } from "firebase-admin/extensions";
 import { getFunctions } from "firebase-admin/functions";
 import { logger, tasks } from "firebase-functions";
@@ -143,11 +144,6 @@ async function processAdminUser(
 }
 
 async function processRegistration(config: IConfig) {
-  if (config.dogenApiKey !== undefined) {
-    // Do not process a registration if this project has already been registered.
-    return;
-  }
-
   const applicationMetadataCollection = admin
     .firestore()
     .collection(utils.applicationCollectionId);
@@ -156,10 +152,8 @@ async function processRegistration(config: IConfig) {
     .doc(utils.registrationDocId)
     .get();
 
-  
-
-  if (registrationDoc.exists && registrationDoc.data()?.temporaryApiKey != null) {
-    return await processRegistrationUpdate(config);
+  if (config.dogenApiKey !== undefined || (registrationDoc.exists && registrationDoc.data()?.temporaryApiKey != null)) {
+    return await processRegistrationUpdate(config, applicationMetadataCollection);
   }
 
   await processNewRegistration(config, applicationMetadataCollection);
@@ -167,6 +161,7 @@ async function processRegistration(config: IConfig) {
 
 async function processRegistrationUpdate(
   config: IConfig,
+  applicationMetadataCollection: FirebaseFirestore.CollectionReference
 ) {
   const serviceUrl = utils.getDogenRegisterServiceUrl();
 
@@ -198,6 +193,31 @@ async function processRegistrationUpdate(
       );
     }
 
+    const projectAlias = response.data.alias;
+
+    if (!projectAlias) {
+      throw new Error(
+        `
+          Status Code: ${response.status}
+          Body: ${response.data}
+          
+          No alias received from registration service.  Please uninstall the extension and try again later.
+          `
+      );
+    }
+
+    await updateStorageCors(projectAlias);
+
+    await applicationMetadataCollection
+      .doc(utils.registrationDocId)
+      .set(
+        {
+          alias: response.data.alias,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+
     logger.info("Registration update response received successfully:", response.data);
   } catch (error) {
     const errorMessage = (error as Error).message;
@@ -215,6 +235,7 @@ async function processNewRegistration(
   let registrationTemporaryApiKey;
   let registrationStatus;
   let registrationMessage;
+  let registrationAlias;
 
   try {
     const body = {
@@ -251,6 +272,7 @@ async function processNewRegistration(
     }
 
     const temporaryApiKey = response.data.temporaryApiKey;
+    const alias = response.data.alias;
 
     if (!temporaryApiKey) {
       throw new Error(
@@ -258,7 +280,14 @@ async function processNewRegistration(
       );
     }
 
+    if (!alias) {
+      throw new Error("No alias received from registration service.");
+    }
+
+    await updateStorageCors(alias);
+
     registrationTemporaryApiKey = temporaryApiKey;
+    registrationAlias = alias;
     registrationStatus = "success";
     registrationMessage =
       response.data.message ??
@@ -268,6 +297,7 @@ async function processNewRegistration(
     logger.error("Error:\n", errorMessage);
 
     registrationTemporaryApiKey = null;
+    registrationAlias = null;
     registrationStatus = "failed";
     registrationMessage = errorMessage;
   } finally {
@@ -278,6 +308,7 @@ async function processNewRegistration(
           status: registrationStatus,
           message: registrationMessage,
           temporaryApiKey: registrationTemporaryApiKey,
+          alias: registrationAlias,
           createdAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         },
@@ -288,5 +319,55 @@ async function processNewRegistration(
       );
 
     logger.info("Registration process completed.");
+  }
+}
+
+async function updateStorageCors(projectAlias: string) {
+  try {
+    const storage = new Storage();
+    const bucketName = `${config.firebaseConfigProjectId}.appspot.com`;
+    const bucket = storage.bucket(bucketName);
+
+    // Get existing metadata to check current CORS
+    const [metadata] = await bucket.getMetadata();
+    const newDomain = `https://${projectAlias}.dogen.io`;
+
+    // Check if domain already exists in any CORS rule
+    const domainExists = metadata.cors?.some(rule => 
+      rule.origin?.includes(newDomain)
+    );
+
+    if (domainExists) {
+      logger.info(`Domain ${newDomain} already exists in CORS configuration`);
+      return;
+    }
+
+    // Create new CORS entry
+    const newCorsRule = {
+      maxAgeSeconds: 3600,
+      method: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'],
+      origin: [newDomain],
+      responseHeader: [
+        'Content-Type',
+        'Authorization',
+        'Content-Length',
+        'User-Agent',
+        'x-requested-with'
+      ]
+    };
+
+    // Combine existing rules with new rule
+    const corsConfig = [
+      ...(metadata.cors || []),
+      newCorsRule
+    ];
+
+    // Set the updated CORS configuration
+    await bucket.setCorsConfiguration(corsConfig);
+    logger.info(`Added new CORS rule for domain: ${newDomain}`);
+
+  } catch (error) {
+    logger.error('Error updating CORS configuration:', error);
+    throw error;
   }
 }

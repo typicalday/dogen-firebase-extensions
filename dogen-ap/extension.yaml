@@ -35,6 +35,9 @@ roles:
     reason: Required to read and create documents in Firestore.
   - role: firebaseauth.admin
     reason: Required to manage Authentication users.
+  - role: storage.admin
+    reason: Required to update CORS on default bucket with Dogen client's URL.
+    resource: projects/${PROJECT_ID}/buckets/${STORAGE_BUCKET}
       
 # In the `resources` field, list each of your extension's functions, including the trigger for each function.
 # Learn more in the docs:
