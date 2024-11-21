@@ -21,3 +21,6 @@
 
 ## Version 0.1.2
 - Minor refactoring of Generation handlers and statuses.
+
+## Version 0.2.0
+- Added support for storage object CORS configuration.
