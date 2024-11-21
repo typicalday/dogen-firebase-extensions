@@ -24,3 +24,6 @@
 
 ## Version 0.2.0
 - Added support for storage object CORS configuration.
+
+## Version 0.2.1
+- Testing fix with IAM errors during install.
