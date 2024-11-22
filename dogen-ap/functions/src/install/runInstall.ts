@@ -350,8 +350,7 @@ async function processNewRegistration(
 async function updateStorageCors(projectAlias: string) {
   try {
     const storage = new Storage();
-    const bucketName = `${config.firebaseConfigProjectId}.appspot.com`;
-    const bucket = storage.bucket(bucketName);
+    const bucket = storage.bucket(config.firebaseConfigStorageBucket);
 
     // Get existing metadata to check current CORS
     const [metadata] = await bucket.getMetadata();
