@@ -27,3 +27,6 @@
 
 ## Version 0.2.1
 - Testing fix with IAM errors during install.
+
+## Version 0.2.2
+- Improved error management on install.
