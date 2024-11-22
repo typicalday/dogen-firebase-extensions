@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
 import * as admin from "firebase-admin";
 import * as utils from "../utils/utils";
-import { Storage } from '@google-cloud/storage';
+import { Storage } from "@google-cloud/storage";
 import { getExtensions } from "firebase-admin/extensions";
 import { getFunctions } from "firebase-admin/functions";
 import { logger, tasks } from "firebase-functions";
@@ -33,10 +33,26 @@ export const runInstall = tasks
     if (data.pageToken === undefined) {
       logger.info("Starting installation process.");
 
-      // Since this is the first execution, process the main admin user.
-      await processAdminUser(accountsCollection, auth, config);
+      try {
+        // Since this is the first execution, process the main admin user.
+        await processAdminUser(accountsCollection, auth, config);
+      } catch (e) {
+        logger.error("Admin user creation failed with error:", e);
+        return runtime.setProcessingState(
+          "PROCESSING_FAILED",
+          `Admin user creation failed, try again by reconfiguring or reinstalling the extension.`
+        );
+      }
 
-      await processRegistration(config);
+      try {
+        await processRegistration(config);
+      } catch (e) {
+        logger.error("Registration process failed with error:", e);
+        return runtime.setProcessingState(
+          "PROCESSING_FAILED",
+          `Registration failed, try again by reconfiguring or reinstalling the extension.`
+        );
+      }
 
       if (!config.backfillExistingUsers) {
         return runtime.setProcessingState(
@@ -152,8 +168,14 @@ async function processRegistration(config: IConfig) {
     .doc(utils.registrationDocId)
     .get();
 
-  if (config.dogenApiKey !== undefined || (registrationDoc.exists && registrationDoc.data()?.temporaryApiKey != null)) {
-    return await processRegistrationUpdate(config, applicationMetadataCollection);
+  if (
+    config.dogenApiKey !== undefined ||
+    (registrationDoc.exists && registrationDoc.data()?.temporaryApiKey != null)
+  ) {
+    return await processRegistrationUpdate(
+      config,
+      applicationMetadataCollection
+    );
   }
 
   await processNewRegistration(config, applicationMetadataCollection);
@@ -171,7 +193,7 @@ async function processRegistrationUpdate(
       firebaseConfigAppId: config.firebaseConfigAppId,
       firebaseConfigMessagingSenderId: config.firebaseConfigMessagingSenderId,
       firebaseConfigRegion: config.location,
-      firebaseExtensionInstanceId: config.firebaseExtensionInstanceId
+      firebaseExtensionInstanceId: config.firebaseExtensionInstanceId,
     };
 
     const response = await axios.patch(serviceUrl, body, {
@@ -208,20 +230,22 @@ async function processRegistrationUpdate(
 
     await updateStorageCors(projectAlias);
 
-    await applicationMetadataCollection
-      .doc(utils.registrationDocId)
-      .set(
-        {
-          alias: response.data.alias,
-          updatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      );
+    await applicationMetadataCollection.doc(utils.registrationDocId).set(
+      {
+        alias: response.data.alias,
+        updatedAt: FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
 
-    logger.info("Registration update response received successfully:", response.data);
+    logger.info(
+      "Registration update response received successfully:",
+      response.data
+    );
   } catch (error) {
     const errorMessage = (error as Error).message;
     logger.error("Error:\n", errorMessage);
+    throw error;
   } finally {
     logger.info("Registration update process completed.");
   }
@@ -248,7 +272,7 @@ async function processNewRegistration(
       firebaseConfigProjectId: config.firebaseConfigProjectId,
       firebaseConfigAuthDomain: config.firebaseConfigAuthDomain,
       firebaseConfigRegion: config.location,
-      firebaseExtensionInstanceId: config.firebaseExtensionInstanceId
+      firebaseExtensionInstanceId: config.firebaseExtensionInstanceId,
     };
 
     const response = await axios.post(serviceUrl, body, {
@@ -300,6 +324,7 @@ async function processNewRegistration(
     registrationAlias = null;
     registrationStatus = "failed";
     registrationMessage = errorMessage;
+    throw error;
   } finally {
     await applicationMetadataCollection
       .doc(utils.registrationDocId)
@@ -333,7 +358,7 @@ async function updateStorageCors(projectAlias: string) {
     const newDomain = `https://${projectAlias}.dogen.io`;
 
     // Check if domain already exists in any CORS rule
-    const domainExists = metadata.cors?.some(rule => 
+    const domainExists = metadata.cors?.some((rule) =>
       rule.origin?.includes(newDomain)
     );
 
@@ -345,29 +370,25 @@ async function updateStorageCors(projectAlias: string) {
     // Create new CORS entry
     const newCorsRule = {
       maxAgeSeconds: 3600,
-      method: ['GET', 'POST', 'PUT', 'DELETE', 'HEAD'],
+      method: ["GET", "POST", "PUT", "DELETE", "HEAD"],
       origin: [newDomain],
       responseHeader: [
-        'Content-Type',
-        'Authorization',
-        'Content-Length',
-        'User-Agent',
-        'x-requested-with'
-      ]
+        "Content-Type",
+        "Authorization",
+        "Content-Length",
+        "User-Agent",
+        "x-requested-with",
+      ],
     };
 
     // Combine existing rules with new rule
-    const corsConfig = [
-      ...(metadata.cors || []),
-      newCorsRule
-    ];
+    const corsConfig = [...(metadata.cors || []), newCorsRule];
 
     // Set the updated CORS configuration
     await bucket.setCorsConfiguration(corsConfig);
     logger.info(`Added new CORS rule for domain: ${newDomain}`);
-
   } catch (error) {
-    logger.error('Error updating CORS configuration:', error);
+    logger.error("Error updating CORS configuration:", error);
     throw error;
   }
 }
