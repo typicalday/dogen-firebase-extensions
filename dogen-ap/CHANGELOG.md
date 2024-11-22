@@ -30,3 +30,6 @@
 
 ## Version 0.2.2
 - Improved error management on install.
+
+## Version 0.2.3
+- Fix bucket name retrieval on cors update function.
