@@ -1,11 +1,12 @@
 import { firestore, logger } from "firebase-functions";
 import { createOrUpdateUser } from "./userManagement";
 import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 export const onAccountUpdate = firestore
   .document("dogen_application_accounts/{accountId}")
   .onUpdate(async (change, context) => {
-    const accountId = context.params.accountId;
+    const accountId = context.params.accountId; // Must match extension.yaml resource definition
     const accountData = change.after.exists ? change.after.data() : null;
 
     if (!accountData) {
@@ -25,6 +26,7 @@ export const onAccountUpdate = firestore
         await newAccountRef.set({
           ...accountData,
           uid: user.uid,  // Ensure the UID in the document matches the auth UID
+          recreatedAt: FieldValue.serverTimestamp(),
         });
 
         logger.info(`Created new account document for user`, { uid: user.uid, oldAccountId: accountId });

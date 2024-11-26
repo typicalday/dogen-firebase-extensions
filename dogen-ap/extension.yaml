@@ -78,7 +78,7 @@ resources:
       location: ${LOCATION}
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.create
-        resource: projects/${PROJECT_ID}/databases/(default)/documents/dogen_application_accounts/{userId}
+        resource: projects/${PROJECT_ID}/databases/(default)/documents/dogen_application_accounts/{accountId}
       runtime: "nodejs18"
   - name: onAccountUpdate
     type: firebaseextensions.v1beta.function
@@ -88,7 +88,7 @@ resources:
       location: ${LOCATION}
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.update
-        resource: projects/${PROJECT_ID}/databases/(default)/documents/dogen_application_accounts/{userId}
+        resource: projects/${PROJECT_ID}/databases/(default)/documents/dogen_application_accounts/{accountId}
       runtime: "nodejs18"
   - name: onGenerationWrite
     type: firebaseextensions.v1beta.function

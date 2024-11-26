@@ -1,11 +1,12 @@
 import { firestore, logger } from "firebase-functions";
 import { createOrUpdateUser } from "./userManagement";
 import * as admin from "firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 export const onAccountCreate = firestore
   .document("dogen_application_accounts/{accountId}")
   .onCreate(async (snapshot, context) => {
-    const accountId = context.params.accountId;
+    const accountId = context.params.accountId; // Must match extension.yaml resource definition
     const accountData = snapshot.data();
 
     if (!accountData) {
@@ -17,6 +18,13 @@ export const onAccountCreate = firestore
       const { user, isNewUser, needsNewAccount } = await createOrUpdateUser(accountId, accountData);
 
       if (needsNewAccount) {
+        const recreatedAt = accountData.recreatedAt;
+
+        if (recreatedAt != null && recreatedAt != undefined) {
+          logger.warn(`Could not recreate account for user ${user.uid} because it was already recreated at ${recreatedAt}.`);
+          return;
+        }
+
         // This shouldn't happen on account creation, but let's handle it just in case
         logger.warn(`Unexpected needsNewAccount flag on account creation`, { accountId, uid: user.uid });
         
@@ -28,6 +36,7 @@ export const onAccountCreate = firestore
         await newAccountRef.set({
           ...accountData,
           uid: user.uid,  // Ensure the UID in the document matches the auth UID
+          recreatedAt: FieldValue.serverTimestamp(),
         });
 
         logger.info(`Created new account document for user`, { uid: user.uid, oldAccountId: accountId });
@@ -42,13 +51,5 @@ export const onAccountCreate = firestore
       logger.info(`${isNewUser ? 'Created' : 'Updated'} user and account`, { uid: user.uid, isNewUser, needsNewAccount });
     } catch (error) {
       logger.error("Error processing account creation.", { error, accountId });
-      
-      // If there was an error, we should delete the Firestore document to maintain consistency
-      try {
-        await snapshot.ref.delete();
-        logger.info("Deleted Firestore document due to error in account creation", { accountId });
-      } catch (deleteError) {
-        logger.error("Error deleting Firestore document after failed account creation", { deleteError, accountId });
-      }
     }
   });
