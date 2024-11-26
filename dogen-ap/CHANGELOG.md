@@ -33,3 +33,6 @@
 
 ## Version 0.2.3
 - Fix bucket name retrieval on cors update function.
+
+## Version 0.2.4
+- Fix account creation glitch due to extension parameter mismatch.
