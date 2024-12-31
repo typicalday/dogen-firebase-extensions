@@ -17,12 +17,7 @@
 - [Table of Contents](#table-of-contents)
 - [What does it do?](#what-does-it-do)
 - [Who Is It For?](#who-is-it-for)
-- [Pricing](#pricing)
-- [Waitlist](#waitlist)
-- [How do I get started?](#how-do-i-get-started)
-- [How does it work?](#how-does-it-work)
-- [How do I ensure data integrity with Dogen?](#how-do-i-ensure-data-integrity-with-dogen)
-- [Will Dogen have access to my data?](#will-dogen-have-access-to-my-data)
+- [Where can I learn more?](#where-can-i-learn-more)
 - [How will this affect my Google billing?](#how-will-this-affect-my-google-billing)
 
 # What does it do?<a name="what-does-it-do" />
@@ -32,100 +27,22 @@ Use this extension to integrate with Dogen's Application Platform, which is a to
 ||CMS|Firestore Clients|Dogen AP|
 |--- |--- |--- |--- |
 |Entity Schemas & Validations|&check;|&cross;|&check;|
-|User Firendly Data Management|&check;|&cross;|&check;|
-|Compatible with Firestore Types & Paths|&cross;|&check;|&check;|
-|Natively Management of Complex Data|&cross;|&check;|&check;|
+|User Friendly & Feature Rich|&check;|&cross;|&check;|
+|Complex Application Data Management|&cross;|&check;|&check;|
 |Application Layer Context|&cross;|&cross;|&check;|
+|Compatible with Firestore Types & Paths|&cross;|&check;|&check;|
 |Intuitive Relationship Management & Navigation|&cross;|&cross;|&check;|
 |Cascading Configurations & Validations|&cross;|&cross;|&check;|
 
 # Who Is It For?<a name="who-is-it-for" />
 
-This extension is for developers building awesome applications.  The thing is, truly awesome applications typically leverage complex data structures such as arrays, maps, arrays of maps, nested maps, and so on. If your go-to data management solution cannot natively handle these complex data structures it can lead to challenges and negative outcomes for your dev team. 
+This extension is for developers building awesome applications.  The thing is, truly awesome applications typically leverage complex data structures. If your go-to data management solution cannot natively handle these complex data structures it can lead to challenges and negative outcomes for your dev team. 
 
 With Dogen we hope to eliminate data management compromises so you can focus on things that truly matter.
 
-# Pricing<a name="pricing" />
+# Where can I learn more?<a name="where-can-i-learn-more" />
 
-Dogen is currently in its alpha testing phase and is free to use for a limited time.  We will be introducing a pricing model in the near future.  We will provide more information on pricing as we get closer to the next release phase.
-
-# Waitlist<a name="waitlist" />
-
-There is a waitlist to join the alpha testing phase of Dogen.  If you have an invitation code, you can use it to bypass the waitlist.  If you don't have an invitation code, you can still install the extension and this will prepare your project for Dogen and register you in our waitlist.
-
-# How do I get started?<a name="how-do-i-get-started" />
-
-1. **Accept the Terms of Service**
-   - **Important**: Dogen is currently in its alpha testing phase and is provided "as is" without any warranties. We advise using it with caution, regularly backing up your data, and reviewing your Firebase billing to avoid unexpected charges.
-   - By installing this extension and using Dogen services, you agree to our [Terms of Service](https://dogen.io/tos) and [Privacy Policy](https://dogen.io/privacy).
-2. **Enable the Blaze Billing plan**
-   - **Note**: In order to use Firebase Extensions, you must enable the Blaze plan for your Firebase project.  This is a Firebase requirement, not a Dogen one.
-   - To enable the Blaze plan, go to the Firebase console and click on the cog next to Project Overview.  
-   - In the dropdown menu choose **Usage and billing**.
-   - Click the **Details & settings** tab.
-   - Enable the Blaze plan.
-  
-3. **Create a Firestore Database**
-   - Set up a Firestore database in your Firebase project. [Learn more](https://firebase.google.com/docs/firestore/quickstart).
-  
-4. **Enable Authentication**
-   - Enable Firebase Authentication in your Firebase project. [Learn more](https://firebase.google.com/docs/auth).
-   - Enable the **Email/Password** sign-in method.
-   - Create a new user account if you don't have one so that you can administer your project.
-
-5. **Create a New Web App**
-   - Go to the Firebase console and click on **Project Settings**.
-   - Under the **Your apps** section, click **Add app**.
-   - Follow the instructions to register a new Web App for the Dogen AP client.
-   - Copy the Firebase configuration object for the new Web App and paste it temporarily into your preferred text editor.  You will reference these values in a minute.
-
-6. **Install and register the Dogen Application Platform extension**
-   - In the Firebase console, navigate to **Extensions**.
-   - Click **Explore extensions** and search for **Dogen Application Platform**.
-   - Click **Install**.
-   - On the Extension Configuration page, provide the following:
-     - Your desired Dogen service registration email.
-     - An invitation code, if you have one. If not, leave it blank to be added to the waitlist.
-     - Your official Dogen API key, if you have one.  If not, leave it blank.
-     - The remaining configuration values from the Firebase configuration object you copied earlier.
-   - Finalize the installation and wait for it to complete. We will send you an email with further instructions.
-   - **Note:** API keys and invitation codes work on a per project basis. If you have multiple Firebase projects, each one will need its own separate extension installation, API key, and invitation code (or waitlist entry if left blank).
-7. **Update your Firestore Rules**
-   - Dogen AP is a Firebase client application. It facilitates access to your Firestore data, but the underlying logged in user must have the appropriate permissions to access the data. You can use the following Firestore rules to grant global access to Dogen AP admins or you can create more granular rules to suit your needs.
-     ```plaintext
-        rules_version = '2';
-        service cloud.firestore {
-            function isAuthorized(role) {
-                return request.auth != null && ('admin' in request.auth.token.dogenRoles || role in request.auth.token.dogenRoles);
-            }
-            match /databases/{database}/documents {
-                match /{document=**} {
-                    allow read, write: if isAuthorized('admin');
-                }
-            }
-        }
-     ```
-     - **Note:** At the moment Dogen AP's UI is primarily designed for admin users. In the future we will add more capabilities for non admin roles.
-
-# How does it work?<a name="how-does-it-work" />
-
-The Dogen Application Platform is a data management solution unlike any you've likely encountered in the past. This is because your Dogen AP is custom-made for you through code generation. This in itself is not novel, however, we've made the code generation process iterative.  This means each version of your application is a stepping stone to the next version.
-
-We achieve iteration by allowing each version of your application to act as a blueprint editor where you can define exactly what you need from the next version.  When you're ready, you create a new generation in the Dogen AP.  This action will cause the extension to request a new generated application from our service.  We build the application to your specifications, and when its ready, your existing application will notify you there is an update available.  You can then seamlessly load the new version from within the UI and carry on.  The end result is a custom made application which addresseses your needs.  
-
-# How do I ensure data integrity with Dogen?<a name="how-do-i-ensure-data-integrity-with-dogen" />
-
-The Dogen Application Platform is designed to help you manage your data efficiently, with a strong focus on improving data integrity. However, the extension is currently in its alpha stage, meaning its use is experimental.
-
-As part of a responsible data management strategy, it's crucial to back up your data frequently. We recommend using the Firestore export feature for this purpose. You can learn more about Firestore exports [here](https://firebase.google.com/docs/firestore/manage-data/export-import).
-
-While we plan to introduce more advanced data backup features in the future, we urge you to remain cautious and prioritize regular data backups in the meantime.
-
-# Will Dogen have access to my data?<a name="will-dogen-have-access-to-my-data" />
-
-In short, Dogen's services and team will never have direct access to your project resources or application data.  Information flows in one direction from the open source extension you install (which communicates **only blueprint data** to Dogen's API).  The API then generates a Firebase web application.  This application requires a logged in user to gain access to your database.  Its this logged in user who has the access, not the application itself.  
-
-The biggest takeaway here is your custom application platform only communicates with your Firebase project.  This means the data only flows in one direction.  The end result is we only receive blueprint data and we have no way to access your application data, and thats the best kind of privacy there is!
+For more details, please visit the [Dogen website](https://dogen.io).
 
 # How will this affect my Google billing?<a name="how-will-this-affect-my-google-billing" />
 
