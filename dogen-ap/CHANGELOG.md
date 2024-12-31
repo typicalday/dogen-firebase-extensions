@@ -36,3 +36,6 @@
 
 ## Version 0.2.4
 - Fix account creation glitch due to extension parameter mismatch.
+
+## Version 0.2.5
+- Fix auth user disabled field must be a boolean.
