@@ -2,8 +2,17 @@ import * as admin from "firebase-admin";
 import { logger } from "firebase-functions";
 import { updateUserClaims } from "../utils/utils";
 
-export async function createOrUpdateUser(accountId: string, accountData: any) {
+export interface AccountData {
+  email: string;
+  disabled?: boolean;
+  roles?: string[];
+  temporaryPassword?: string;
+  recreatedAt?: admin.firestore.Timestamp;
+}
+
+export async function createOrUpdateUser(accountId: string, accountData: AccountData) {
   const { email, disabled = false, roles = ["registered"], temporaryPassword } = accountData;
+
   let user: admin.auth.UserRecord;
   let isNewUser = false;
   let needsNewAccount = false;
@@ -23,7 +32,7 @@ export async function createOrUpdateUser(accountId: string, accountData: any) {
         uid: accountId,
         email,
         password,
-        disabled,
+        disabled: disabled ?? false,
       });
       isNewUser = true;
     }
@@ -31,7 +40,7 @@ export async function createOrUpdateUser(accountId: string, accountData: any) {
     if (!isNewUser) {
       // Update user if needed
       const updateRequest: admin.auth.UpdateRequest = {
-        ...(disabled !== undefined ? { disabled } : {}),
+        ...(disabled !== undefined ? { disabled: disabled ?? false } : {}),
       };
 
       if (temporaryPassword) {

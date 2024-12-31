@@ -1,5 +1,5 @@
 import { firestore, logger } from "firebase-functions";
-import { createOrUpdateUser } from "./userManagement";
+import { AccountData, createOrUpdateUser } from "./userManagement";
 import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 
@@ -7,12 +7,26 @@ export const onAccountCreate = firestore
   .document("dogen_application_accounts/{accountId}")
   .onCreate(async (snapshot, context) => {
     const accountId = context.params.accountId; // Must match extension.yaml resource definition
-    const accountData = snapshot.data();
+    const snapshotData = snapshot.data();
 
-    if (!accountData) {
+    if (!snapshotData) {
       logger.error("No account data available.");
       return;
     }
+
+    // Validate the data has required fields
+    if (!snapshotData.email || typeof snapshotData.email !== 'string') {
+      logger.error("Account data missing required email field or invalid email type");
+      return;
+    }
+
+    // Create a validated AccountData object
+    const accountData: AccountData = {
+      email: snapshotData.email,
+      disabled: typeof snapshotData.disabled === 'boolean' ? snapshotData.disabled : false,
+      roles: Array.isArray(snapshotData.roles) ? snapshotData.roles : ['registered'],
+      temporaryPassword: typeof snapshotData.temporaryPassword === 'string' ? snapshotData.temporaryPassword : undefined
+    };    
 
     try {
       const { user, isNewUser, needsNewAccount } = await createOrUpdateUser(accountId, accountData);
