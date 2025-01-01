@@ -12,6 +12,7 @@ interface IConfig {
   firebaseConfigStorageBucket: string;
   firebaseConfigProjectId: string;
   firebaseExtensionInstanceId: string;
+  webhookValidationSalt: string;
   }
 
 const config: IConfig = {
@@ -28,6 +29,7 @@ const config: IConfig = {
   firebaseConfigStorageBucket: process.env.STORAGE_BUCKET!,
   firebaseConfigProjectId: process.env.PROJECT_ID!,
   firebaseExtensionInstanceId: process.env.EXT_INSTANCE_ID || "dogen-ap",
+  webhookValidationSalt: process.env.WEBHOOK_VALIDATION_SALT!,
 };
 
 export {IConfig};

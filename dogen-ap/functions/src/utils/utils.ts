@@ -1,5 +1,6 @@
 import * as admin from "firebase-admin";
 import config from "../config";
+import * as crypto from 'crypto';
 import { UserRecord } from "firebase-admin/auth";
 
 const defaultDogenServiceUrl = "https://api.dogen.io/";
@@ -70,8 +71,12 @@ export function getWebhookBaseUrl() {
   );
 }
 
-export function getWebhookUrl(webhookKey: any) {
-  return `${getWebhookBaseUrl()}ext-${process.env.EXT_INSTANCE_ID || "dogen-ap"}-updateGenerationWebhook?key=${webhookKey}`;
+export function getWebhookUrl(generationId: string, webhookKey: string) {
+  return `${getWebhookBaseUrl()}ext-${process.env.EXT_INSTANCE_ID || "dogen-ap"}-updateGenerationWebhook?key=${generateWebhookKeyHash(generationId, webhookKey)}`;
+}
+
+export function generateWebhookKeyHash(generationId: string, webhookKey: string) {
+  return crypto.createHash("sha256").update(config.webhookValidationSalt + generationId + webhookKey).digest("hex");
 }
 
 export async function getApiKey() : Promise<string> {

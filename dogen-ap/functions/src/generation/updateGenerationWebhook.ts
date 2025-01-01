@@ -39,8 +39,9 @@ export const updateGenerationWebhook = functions.https.onRequest(async (req, res
 
         // Validate the webhook key
         const generationData = generationDoc.data();
+        const expectedKey = utils.generateWebhookKeyHash(generationId, generationData?.webhookKey);
 
-        if (generationData?.webhookKey !== key) {
+        if (key !== expectedKey) {
             functions.logger.error('Invalid webhook key:', { generationId, key });
             res.status(403).send('Invalid webhook key!');
             return;

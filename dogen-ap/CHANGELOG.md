@@ -39,3 +39,6 @@
 
 ## Version 0.2.5
 - Fix auth user disabled field must be a boolean.
+
+## Version 1.0.0
+- Added the WEBHOOK_VALIDATION_SALT to enhance security of the webhook.

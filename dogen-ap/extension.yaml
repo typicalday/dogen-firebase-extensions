@@ -2,7 +2,7 @@
 # https://firebase.google.com/docs/extensions/reference/extension-yaml
 
 name: dogen-ap  # Identifier for your extension
-version: 0.2.5  # Follow semver versioning
+version: 1.0.0  # Follow semver versioning
 specVersion: v1beta  # Version of the Firebase Extensions specification
 
 # Friendly display name for your extension (~3-5 words)
@@ -236,6 +236,13 @@ params:
     description: >-
       The App ID for the Dogen app connecting to your Firebase project.  (You 
       will need to create a new Web App under your Firebase project to obtain one.)
+    type: string
+    required: true
+  
+  - param: WEBHOOK_VALIDATION_SALT
+    label: Webhook Validation Salt (Required)
+    description: >-
+      A unique string value that helps validate webhook URLs - can be any text, but changing it will invalidate all existing webhookUrls.
     type: string
     required: true
 
