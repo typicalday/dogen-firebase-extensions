@@ -3,14 +3,11 @@ import * as admin from "firebase-admin";
 import * as utils from "../utils/utils";
 import { Storage } from "@google-cloud/storage";
 import { getExtensions } from "firebase-admin/extensions";
-import { getFunctions } from "firebase-admin/functions";
 import { logger, tasks } from "firebase-functions";
-import { getUserData } from "../user/onUserCreate";
 import config, { IConfig } from "../config";
 import axios from "axios";
 import { FieldValue } from "firebase-admin/firestore";
-
-const BATCH_SIZE = 500;
+import { getUserData } from "../user/userManagement";
 
 const auth = admin.auth();
 const db = admin.firestore();
@@ -25,104 +22,36 @@ export const runInstall = tasks
       maxConcurrentDispatches: 1,
     },
   })
-  .onDispatch(async (data) => {
+  .onDispatch(async (_) => {
     const accountsCollection = db.collection(utils.accountsCollectionId);
     const runtime = getExtensions().runtime();
-    const offset = data.offset ?? 0;
 
-    if (data.pageToken === undefined) {
-      logger.info("Starting installation process.");
+    logger.info("Starting installation process.");
 
-      try {
-        // Since this is the first execution, process the main admin user.
-        await processAdminUser(accountsCollection, auth, config);
-      } catch (e) {
-        logger.error("Admin user creation failed with error:", e);
-        return runtime.setProcessingState(
-          "PROCESSING_FAILED",
-          `Admin user creation failed, try again by reconfiguring or reinstalling the extension.`
-        );
-      }
-
-      try {
-        await processRegistration(config);
-      } catch (e) {
-        logger.error("Registration process failed with error:", e);
-        return runtime.setProcessingState(
-          "PROCESSING_FAILED",
-          `Registration failed, try again by reconfiguring or reinstalling the extension.`
-        );
-      }
-
-      if (!config.backfillExistingUsers) {
-        return runtime.setProcessingState(
-          "PROCESSING_COMPLETE",
-          "Skipping backfill of existing users."
-        );
-      }
-
-      logger.info("Starting auth user backfill into accounts collection.");
-    } else {
-      logger.info(
-        `Backfilling existing users, continuing with page token: ${data.pageToken}`
+    try {
+      await processAdminUser(accountsCollection, auth, config);
+    } catch (e) {
+      logger.error("Admin user creation failed with error:", e);
+      return runtime.setProcessingState(
+        "PROCESSING_FAILED",
+        `Admin user creation failed, try again by reconfiguring or reinstalling the extension.`
       );
     }
 
     try {
-      // Obtain a list of Auth users.
-      const { users, pageToken } = await auth.listUsers(
-        BATCH_SIZE,
-        data.pageToken
-      );
-
-      const batch = db.batch();
-
-      // For each user create a Firestore document in the accounts collection.
-      for (const user of users) {
-        // This user should have been processed already.
-        if (user.email === config.adminUserEmail) {
-          continue;
-        }
-
-        const userDocumentRef = accountsCollection.doc(user.uid);
-        batch.set(userDocumentRef, getUserData(user), { merge: true });
-      }
-
-      const commitResult = await batch.commit();
-
-      // Prepare for next execution if necessary.
-      const nextOffset = offset + commitResult.length;
-
-      if (pageToken) {
-        const queue = getFunctions().taskQueue(
-          `locations/${config.location}/functions/runInstall`,
-          process.env.EXT_INSTANCE_ID
-        );
-
-        await queue.enqueue({
-          pageToken,
-          offset: nextOffset,
-        });
-      } else {
-        // If there are no more users to process, mark the task as complete.
-        logger.info(
-          `Auth user backfill completed with ${nextOffset} documents.`
-        );
-
-        return runtime.setProcessingState(
-          "PROCESSING_COMPLETE",
-          `Auth user backfill created ${nextOffset} documents.`
-        );
-      }
+      await processRegistration(config);
     } catch (e) {
-      logger.error(
-        `Auth user backfill failed at offset ${offset}, with error:`,
-        e
+      logger.error("Registration process failed with error:", e);
+      return runtime.setProcessingState(
+        "PROCESSING_FAILED",
+        `Registration failed, try again by reconfiguring or reinstalling the extension.`
       );
-
-      // Rethrow error so that it can be retried.
-      throw e;
     }
+
+    return runtime.setProcessingState(
+      "PROCESSING_COMPLETE",
+      "Installation process completed successfully."
+    );
   });
 
 async function processAdminUser(

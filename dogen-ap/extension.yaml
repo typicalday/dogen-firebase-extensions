@@ -42,26 +42,6 @@ roles:
 # Learn more in the docs:
 # https://firebase.google.com/docs/extensions/reference/extension-yaml#resources-field
 resources:
-  - name: onUserCreate
-    type: firebaseextensions.v1beta.function
-    description: >-
-      Auth triggered function that creates a new accounts collection document for the user.
-    properties:
-      location: ${LOCATION}
-      eventTrigger:
-        eventType: providers/firebase.auth/eventTypes/user.create
-        resource: projects/${PROJECT_ID}
-      runtime: "nodejs18"
-  - name: onUserDelete
-    type: firebaseextensions.v1beta.function
-    description: >-
-      Auth triggered function that deletes an existing accounts collection document from the deleted user.
-    properties:
-      location: ${LOCATION}
-      eventTrigger:
-        eventType: providers/firebase.auth/eventTypes/user.delete
-        resource: projects/${PROJECT_ID}
-      runtime: "nodejs18"
   - name: runInstall
     type: firebaseextensions.v1beta.function
     description: >-
@@ -207,21 +187,6 @@ params:
       user.
     type: string
     required: true
-
-  - param: BACKFILL_EXISTING_USERS
-    label: Backfill Existing Firebase Authentication Users
-    description: >-
-      Creates a Dogen Application Platform account document for each existing user.  
-      This facilitates user management.  By default each user will receive a role of 
-      'registered'.  If you're not sure, leave this as "No".
-    type: select
-    options:
-      - label: Yes
-        value: true
-      - label: No
-        value: false
-    default: false
-    required: false
 
   - param: FIREBASE_CONFIG_API_KEY
     label: Firebase Config API Key (Required)

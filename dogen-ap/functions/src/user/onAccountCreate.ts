@@ -25,36 +25,43 @@ export const onAccountCreate = firestore
       email: snapshotData.email,
       disabled: typeof snapshotData.disabled === 'boolean' ? snapshotData.disabled : false,
       roles: Array.isArray(snapshotData.roles) ? snapshotData.roles : ['registered'],
-      temporaryPassword: typeof snapshotData.temporaryPassword === 'string' ? snapshotData.temporaryPassword : undefined
+      temporaryPassword: typeof snapshotData.temporaryPassword === 'string' ? snapshotData.temporaryPassword : null
     };    
 
     try {
       const { user, isNewUser, needsNewAccount } = await createOrUpdateUser(accountId, accountData);
 
+      // Sometimes we need to recreate the account to maintain User ID consistency
       if (needsNewAccount) {
         const recreatedAt = accountData.recreatedAt;
-
         if (recreatedAt != null && recreatedAt != undefined) {
           logger.warn(`Could not recreate account for user ${user.uid} because it was already recreated at ${recreatedAt}.`);
           return;
         }
-
-        // This shouldn't happen on account creation, but let's handle it just in case
-        logger.warn(`Unexpected needsNewAccount flag on account creation`, { accountId, uid: user.uid });
         
-        // Delete the original document
-        await snapshot.ref.delete();
-
-        // Create a new account document with the correct ID
-        const newAccountRef = admin.firestore().collection('dogen_application_accounts').doc(user.uid);
-        await newAccountRef.set({
-          ...accountData,
-          uid: user.uid,  // Ensure the UID in the document matches the auth UID
-          recreatedAt: FieldValue.serverTimestamp(),
-        });
-
-        logger.info(`Created new account document for user`, { uid: user.uid, oldAccountId: accountId });
+        try {
+          // Delete the original document
+          await snapshot.ref.delete();
+          
+          // Create a new account document with the correct ID
+          const newAccountRef = admin.firestore().collection('dogen_application_accounts').doc(user.uid);
+          await newAccountRef.set({
+            ...accountData,
+            uid: user.uid,
+            recreatedAt: FieldValue.serverTimestamp(),
+          });
+          
+          logger.info(`Created new account document for user`, { uid: user.uid, oldAccountId: accountId });
+        } catch (error) {
+          logger.error("Error during account recreation", { 
+            error: error instanceof Error ? error.message : error,
+            uid: user.uid, 
+            oldAccountId: accountId 
+          });
+          throw error; // Re-throw to be caught by outer catch block
+        }
       } else {
+        // Remove temporary password after updating auth user
         if (accountData.temporaryPassword != null) {
           await snapshot.ref.update({
             temporaryPassword: admin.firestore.FieldValue.delete(),
