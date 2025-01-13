@@ -18,6 +18,7 @@
 - [What does it do?](#what-does-it-do)
 - [Who Is It For?](#who-is-it-for)
 - [Where can I learn more?](#where-can-i-learn-more)
+- [How do I install it?](#how-do-i-install-it)
 - [How will this affect my Google billing?](#how-will-this-affect-my-google-billing)
 
 # What does it do?<a name="what-does-it-do" />
@@ -43,6 +44,10 @@ With Dogen we hope to eliminate data management compromises so you can focus on 
 # Where can I learn more?<a name="where-can-i-learn-more" />
 
 For more details, please visit the [Dogen website](https://dogen.io).
+
+# How do I install it?<a name="how-do-i-install-it" />
+
+For the latest installation details and requirements, please visit the [Getting Started Docs](https://www.dogen.io/docs/getting-started).
 
 # How will this affect my Google billing?<a name="how-will-this-affect-my-google-billing" />
 
