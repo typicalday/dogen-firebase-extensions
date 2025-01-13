@@ -51,7 +51,7 @@ For the latest installation details and requirements, please visit the [Getting 
 
 # How will this affect my Google billing?<a name="how-will-this-affect-my-google-billing" />
 
-**Important**: Dogen is currently in its alpha testing phase and is provided "as is" without any warranties. We advise using it with caution, regularly backing up your data, and reviewing your Firebase billing to avoid unexpected charges.
+**Important**: Dogen is currently in its beta testing phase and is provided "as is" without any warranties. We advise using it with caution, regularly backing up your data, and reviewing your Firebase billing to avoid unexpected charges.
 
 This extension uses Firebase and Google Cloud Platform services which may have associated charges:
 
