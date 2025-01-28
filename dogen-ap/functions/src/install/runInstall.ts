@@ -204,8 +204,11 @@ async function processNewRegistration(
       firebaseExtensionInstanceId: config.firebaseExtensionInstanceId,
     };
 
+    const identityToken = await utils.getIdentityToken();
+
     const response = await axios.post(serviceUrl, body, {
       headers: {
+        "Authorization": `Bearer ${identityToken}`,
         "Content-Type": "application/json",
       },
       validateStatus: (_) => true,
