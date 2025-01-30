@@ -25,7 +25,7 @@ export const onAccountUpdate = firestore
       email: snapshotData.email,
       disabled: typeof snapshotData.disabled === 'boolean' ? snapshotData.disabled : false,
       roles: Array.isArray(snapshotData.roles) ? snapshotData.roles : ['registered'],
-      temporaryPassword: typeof snapshotData.temporaryPassword === 'string' ? snapshotData.temporaryPassword : undefined
+      temporaryPassword: typeof snapshotData.temporaryPassword === 'string' ? snapshotData.temporaryPassword : null
     };
 
     try {
