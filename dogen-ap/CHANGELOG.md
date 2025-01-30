@@ -1,3 +1,6 @@
+## Version 2.1.0
+- Added import and export CSV + JSON functionality.
+
 ## Version 2.0.0
 - Added Identity Token to registration. 
 

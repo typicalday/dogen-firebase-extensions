@@ -8,6 +8,10 @@ import { Job, JobStatus } from "./job";
 import { handleListCollections } from "./handlers/listCollections";
 import { handleCreateDocument } from "./handlers/createDocument";
 import { handleCopyDocument } from "./handlers/copyDocument";
+import { handleExportCollectionCSV } from "./handlers/exportCollectionCSV";
+import { handleImportCollectionCSV } from "./handlers/importCollectionCSV";
+import { handleExportCollectionJSON } from "./handlers/exportCollectionJSON";
+import { handleImportCollectionJSON } from "./handlers/importCollectionJSON";
 
 const persistIntervalDuration = 10000;
 
@@ -174,6 +178,14 @@ async function processTask(task: JobTask): Promise<Record<string, any>> {
           return await handleDeletePath(task);
         case "delete-documents":
           return await handleDeleteDocuments(task);
+        case "export-collection-csv":
+          return await handleExportCollectionCSV(task);
+        case "export-collection-json":
+          return await handleExportCollectionJSON(task);
+        case "import-collection-csv":
+          return await handleImportCollectionCSV(task);
+        case "import-collection-json":
+          return await handleImportCollectionJSON(task);
         case "list-collections":
           return await handleListCollections(task);
         default:

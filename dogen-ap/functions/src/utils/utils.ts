@@ -113,3 +113,24 @@ export async function getIdentityToken(): Promise<string> {
   const client = await auth.getIdTokenClient(defaultDogenServiceUrl);
   return await client.idTokenProvider.fetchIdToken(defaultDogenServiceUrl);
 }
+
+export interface CollectionData {
+  documents: {
+    [documentId: string]: {
+      data: Record<string, any>;
+      subcollections?: {
+        [subcollectionName: string]: CollectionData;
+      };
+    }
+  };
+  metadata: {
+    path: string;
+    exportedTo: string;
+    exportedAt: string;
+    totalDocuments: number;
+    includesSubcollections: boolean;
+    limit?: number;
+    orderByField?: string;
+    orderByDirection?: 'asc' | 'desc';
+  };
+}

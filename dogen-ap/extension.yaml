@@ -2,7 +2,7 @@
 # https://firebase.google.com/docs/extensions/reference/extension-yaml
 
 name: dogen-ap  # Identifier for your extension
-version: 2.0.0  # Follow semver versioning
+version: 2.1.0  # Follow semver versioning
 specVersion: v1beta  # Version of the Firebase Extensions specification
 
 # Friendly display name for your extension (~3-5 words)
@@ -88,6 +88,8 @@ resources:
       location: ${LOCATION}
       httpsTrigger: {}
       runtime: "nodejs18"
+      timeout: "540s"
+      availableMemoryMb: 2048
   - name: updateGenerationWebhook
     type: firebaseextensions.v1beta.function
     description: >-

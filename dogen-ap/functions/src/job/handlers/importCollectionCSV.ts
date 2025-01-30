@@ -1,0 +1,291 @@
+import { JobTask } from "../jobTask";
+import { BatchManager } from "../../utils/batchManager";
+import { Timestamp, DocumentReference } from "firebase-admin/firestore";
+import * as admin from "firebase-admin";
+import * as fs from "fs";
+import * as path from "path";
+import { parse } from "csv-parse";
+
+const db = admin.firestore();
+
+interface CSVFieldImport {
+  header?: string;
+  destination?: string | null;
+}
+
+interface ImportCsvTaskInput {
+  collectionPath: string;
+  bucketPath: string;
+  fieldMappings?: CSVFieldImport[];
+  delimiter?: string;
+}
+
+interface ImportMetadata {
+  documentsProcessed: number;
+  importedTo: string;
+  importedAt: string;
+}
+
+interface SpecialFields {
+  docId?: string;
+  docRef?: DocumentReference;
+}
+
+export async function handleImportCollectionCSV(
+  task: JobTask
+): Promise<Record<string, any>> {
+  const input = task.input as ImportCsvTaskInput | undefined;
+
+  if (!input?.collectionPath || !input?.bucketPath) {
+    throw new Error(
+      "Invalid input: collectionPath and bucketPath are required"
+    );
+  }
+
+  const metadata = await importCollection(
+    input.collectionPath,
+    input.bucketPath,
+    input.fieldMappings ?? [],
+    input.delimiter ?? ","
+  );
+
+  return {
+    bucketPath: input.bucketPath,
+    importedTo: input.collectionPath,
+    importedAt: metadata.importedAt,
+    fieldMappings: input.fieldMappings ?? [],
+    delimiter: input.delimiter ?? ",",
+    documentsProcessed: metadata.documentsProcessed,
+  };
+}
+
+function isISO8601(str: string): boolean {
+  const iso8601Regex =
+    /^\d{4}-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[-+]\d{2}:?\d{2})?)?$/;
+  return iso8601Regex.test(str);
+}
+
+function parseValue(value: any): any {
+  if (typeof value === "string") {
+    // Check for ISO8601 date strings first
+    if (isISO8601(value)) {
+      return Timestamp.fromDate(new Date(value));
+    }
+
+    // Try to parse JSON if it looks like a JSON string
+    if (
+      (value.startsWith("{") && value.endsWith("}")) ||
+      (value.startsWith("[") && value.endsWith("]"))
+    ) {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+  }
+  return value;
+}
+
+function setValueAtPath(obj: any, path: string, value: any): void {
+  const parts = path.split(".");
+  let current = obj;
+
+  for (let i = 0; i < parts.length - 1; i++) {
+    const part = parts[i];
+    const nextPart = parts[i + 1];
+    const isNextNumeric = /^\d+$/.test(nextPart);
+
+    if (/^\d+$/.test(part)) {
+      // Current part is numeric - ensure parent is array
+      const index = parseInt(part, 10);
+      if (!Array.isArray(current)) {
+        current = Array(index + 1).fill(null);
+      } else if (current.length <= index) {
+        // Extend array preserving existing values
+        const oldLength = current.length;
+        const extension = Array(index - oldLength + 1).fill(null);
+        current.push(...extension);
+      }
+      // Initialize next level based on next part if not already set
+      if (current[index] === null) {
+        current[index] = isNextNumeric ? [] : {};
+      }
+      current = current[index];
+    } else {
+      // Current part is string - ensure parent is object
+      if (!current[part]) {
+        current[part] = isNextNumeric ? [] : {};
+      }
+      current = current[part];
+    }
+  }
+
+  // Handle the final part
+  const lastPart = parts[parts.length - 1];
+  if (/^\d+$/.test(lastPart)) {
+    const index = parseInt(lastPart, 10);
+    if (!Array.isArray(current)) {
+      current = Array(index + 1).fill(null);
+    } else if (current.length <= index) {
+      // Extend array preserving existing values
+      const oldLength = current.length;
+      const extension = Array(index - oldLength + 1).fill(null);
+      current.push(...extension);
+    }
+    current[index] = value;
+  } else {
+    current[lastPart] = value;
+  }
+}
+
+function processRowData(
+  row: any,
+  mappingsByHeader: Map<string, string | null | undefined>,
+  collectionPath: string
+): { processedData: Record<string, any>; specialFields: SpecialFields } {
+  const doc: Record<string, any> = {};
+  const specialFields: SpecialFields = {};
+
+  // Get all headers from the row
+  const headers = Object.keys(row);
+
+  for (const header of headers) {
+    const value = row[header];
+    if (value === undefined || value === null || value === "") continue;
+
+    // Check if there's an override mapping
+    const hasMapping = mappingsByHeader.has(header);
+    const destination = mappingsByHeader.get(header);
+
+    // Skip if mapping explicitly sets destination to null
+    if (hasMapping && destination === null) {
+      continue;
+    }
+
+    // Use either the mapped destination or the original header
+    const fieldPath = destination || header;
+
+    // Handle special fields
+    if (fieldPath === "_id_") {
+      specialFields.docId = String(value);
+    } else if (fieldPath === "_ref_") {
+      specialFields.docRef = db.collection(collectionPath).doc(String(value));
+    } else {
+      // Both original headers and mapped destinations can contain dot notation
+      setValueAtPath(doc, fieldPath, parseValue(value));
+    }
+  }
+
+  return { processedData: doc, specialFields };
+}
+
+async function importCollection(
+  collectionPath: string,
+  bucketPath: string,
+  fieldMappings: CSVFieldImport[],
+  delimiter: string = ","
+): Promise<ImportMetadata> {
+  const bucket = admin.storage().bucket();
+  const tempFilePath = `/tmp/${path.basename(bucketPath)}`;
+  let documentsProcessed = 0;
+  let fileStream: fs.ReadStream | null = null;
+  let mappingsByHeader = new Map<string, string | null | undefined>();
+
+  try {
+    console.log(`Attempting to download from bucket path: ${bucketPath}`);
+    const file = bucket.file(bucketPath);
+    const [exists] = await file.exists();
+
+    if (!exists) {
+      throw new Error(
+        `File ${bucketPath} not found in Firebase Storage bucket`
+      );
+    }
+
+    console.log(`File exists, downloading to ${tempFilePath}`);
+    await file.download({ destination: tempFilePath });
+    console.log(`Download completed, checking file details`);
+
+    fileStream = fs.createReadStream(tempFilePath);
+    const batchManager = new BatchManager(db);
+    let isFirstRow = true;
+
+    // Create the parser
+    const parser = fileStream.pipe(
+      parse({
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+        delimiter,
+      })
+    );
+
+    for await (const row of parser) {
+      // Initialize mappings from first row
+      if (isFirstRow) {
+        const headers = Object.keys(row);
+
+        // Reset the map with initial header mappings
+        mappingsByHeader = new Map(headers.map((header) => [header, header]));
+
+        // Apply override mappings
+        fieldMappings.forEach((mapping) => {
+          if (mapping.header) {
+            console.log(
+              `Applying mapping override: ${mapping.header} -> ${mapping.destination}`
+            );
+            mappingsByHeader.set(mapping.header, mapping.destination);
+          }
+        });
+
+        console.log(
+          "Final mappings:",
+          JSON.stringify(
+            Object.fromEntries(mappingsByHeader.entries()),
+            null,
+            2
+          )
+        );
+
+        isFirstRow = false;
+      }
+
+      const { processedData, specialFields } = processRowData(
+        row,
+        mappingsByHeader,
+        collectionPath
+      );
+
+      const finalDocRef =
+        specialFields.docRef ||
+        (specialFields.docId
+          ? db.collection(collectionPath).doc(specialFields.docId)
+          : db.collection(collectionPath).doc());
+
+      await batchManager.add(finalDocRef, processedData);
+      documentsProcessed++;
+    }
+
+    await batchManager.commit();
+    return {
+      documentsProcessed,
+      importedTo: collectionPath,
+      importedAt: new Date().toISOString(),
+    };
+  } catch (error) {
+    if (fileStream) {
+      fileStream.destroy();
+    }
+    console.error(`Import failed for collection ${collectionPath}:`, error);
+    throw error;
+  } finally {
+    if (fs.existsSync(tempFilePath)) {
+      try {
+        fs.unlinkSync(tempFilePath);
+      } catch (error) {
+        console.error("Error deleting temp file:", error);
+      }
+    }
+  }
+}
