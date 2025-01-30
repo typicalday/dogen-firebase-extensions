@@ -75,20 +75,8 @@ async function exportCollection(
   const bucket = admin.storage().bucket();
   const timestamp = Math.floor(Date.now() / 1000);
   const baseFileName = collectionPath.replace(/\//g, "_");
-  const hasFileExtension = /\.[^/.]+$/.test(bucketPathPrefix);
-
-  let exportName: string;
-  if (hasFileExtension) {
-    const hasDirectory = bucketPathPrefix.includes("/");
-    if (hasDirectory) {
-      const dirName = path.dirname(bucketPathPrefix);
-      exportName = `${dirName}/${timestamp}.csv`;
-    } else {
-      exportName = `${timestamp}.csv`;
-    }
-  } else {
-    exportName = `${bucketPathPrefix}/${baseFileName}_${timestamp}.csv`;
-  }
+  const fileName = `${baseFileName}_${timestamp}.csv`;
+  const exportName = `${bucketPathPrefix}/${fileName}`.replace(/\/+/g, "/");
 
   const tempFilePath = `/tmp/${path.basename(exportName)}`;
   const writeStream = fs.createWriteStream(tempFilePath);

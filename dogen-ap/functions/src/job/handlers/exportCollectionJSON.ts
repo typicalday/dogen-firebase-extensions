@@ -70,7 +70,9 @@ async function exportCollection(
 ): Promise<CollectionData['metadata']> {
   const bucket = admin.storage().bucket();
   const timestamp = Math.floor(Date.now() / 1000);
-  const exportName = `${bucketPathPrefix}/${timestamp}.json`;
+  const baseFileName = collectionPath.replace(/\//g, "_");
+  const fileName = `${baseFileName}_${timestamp}.json`;
+  const exportName = `${bucketPathPrefix}/${fileName}`.replace(/\/+/g, "/");
   const tempFilePath = `/tmp/${path.basename(exportName)}`;
   const writeStream = fs.createWriteStream(tempFilePath);
 
