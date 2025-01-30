@@ -8,6 +8,12 @@ import { parse } from "csv-parse";
 
 const db = admin.firestore();
 
+// Special field identifiers
+const SPECIAL_FIELDS = {
+  ID: "_id_",
+  REF: "_ref_",
+} as const;
+
 interface CSVFieldImport {
   header?: string;
   destination?: string | null;
@@ -146,35 +152,44 @@ function processRowData(
 ): { processedData: Record<string, any>; specialFields: SpecialFields } {
   const doc: Record<string, any> = {};
   const specialFields: SpecialFields = {};
+  const specialFieldsFound = new Map<string, string>();
 
   // Get all headers from the row
   const headers = Object.keys(row);
 
+  // First pass: collect all potential special field values
   for (const header of headers) {
     const value = row[header];
     if (value === undefined || value === null || value === "") continue;
 
     // Check if there's an override mapping
-    const hasMapping = mappingsByHeader.has(header);
     const destination = mappingsByHeader.get(header);
 
-    // Skip if mapping explicitly sets destination to null
-    if (hasMapping && destination === null) {
-      continue;
-    }
-
-    // Use either the mapped destination or the original header
-    const fieldPath = destination || header;
-
-    // Handle special fields
-    if (fieldPath === "_id_") {
-      specialFields.docId = String(value);
-    } else if (fieldPath === "_ref_") {
-      specialFields.docRef = db.collection(collectionPath).doc(String(value));
-    } else {
-      // Both original headers and mapped destinations can contain dot notation
+    // Three cases to handle:
+    // 1. Header is a special field with no mapping
+    // 2. Header maps to a special field
+    // 3. Neither - regular field
+    
+    if (header === SPECIAL_FIELDS.ID || destination === SPECIAL_FIELDS.ID) {
+      specialFieldsFound.set(SPECIAL_FIELDS.ID, String(value));
+    } else if (header === SPECIAL_FIELDS.REF || destination === SPECIAL_FIELDS.REF) {
+      specialFieldsFound.set(SPECIAL_FIELDS.REF, String(value));
+    } else if (destination !== null) {
+      // Only process non-special fields that aren't explicitly mapped to null
+      const fieldPath = destination || header;
       setValueAtPath(doc, fieldPath, parseValue(value));
     }
+  }
+
+  // Process special fields with correct precedence (REF takes precedence over ID)
+  if (specialFieldsFound.has(SPECIAL_FIELDS.REF)) {
+    const refValue = specialFieldsFound.get(SPECIAL_FIELDS.REF)!;
+    const refPath = refValue.includes('/')
+      ? refValue
+      : `${collectionPath}/${refValue}`;
+    specialFields.docRef = db.doc(refPath);
+  } else if (specialFieldsFound.has(SPECIAL_FIELDS.ID)) {
+    specialFields.docId = specialFieldsFound.get(SPECIAL_FIELDS.ID);
   }
 
   return { processedData: doc, specialFields };

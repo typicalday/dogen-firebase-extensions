@@ -1,4 +1,3 @@
-// handlers/exportCollectionCSV.ts
 import { JobTask } from "../jobTask";
 import * as admin from "firebase-admin";
 import { Timestamp } from "firebase-admin/firestore";
@@ -27,6 +26,12 @@ interface ExportMetadata {
   exportedAt: string;
   documentsProcessed: number;
 }
+
+// Special field identifiers
+const SPECIAL_FIELDS = {
+  ID: "_id_",
+  REF: "_ref_",
+} as const;
 
 export async function handleExportCollectionCSV(
   task: JobTask
@@ -126,8 +131,14 @@ async function exportCollection(
         const row: Record<string, any> = {};
 
         fields.forEach((field) => {
-          const value = getValueFromPath(data, field.source);
-          row[field.source] = formatValue(value);
+          if (field.source === SPECIAL_FIELDS.ID) {
+            row[field.source] = doc.id;
+          } else if (field.source === SPECIAL_FIELDS.REF) {
+            row[field.source] = doc.ref.path;
+          } else {
+            const value = getValueFromPath(data, field.source);
+            row[field.source] = formatValue(value);
+          }
         });
 
         return row;
