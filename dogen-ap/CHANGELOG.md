@@ -1,3 +1,6 @@
+## Version 2.1.1
+- Fixed issue with case sensitive import of JSONStream
+
 ## Version 2.1.0
 - Added import and export CSV + JSON functionality.
 

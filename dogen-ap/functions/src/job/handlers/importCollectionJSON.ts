@@ -4,7 +4,7 @@ import * as admin from "firebase-admin";
 import { Timestamp } from "firebase-admin/firestore";
 import * as fs from 'fs';
 import * as path from 'path';
-import * as JSONStream from 'jsonstream';
+import * as JSONStream from 'JSONStream';
 import { CollectionData } from "../../utils/utils";
 const db = admin.firestore();
 
