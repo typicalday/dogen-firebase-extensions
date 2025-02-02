@@ -208,7 +208,7 @@ async function processNewRegistration(
 
     const response = await axios.post(serviceUrl, body, {
       headers: {
-        "Authorization": `Bearer ${identityToken}`,
+        "X-Original-Auth": `Bearer ${identityToken}`,
         "Content-Type": "application/json",
       },
       validateStatus: (_) => true,
