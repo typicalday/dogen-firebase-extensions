@@ -1,19 +1,18 @@
 # Learn detailed information about the fields of an extension.yaml file in the docs:
 # https://firebase.google.com/docs/extensions/reference/extension-yaml
 
-name: dogen-ap  # Identifier for your extension
-version: 2.1.2  # Follow semver versioning
-specVersion: v1beta  # Version of the Firebase Extensions specification
+name: dogen-ap # Identifier for your extension
+version: 2.2.0 # Follow semver versioning
+specVersion: v1beta # Version of the Firebase Extensions specification
 
 # Friendly display name for your extension (~3-5 words)
 displayName: Dogen Application Platform
 
 # Brief description of the task your extension performs (~1 sentence)
 description: >-
-  Installs the Dogen Application Platform, allowing you to manage data like a pro! 
-  For more information visit https://www.dogen.io.
+  Meet Dogen, the web client that redefines data management. Dogen combines the flexibility of a Firestore client with the user-friendly features we've come to love from CMSs.  For more information visit https://www.dogen.io.
 
-license: Apache-2.0  # https://spdx.org/licenses/
+license: Apache-2.0 # https://spdx.org/licenses/
 
 # Public URL for the source code of your extension
 sourceUrl: https://github.com/typicalday/dogen-firebase-extensions/dogen-ap
@@ -31,13 +30,20 @@ billingRequired: true
 # Learn more in the docs:
 # https://firebase.google.com/docs/extensions/reference/extension-yaml#roles-field
 roles:
-  - role: datastore.owner
-    reason: Required to read and create documents in Firestore.
+  - role: datastore.user
+    reason: Required to manage documents and collections in Firestore.
   - role: firebaseauth.admin
     reason: Required to manage Authentication users.
   - role: storage.admin
-    reason: Required to update CORS on default bucket with Dogen client's URL.
-      
+    reason: "Dogen allows users to manage their files directly in the Dogen client.  The permission storage.admin is required to update CORS on the default bucket to allow your custom Dogen client's URL. This allows the client's signed in users the ability to manage these files.  For more details please visit: https://cloud.google.com/storage/docs/using-cors"
+
+# Define external services the extension uses
+# Learn more in the docs:
+# https://firebase.google.com/docs/extensions/reference/extension-yaml#external-services
+externalServices:
+  - name: Dogen API
+    pricingUri: https://dogen.io
+
 # In the `resources` field, list each of your extension's functions, including the trigger for each function.
 # Learn more in the docs:
 # https://firebase.google.com/docs/extensions/reference/extension-yaml#resources-field
@@ -205,7 +211,7 @@ params:
       will need to create a new Web App under your Firebase project to obtain one.)
     type: string
     required: true
-  
+
   - param: WEBHOOK_VALIDATION_SALT
     label: Webhook Validation Salt (Required)
     description: >-
@@ -223,4 +229,3 @@ lifecycleEvents:
   onConfigure:
     function: runInstall
     processingMessage: Updating extension configuration...
-  

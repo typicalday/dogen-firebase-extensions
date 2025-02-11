@@ -1,3 +1,6 @@
+## Version 2.2.0
+- Update extension.yaml with Firebase extension review team's suggestions where possible.  Note: storage.admin is still required for CORS updates on buckets (https://cloud.google.com/storage/docs/using-cors).
+  
 ## Version 2.1.2
 - Use a custom authorization header for registration.
 
