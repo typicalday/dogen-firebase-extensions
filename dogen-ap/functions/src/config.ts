@@ -1,6 +1,5 @@
 interface IConfig {
   dogenAccountEmail: string;
-  dogenInvitationCode?: string;
   dogenApiKey?: string;
   location: string;
   backfillExistingUsers: boolean;
@@ -17,7 +16,6 @@ interface IConfig {
 
 const config: IConfig = {
   dogenAccountEmail: process.env.DOGEN_ACCOUNT_EMAIL!,
-  dogenInvitationCode: process.env.DOGEN_INVITATION_CODE,
   dogenApiKey: process.env.DOGEN_API_KEY,
   location: process.env.FUNCTIONS_LOCATION ?? "us-central1",
   backfillExistingUsers: (process.env.BACKFILL_EXISTING_USERS ?? "false") === "true",

@@ -193,7 +193,6 @@ async function processNewRegistration(
   try {
     const body = {
       accountEmail: config.dogenAccountEmail,
-      invitationCode: config.dogenInvitationCode,
       firebaseConfigApiKey: config.firebaseConfigApiKey,
       firebaseConfigAppId: config.firebaseConfigAppId,
       firebaseConfigMessagingSenderId: config.firebaseConfigMessagingSenderId,
