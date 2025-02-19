@@ -82,7 +82,7 @@ export function generateWebhookKeyHash(generationId: string, webhookKey: string)
 export async function getApiKey() : Promise<string> {
   if (process.env.DOGEN_API_KEY === undefined || process.env.DOGEN_API_KEY === "") {
       throw new Error(
-        "Could not find a valid API Key in the extension config nor in the registration details."
+        "Could not find a valid API Key in the extension config."
       );
   }
 
