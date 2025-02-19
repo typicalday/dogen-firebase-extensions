@@ -2,7 +2,7 @@
 # https://firebase.google.com/docs/extensions/reference/extension-yaml
 
 name: dogen-ap # Identifier for your extension
-version: 2.2.1 # Follow semver versioning
+version: 3.0.0 # Follow semver versioning
 specVersion: v1beta # Version of the Firebase Extensions specification
 
 # Friendly display name for your extension (~3-5 words)
@@ -109,23 +109,12 @@ resources:
 # Learn more in the docs:
 # https://firebase.google.com/docs/extensions/reference/extension-yaml#params-field
 params:
-  - param: DOGEN_ACCOUNT_EMAIL
-    label: Registration Email / Dogen Account Email (Required)
-    description: >-
-      The email address associated with your Dogen account.  If you do not have an 
-      existing Dogen account, provide the registration email address.
-    type: string
-    required: true
-
   - param: DOGEN_API_KEY
     label: Dogen API Key
     description: >-
-      The API Key to use when communicating with the Dogen service.  You can
-      leave it blank if you're just trying the service.  Once we issue you an API 
-      key in the future, you can update the extension configuration.  This uses
-      secret manager for storage, it may have its own costs.
+      The API Key to use when communicating with the Dogen service.
     type: secret
-    required: false
+    required: true
 
   - param: LOCATION
     label: Cloud Location (Required)
@@ -184,22 +173,6 @@ params:
       The email address for an existing Firebase Auth User which will be granted 
       the 'admin' Dogen role. This is essentially your first Dogen application 
       user.
-    type: string
-    required: true
-
-  - param: FIREBASE_CONFIG_API_KEY
-    label: Firebase Config API Key (Required)
-    description: >-
-      The API Key for the Dogen app to connect to your Firebase project.  (You 
-      will need to create a new Web App in your Firebase project to obtain one.)
-    type: string
-    required: true
-
-  - param: FIREBASE_CONFIG_APP_ID
-    label: Firebase Config App ID (Required)
-    description: >-
-      The App ID for the Dogen app connecting to your Firebase project.  (You 
-      will need to create a new Web App under your Firebase project to obtain one.)
     type: string
     required: true
 

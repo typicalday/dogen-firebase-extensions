@@ -39,7 +39,7 @@ export const runInstall = tasks
     }
 
     try {
-      await processRegistration(config);
+      await registerProjectConfig(config);
     } catch (e) {
       logger.error("Registration process failed with error:", e);
       return runtime.setProcessingState(
@@ -88,39 +88,17 @@ async function processAdminUser(
   }
 }
 
-async function processRegistration(config: IConfig) {
+async function registerProjectConfig(
+  config: IConfig,
+) {
+  const serviceUrl = utils.getDogenRegisterServiceUrl();
+
   const applicationMetadataCollection = admin
     .firestore()
     .collection(utils.applicationCollectionId);
 
-  const registrationDoc = await applicationMetadataCollection
-    .doc(utils.registrationDocId)
-    .get();
-
-  if (
-    config.dogenApiKey !== undefined ||
-    (registrationDoc.exists && registrationDoc.data()?.temporaryApiKey != null)
-  ) {
-    return await processRegistrationUpdate(
-      config,
-      applicationMetadataCollection
-    );
-  }
-
-  await processNewRegistration(config, applicationMetadataCollection);
-}
-
-async function processRegistrationUpdate(
-  config: IConfig,
-  applicationMetadataCollection: FirebaseFirestore.CollectionReference
-) {
-  const serviceUrl = utils.getDogenRegisterServiceUrl();
-
   try {
     const body = {
-      firebaseConfigApiKey: config.firebaseConfigApiKey,
-      firebaseConfigAppId: config.firebaseConfigAppId,
-      firebaseConfigMessagingSenderId: config.firebaseConfigMessagingSenderId,
       firebaseConfigRegion: config.location,
       firebaseExtensionInstanceId: config.firebaseExtensionInstanceId,
     };
@@ -168,113 +146,24 @@ async function processRegistrationUpdate(
     );
 
     logger.info(
-      "Registration update response received successfully:",
+      "Project registration response received successfully:",
       response.data
     );
   } catch (error) {
     const errorMessage = (error as Error).message;
-    logger.error("Error:\n", errorMessage);
-    throw error;
-  } finally {
-    logger.info("Registration update process completed.");
-  }
-}
+    logger.error("Project registration error:\n", errorMessage);
 
-async function processNewRegistration(
-  config: IConfig,
-  applicationMetadataCollection: FirebaseFirestore.CollectionReference
-) {
-  const serviceUrl = utils.getDogenRegisterServiceUrl();
-  let registrationTemporaryApiKey;
-  let registrationStatus;
-  let registrationMessage;
-  let registrationAlias;
-
-  try {
-    const body = {
-      accountEmail: config.dogenAccountEmail,
-      firebaseConfigApiKey: config.firebaseConfigApiKey,
-      firebaseConfigAppId: config.firebaseConfigAppId,
-      firebaseConfigMessagingSenderId: config.firebaseConfigMessagingSenderId,
-      firebaseConfigStorageBucket: config.firebaseConfigStorageBucket,
-      firebaseConfigProjectId: config.firebaseConfigProjectId,
-      firebaseConfigAuthDomain: config.firebaseConfigAuthDomain,
-      firebaseConfigRegion: config.location,
-      firebaseExtensionInstanceId: config.firebaseExtensionInstanceId,
-    };
-
-    const identityToken = await utils.getIdentityToken();
-
-    const response = await axios.post(serviceUrl, body, {
-      headers: {
-        "X-Original-Auth": `Bearer ${identityToken}`,
-        "Content-Type": "application/json",
+    await applicationMetadataCollection.doc(utils.registrationDocId).set(
+      {
+        status: utils.GenerationStatus.FAILED,
+        message: errorMessage,
+        updatedAt: FieldValue.serverTimestamp(),
       },
-      validateStatus: (_) => true,
-    });
-
-    logger.info("Registration response received:", response.data);
-
-    if (response.status !== 200) {
-      throw new Error(
-        `
-          Status Code: ${response.status}
-          Body: ${response.data}
-          
-          Please uninstall the extension and try again later.
-          `
-      );
-    }
-
-    const temporaryApiKey = response.data.temporaryApiKey;
-    const alias = response.data.alias;
-
-    if (!temporaryApiKey) {
-      throw new Error(
-        "No temporary API key received from registration service."
-      );
-    }
-
-    if (!alias) {
-      throw new Error("No alias received from registration service.");
-    }
-
-    await updateStorageCors(alias);
-
-    registrationTemporaryApiKey = temporaryApiKey;
-    registrationAlias = alias;
-    registrationStatus = "success";
-    registrationMessage =
-      response.data.message ??
-      "Registration process completed successfully.  Please check your email for further instructions.";
-  } catch (error) {
-    const errorMessage = (error as Error).message;
-    logger.error("Error:\n", errorMessage);
-
-    registrationTemporaryApiKey = null;
-    registrationAlias = null;
-    registrationStatus = "failed";
-    registrationMessage = errorMessage;
-    throw error;
+      { merge: true }
+    );
+    throw Error('Project registration failed: ' + errorMessage);
   } finally {
-    await applicationMetadataCollection
-      .doc(utils.registrationDocId)
-      .set(
-        {
-          status: registrationStatus,
-          message: registrationMessage,
-          temporaryApiKey: registrationTemporaryApiKey,
-          alias: registrationAlias,
-          createdAt: FieldValue.serverTimestamp(),
-          updatedAt: FieldValue.serverTimestamp(),
-        },
-        { merge: true }
-      )
-      .catch((updateError) =>
-        console.error("Error updating install document:\n", updateError)
-      );
-
-    logger.info("Registration process completed.");
+    logger.info("Project registration process completed.");
   }
 }
 

@@ -1,3 +1,6 @@
+## Version 3.0.0
+- Simplified the extension installation flow to perform registration through website.
+
 ## Version 2.2.0
 - Update extension.yaml with Firebase extension review team's suggestions where possible.  Note: storage.admin is still required for CORS updates on buckets (https://cloud.google.com/storage/docs/using-cors).
   

@@ -1,10 +1,12 @@
+# How do I install it?
+
+IMPORTANT: This extension has requirements that must be met before installation.  
+
+Follow the installation steps from the [Getting Started Docs](https://www.dogen.io/docs/getting-started).
+
 # What does it do?
 
 Dogen is a no-code CMS web client which manages any data structure out of the box. For more details, please visit the [Dogen website](https://dogen.io).
-
-# How do I install it?
-
-For the latest installation details and requirements, please visit the [Getting Started Docs](https://www.dogen.io/docs/getting-started).
 
 # How will this affect my Google billing?
 

@@ -81,21 +81,10 @@ export function generateWebhookKeyHash(generationId: string, webhookKey: string)
 }
 
 export async function getApiKey() : Promise<string> {
-  // Allow trial installations to use a temporary (unsecure) API Key
-  if (process.env.DOGEN_API_KEY === undefined) {
-    const registrationDoc = await admin
-      .firestore()
-      .collection(applicationCollectionId)
-      .doc(registrationDocId)
-      .get();
-
-    if (!registrationDoc.exists || !registrationDoc.data()?.temporaryApiKey) {
+  if (process.env.DOGEN_API_KEY === undefined || process.env.DOGEN_API_KEY === "") {
       throw new Error(
         "Could not find a valid API Key in the extension config nor in the registration details."
       );
-    }
-
-    return registrationDoc.data()?.temporaryApiKey;
   }
 
   return process.env.DOGEN_API_KEY;
