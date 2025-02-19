@@ -2,7 +2,6 @@ import * as admin from "firebase-admin";
 import config from "../config";
 import * as crypto from 'crypto';
 import { UserRecord } from "firebase-admin/auth";
-import { GoogleAuth } from 'google-auth-library';
 
 const defaultDogenServiceUrl = "https://api.dogen.io/";
 
@@ -95,12 +94,6 @@ export async function updateUserClaims(user: UserRecord, roles: string[]) {
   const updatedClaims = { ...currentClaims, dogenRoles: roles };
 
   await admin.auth().setCustomUserClaims(user.uid, updatedClaims);
-}
-
-export async function getIdentityToken(): Promise<string> {
-  const auth = new GoogleAuth();
-  const client = await auth.getIdTokenClient(defaultDogenServiceUrl);
-  return await client.idTokenProvider.fetchIdToken(defaultDogenServiceUrl);
 }
 
 export interface CollectionData {
