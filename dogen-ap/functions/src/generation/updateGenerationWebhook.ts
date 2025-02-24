@@ -28,7 +28,7 @@ export const updateGenerationWebhook = functions.https.onRequest(async (req, res
         }
 
         // Retrieve the generation document
-        const generationRef = admin.firestore().collection(utils.generationCollectionId).doc(generationId);
+        const generationRef = admin.firestore().collection(utils.generationCollectionPath).doc(generationId);
         const generationDoc = await generationRef.get();
 
         if (!generationDoc.exists) {

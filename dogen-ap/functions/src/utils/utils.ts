@@ -21,11 +21,9 @@ export enum GenerationStatus {
   FAILED = "failed"
 }
 
-export const accountsCollectionId = "dogen_application_accounts";
-export const applicationCollectionId = "dogen_application";
-export const generationCollectionId = "dogen_application_generations";
-
-export const registrationDocId = "registration";
+export const accountsCollectionPath = "dogen/application/accounts";
+export const applicationDocumentPath = "dogen/application";
+export const generationCollectionPath = "dogen/application/generations";
 
 export function getDogenRegisterServiceUrl() {
   if (isDevEnvironment() && process.env.DOGEN_REGISTRATION_URL) {

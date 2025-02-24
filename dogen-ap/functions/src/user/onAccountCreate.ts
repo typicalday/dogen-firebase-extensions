@@ -4,7 +4,7 @@ import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
 
 export const onAccountCreate = firestore
-  .document("dogen_application_accounts/{accountId}")
+  .document("dogen/application/accounts/{accountId}")
   .onCreate(async (snapshot, context) => {
     const accountId = context.params.accountId; // Must match extension.yaml resource definition
     const snapshotData = snapshot.data();
@@ -44,7 +44,7 @@ export const onAccountCreate = firestore
           await snapshot.ref.delete();
           
           // Create a new account document with the correct ID
-          const newAccountRef = admin.firestore().collection('dogen_application_accounts').doc(user.uid);
+          const newAccountRef = admin.firestore().collection('dogen/application/accounts').doc(user.uid);
           await newAccountRef.set({
             ...accountData,
             uid: user.uid,

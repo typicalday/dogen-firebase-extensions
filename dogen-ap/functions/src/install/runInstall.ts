@@ -23,7 +23,7 @@ export const runInstall = tasks
     },
   })
   .onDispatch(async (_) => {
-    const accountsCollection = db.collection(utils.accountsCollectionId);
+    const accountsCollection = db.collection(utils.accountsCollectionPath);
     const runtime = getExtensions().runtime();
 
     logger.info("Starting installation process.");
@@ -93,9 +93,9 @@ async function registerProjectConfig(
 ) {
   const serviceUrl = utils.getDogenRegisterServiceUrl();
 
-  const applicationMetadataCollection = admin
+  const applicationDoc = admin
     .firestore()
-    .collection(utils.applicationCollectionId);
+    .doc(utils.applicationDocumentPath);
 
   try {
     const body = {
@@ -137,7 +137,7 @@ async function registerProjectConfig(
 
     await updateStorageCors(projectAlias);
 
-    await applicationMetadataCollection.doc(utils.registrationDocId).set(
+    await applicationDoc.set(
       {
         alias: response.data.alias,
         updatedAt: FieldValue.serverTimestamp(),
@@ -153,7 +153,7 @@ async function registerProjectConfig(
     const errorMessage = (error as Error).message;
     logger.error("Project registration error:\n", errorMessage);
 
-    await applicationMetadataCollection.doc(utils.registrationDocId).set(
+    await applicationDoc.set(
       {
         status: utils.GenerationStatus.FAILED,
         message: errorMessage,

@@ -11,7 +11,7 @@ const db = admin.firestore();
 const generationApiVersion = "1";
 
 export const onGenerationWrite = firestore
-  .document(`${utils.generationCollectionId}/{generationId}`)
+  .document(`${utils.generationCollectionPath}/{generationId}`)
   .onWrite(async (change, context) => {
     const document = change.after.exists ? change.after : change.before;
 
@@ -52,12 +52,12 @@ async function handleCreatedEvent(
 
   const dogenServiceUrl = utils.getDogenGenerateServiceUrl();
 
-  const objectEntitiesCollection = "dogen_blueprint_object_entities";
-  const embeddedEntitiesCollection = "dogen_blueprint_embedded_entities";
-  const adapterEntitiesCollection = "dogen_blueprint_adapter_entities";
-  const variantEntitiesCollection = "dogen_blueprint_variant_entities";
-  const enumEntitiesCollection = "dogen_blueprint_enum_entities";
-  const configParametersCollection = "dogen_blueprint_config_parameters";
+  const objectEntitiesCollection = "dogen/application/object_entity_blueprints";
+  const embeddedEntitiesCollection = "dogen/application/embedded_entity_blueprints";
+  const adapterEntitiesCollection = "dogen/application/adapter_entity_blueprints";
+  const variantEntitiesCollection = "dogen/application/variant_entity_blueprints";
+  const enumEntitiesCollection = "dogen/application/enum_entity_blueprints";
+  const configParametersCollection = "dogen/application/config_parameter_blueprints";
 
   const objectEntitiesKey = "objectEntities";
   const embeddedEntitiesKey = "embeddedEntities";
@@ -280,18 +280,21 @@ async function handlePromotionDemotionEvent(
 
 async function processCollection(
   batchManager: BatchManager,
-  collectionName: string,
+  collectionPath: string,
   generationId: string
 ): Promise<Array<FirebaseFirestore.DocumentData>> {
-  // Read all documents
-  const snapshot = await db.collection(collectionName).get();
+  // Read all documents from the full path
+  const snapshot = await db.collection(collectionPath).get();
+
+  // Extract just the collection name from the path
+  const collectionName = collectionPath.split('/').pop() || '';
 
   const documents: FirebaseFirestore.DocumentData[] = [];
 
-  // Copy documents to generation document sub-collection
+  // Copy documents to generation document sub-collection using only the collection name
   for (const doc of snapshot.docs) {
     const docRef = db.doc(
-      `${utils.generationCollectionId}/${generationId}/${collectionName}/${doc.id}`
+      `${utils.generationCollectionPath}/${generationId}/${collectionName}/${doc.id}`
     );
     const docData = doc.data();
     documents.push(docData);
