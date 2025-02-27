@@ -1,10 +1,11 @@
-import { firestore, logger } from "firebase-functions";
+import { firestore, logger } from "firebase-functions/v1";
 import { AccountData, createOrUpdateUser } from "./userManagement";
 import * as admin from "firebase-admin";
 import { FieldValue } from "firebase-admin/firestore";
+import * as utils from "../utils/utils";
 
 export const onAccountUpdate = firestore
-  .document("dogen/application/accounts/{accountId}")
+  .document(`${utils.accountsCollectionPath}/{accountId}`)
   .onUpdate(async (change, context) => {
     const accountId = context.params.accountId; // Must match extension.yaml resource definition
     const snapshotData = change.after.exists ? change.after.data() : null;
@@ -38,7 +39,7 @@ export const onAccountUpdate = firestore
           await change.after.ref.delete();
           
           // Create a new account document with the correct ID
-          const newAccountRef = admin.firestore().collection('dogen/application/accounts').doc(user.uid);
+          const newAccountRef = admin.firestore().collection(utils.accountsCollectionPath).doc(user.uid);
           await newAccountRef.set({
             ...accountData,
             uid: user.uid,

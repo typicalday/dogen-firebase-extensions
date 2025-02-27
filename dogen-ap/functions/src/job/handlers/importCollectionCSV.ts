@@ -5,8 +5,7 @@ import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
 import { parse } from "csv-parse";
-
-const db = admin.firestore();
+import { getDatabaseByName, parseDatabasePath } from "../../utils/utils";
 
 // Special field identifiers
 const SPECIAL_FIELDS = {
@@ -48,8 +47,12 @@ export async function handleImportCollectionCSV(
     );
   }
 
+  const [dbName, fsPath] = parseDatabasePath(input.collectionPath);
+  const db = getDatabaseByName(dbName);
+
   const metadata = await importCollection(
-    input.collectionPath,
+    db,
+    fsPath,
     input.bucketPath,
     input.fieldMappings ?? [],
     input.delimiter ?? ","
@@ -146,6 +149,7 @@ function setValueAtPath(obj: any, path: string, value: any): void {
 }
 
 function processRowData(
+  db: admin.firestore.Firestore,
   row: any,
   mappingsByHeader: Map<string, string | null | undefined>,
   collectionPath: string
@@ -196,6 +200,7 @@ function processRowData(
 }
 
 async function importCollection(
+  db: admin.firestore.Firestore,
   collectionPath: string,
   bucketPath: string,
   fieldMappings: CSVFieldImport[],
@@ -267,6 +272,7 @@ async function importCollection(
       }
 
       const { processedData, specialFields } = processRowData(
+        db,
         row,
         mappingsByHeader,
         collectionPath

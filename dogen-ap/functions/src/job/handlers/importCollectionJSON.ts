@@ -5,8 +5,7 @@ import { Timestamp } from "firebase-admin/firestore";
 import * as fs from 'fs';
 import * as path from 'path';
 import * as JSONStream from 'JSONStream';
-import { CollectionData } from "../../utils/utils";
-const db = admin.firestore();
+import { CollectionData, getDatabaseByName, parseDatabasePath } from "../../utils/utils";
 
 interface ImportTaskInput {
   collectionPath: string;
@@ -27,11 +26,14 @@ export async function handleImportCollectionJSON(task: JobTask): Promise<Record<
     throw new Error("Invalid input: collectionPath and bucketPath are required");
   }
 
-  const metadata = await importCollection(input.collectionPath, input.bucketPath);
+  const [dbName, fsPath] = parseDatabasePath(input.collectionPath);
+  const db = getDatabaseByName(dbName);
+
+  const metadata = await importCollection(db, fsPath, input.bucketPath);
   
   return {
     bucketPath: input.bucketPath,
-    importedTo: metadata.importedTo,
+    importedTo: input.collectionPath,
     importedAt: metadata.importedAt,
     documentsProcessed: metadata.documentsProcessed,
     includesSubcollections: metadata.includesSubcollections
@@ -39,6 +41,7 @@ export async function handleImportCollectionJSON(task: JobTask): Promise<Record<
 }
 
 async function importCollection(
+  db: admin.firestore.Firestore,
   collectionPath: string,
   bucketPath: string
 ): Promise<ImportMetadata> {
@@ -70,6 +73,7 @@ async function importCollection(
             includesSubcollections = true;
             for (const [subName, subData] of Object.entries(docEntry.subcollections)) {
               await importSubcollection(
+                db,
                 `${collectionPath}/${docId}/${subName}`,
                 subData as CollectionData
               );
@@ -108,7 +112,11 @@ async function importCollection(
   }
 }
 
-async function importSubcollection(path: string, collectionData: CollectionData) {
+async function importSubcollection(
+  db: admin.firestore.Firestore,
+  path: string,
+  collectionData: CollectionData
+) {
   const batchManager = new BatchManager(db);
 
   for (const [docId, docData] of Object.entries(collectionData.documents)) {
@@ -121,6 +129,7 @@ async function importSubcollection(path: string, collectionData: CollectionData)
     if (docData.subcollections) {
       for (const [subName, subData] of Object.entries(docData.subcollections)) {
         await importSubcollection(
+          db,
           `${path}/${docId}/${subName}`,
           subData
         );

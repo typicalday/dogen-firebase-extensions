@@ -1,7 +1,7 @@
-
 import * as admin from "firebase-admin";
 import { Timestamp, DocumentReference } from "firebase-admin/firestore";
 import { JobTask } from "./jobTask";
+import * as utils from "../utils/utils";
 
 const db = admin.firestore();
 
@@ -38,7 +38,7 @@ export class Job {
     createdAt?: Date;
     updatedAt?: Date;
   }) {
-    this.ref = ref ?? db.collection("dogen_application_jobs").doc();
+    this.ref = ref ?? db.collection(utils.jobCollectionPath).doc();
     this.abortOnFailure = abortOnFailure;
     this.name = name;
     this.tasks = tasks;

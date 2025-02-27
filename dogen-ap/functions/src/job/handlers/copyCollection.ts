@@ -1,8 +1,6 @@
 import { BatchManager } from "../../utils/batchManager";
+import { getDatabaseByName, parseDatabasePath } from "../../utils/utils";
 import { JobTask } from "../jobTask";
-import * as admin from "firebase-admin";
-
-const db = admin.firestore();
 
 export async function handleCopyCollection(
   task: JobTask
@@ -16,7 +14,10 @@ export async function handleCopyCollection(
     );
   }
 
-  await copyCollection(sourcePath, destinationPath);
+  const [sourceDb, sourceCollPath] = parseDatabasePath(sourcePath);
+  const [destDb, destCollPath] = parseDatabasePath(destinationPath);
+
+  await copyCollection(sourceDb, sourceCollPath, destDb, destCollPath);
 
   return {
     copied: sourcePath,
@@ -25,16 +26,21 @@ export async function handleCopyCollection(
 }
 
 export async function copyCollection(
+  sourceDbName: string,
   sourceCollectionPath: string,
+  destDbName: string,
   destinationCollectionPath: string
 ) {
-  const collectionRef = db.collection(sourceCollectionPath);
+  const sourceDb = getDatabaseByName(sourceDbName);
+  const destDb = getDatabaseByName(destDbName);
+  
+  const collectionRef = sourceDb.collection(sourceCollectionPath);
   const documents = await collectionRef.get();
-  const batchManager = new BatchManager(db);
+  const batchManager = new BatchManager(destDb);
 
   for (const doc of documents.docs) {
-    const sourceDocRef = db.doc(`${sourceCollectionPath}/${doc.id}`);
-    const destinationDocRef = db.doc(`${destinationCollectionPath}/${doc.id}`);
+    const sourceDocRef = sourceDb.doc(`${sourceCollectionPath}/${doc.id}`);
+    const destinationDocRef = destDb.doc(`${destinationCollectionPath}/${doc.id}`);
 
     if (doc.exists) {
       await batchManager.add(destinationDocRef, doc.data() || {});
@@ -43,7 +49,9 @@ export async function copyCollection(
     const subcollections = await sourceDocRef.listCollections();
     for (const subcollection of subcollections) {
       await copyCollection(
+        sourceDbName,
         `${sourceCollectionPath}/${doc.id}/${subcollection.id}`,
+        destDbName,
         `${destinationCollectionPath}/${doc.id}/${subcollection.id}`
       );
     }

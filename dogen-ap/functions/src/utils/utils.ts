@@ -2,6 +2,8 @@ import * as admin from "firebase-admin";
 import config from "../config";
 import * as crypto from 'crypto';
 import { UserRecord } from "firebase-admin/auth";
+import { getFirestore } from 'firebase-admin/firestore';
+import { firebaseApp } from "..";
 
 const defaultDogenServiceUrl = "https://api.dogen.io/";
 
@@ -24,6 +26,7 @@ export enum GenerationStatus {
 export const accountsCollectionPath = "dogen/application/accounts";
 export const applicationDocumentPath = "dogen/application";
 export const generationCollectionPath = "dogen/application/generations";
+export const jobCollectionPath = "dogen/application/jobs";
 
 export function getDogenRegisterServiceUrl() {
   if (isDevEnvironment() && process.env.DOGEN_REGISTRATION_URL) {
@@ -92,6 +95,26 @@ export async function updateUserClaims(user: UserRecord, roles: string[]) {
   const updatedClaims = { ...currentClaims, dogenRoles: roles };
 
   await admin.auth().setCustomUserClaims(user.uid, updatedClaims);
+}
+
+export function parseDatabasePath(path: string): [string, string] {
+  const match = path.match(/^firestore\/(.*?)\/data\/(.*?)$/);
+  if (!match) {
+    throw new Error(`Invalid path format: ${path}. Expected format: firestore/{database}/data/{firestore path}`);
+  }
+  const dbName = match[1];
+  const normalizedDbName = dbName === '(default)' || dbName === '[default]' || dbName === '-default-' 
+    ? 'default' 
+    : dbName;
+  const collectionPath = match[2];
+  return [normalizedDbName, collectionPath];
+}
+
+export function getDatabaseByName(dbName: string): admin.firestore.Firestore {
+  if (dbName === 'default') {
+    return getFirestore(firebaseApp);
+  }
+  return getFirestore(firebaseApp, dbName);
 }
 
 export interface CollectionData {

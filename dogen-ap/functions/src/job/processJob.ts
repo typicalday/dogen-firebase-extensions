@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v1";
 import { DecodedIdToken } from "firebase-admin/auth";
 import { FirebaseTaskStatus, JobTask } from "./jobTask";
 import { handleCopyCollection } from "./handlers/copyCollection";
@@ -16,7 +16,15 @@ import { handleImportCollectionJSON } from "./handlers/importCollectionJSON";
 const persistIntervalDuration = 10000;
 
 export const processJob = functions.https.onCall(async (data, context) => {
+  if (!context?.auth) {
+    throw new functions.https.HttpsError(
+      "unauthenticated",
+      "Function must be called while authenticated"
+    );
+  }
+
   const authToken = context.auth?.token;
+
   if (!authToken || !(await verifyAdmin(authToken))) {
     throw new functions.https.HttpsError("permission-denied", "Unauthorized");
   }
@@ -55,7 +63,7 @@ export const processJob = functions.https.onCall(async (data, context) => {
     await job.persist();
   };
 
-  const persistInterval = persistMode 
+  const persistInterval = persistMode
     ? setInterval(persistJobState, persistIntervalDuration)
     : undefined;
 
@@ -140,7 +148,8 @@ export const processJob = functions.https.onCall(async (data, context) => {
   } finally {
     if (persistMode) {
       job.update({
-        status: failedTask || errorMessage ? JobStatus.Failed : JobStatus.Succeeded,
+        status:
+          failedTask || errorMessage ? JobStatus.Failed : JobStatus.Succeeded,
         outputMessage: errorMessage,
         updatedAt: new Date(),
       });
@@ -156,7 +165,7 @@ const verifyAdmin = async (authToken: DecodedIdToken) => {
     if (!Array.isArray(authToken.dogenRoles)) {
       return false;
     }
-    
+
     return authToken.dogenRoles.includes("admin");
   } catch (error) {
     console.error("Error verifying auth token:", error);

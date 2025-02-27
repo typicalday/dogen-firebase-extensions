@@ -1,7 +1,5 @@
 import { JobTask } from "../jobTask";
-import * as admin from "firebase-admin";
-
-const db = admin.firestore();
+import { getDatabaseByName, parseDatabasePath } from "../../utils/utils";
 
 export async function handleCreateDocument(
     task: JobTask
@@ -17,17 +15,18 @@ export async function handleCreateDocument(
         throw new Error('Invalid documentData');
     }
 
-    const segments = documentPath.split('/');
-    
+    const [dbName, path] = parseDatabasePath(documentPath);
+    const db = getDatabaseByName(dbName);
+
+    const segments = path.split('/');
     if (segments.length % 2 !== 0) {
         throw new Error('Invalid documentPath: Document path should have an even number of segments');
     }
 
-    const documentRef = db.doc(documentPath);
-
+    const documentRef = db.doc(path);
     await documentRef.set(documentData);
 
     return {
-        created: documentRef.path,
+        created: documentPath,
     };
 }

@@ -3,7 +3,7 @@ import * as admin from "firebase-admin";
 import * as utils from "../utils/utils";
 import { Storage } from "@google-cloud/storage";
 import { getExtensions } from "firebase-admin/extensions";
-import { logger, tasks } from "firebase-functions";
+import { logger, tasks } from "firebase-functions/v1";
 import config, { IConfig } from "../config";
 import axios from "axios";
 import { FieldValue } from "firebase-admin/firestore";

@@ -3,8 +3,7 @@ import { Timestamp } from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
 import * as fs from 'fs';
 import * as path from 'path';
-import { CollectionData } from "../../utils/utils";
-const db = admin.firestore();
+import { CollectionData, getDatabaseByName, parseDatabasePath } from "../../utils/utils";
 
 interface ExportTaskInput {
   collectionPath: string;
@@ -42,8 +41,12 @@ export async function handleExportCollectionJSON(task: JobTask): Promise<Record<
     throw new Error("Invalid input: collectionPath and bucketPathPrefix are required");
   }
 
+  const [dbName, fsPath] = parseDatabasePath(input.collectionPath);
+  const db = getDatabaseByName(dbName);
+  
   const metadata = await exportCollection(
-    input.collectionPath, 
+    db,
+    fsPath, 
     input.bucketPathPrefix, 
     input.includeSubcollections ?? false,
     input.limit,
@@ -61,6 +64,7 @@ export async function handleExportCollectionJSON(task: JobTask): Promise<Record<
 }
 
 async function exportCollection(
+  db: admin.firestore.Firestore,
   collectionPath: string,
   bucketPathPrefix: string,
   includeSubcollections: boolean,

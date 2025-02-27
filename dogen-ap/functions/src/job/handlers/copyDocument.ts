@@ -1,8 +1,6 @@
 import { JobTask } from "../jobTask";
-import * as admin from "firebase-admin";
 import { copyCollection } from "./copyCollection";
-
-const db = admin.firestore();
+import { getDatabaseByName, parseDatabasePath } from "../../utils/utils";
 
 export async function handleCopyDocument(
     task: JobTask
@@ -16,7 +14,10 @@ export async function handleCopyDocument(
         );
     }
 
-    await copyDocument(sourcePath, destinationPath);
+    const [sourceDb, sourceDocPath] = parseDatabasePath(sourcePath);
+    const [destDb, destDocPath] = parseDatabasePath(destinationPath);
+
+    await copyDocument(sourceDb, sourceDocPath, destDb, destDocPath);
 
     return {
         copied: sourcePath,
@@ -25,11 +26,16 @@ export async function handleCopyDocument(
 }
 
 async function copyDocument(
+    sourceDbName: string,
     sourceDocumentPath: string,
+    destDbName: string,
     destinationDocumentPath: string
 ) {
-    const sourceDocRef = db.doc(sourceDocumentPath);
-    const destinationDocRef = db.doc(destinationDocumentPath);
+    const sourceDb = getDatabaseByName(sourceDbName);
+    const destDb = getDatabaseByName(destDbName);
+
+    const sourceDocRef = sourceDb.doc(sourceDocumentPath);
+    const destinationDocRef = destDb.doc(destinationDocumentPath);
 
     const sourceDoc = await sourceDocRef.get();
 
@@ -48,7 +54,9 @@ async function copyDocument(
     const subcollections = await sourceDocRef.listCollections();
     for (const subcollection of subcollections) {
         await copyCollection(
+            sourceDbName,
             `${sourceDocumentPath}/${subcollection.id}`,
+            destDbName,
             `${destinationDocumentPath}/${subcollection.id}`
         );
     }

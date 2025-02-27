@@ -3,7 +3,7 @@ import { FieldValue } from "firebase-admin/firestore";
 import * as utils from "../utils/utils";
 import axios from "axios";
 import { createGzip } from "zlib";
-import { firestore, logger, EventContext, Change } from "firebase-functions";
+import { firestore, logger, EventContext, Change } from "firebase-functions/v1";
 import { BatchManager } from "../utils/batchManager";
 
 const db = admin.firestore();
@@ -280,18 +280,15 @@ async function handlePromotionDemotionEvent(
 
 async function processCollection(
   batchManager: BatchManager,
-  collectionPath: string,
+  collectionName: string,
   generationId: string
 ): Promise<Array<FirebaseFirestore.DocumentData>> {
-  // Read all documents from the full path
-  const snapshot = await db.collection(collectionPath).get();
-
-  // Extract just the collection name from the path
-  const collectionName = collectionPath.split('/').pop() || '';
+  // Read all documents
+  const snapshot = await db.collection(collectionName).get();
 
   const documents: FirebaseFirestore.DocumentData[] = [];
 
-  // Copy documents to generation document sub-collection using only the collection name
+  // Copy documents to generation document sub-collection
   for (const doc of snapshot.docs) {
     const docRef = db.doc(
       `${utils.generationCollectionPath}/${generationId}/${collectionName}/${doc.id}`

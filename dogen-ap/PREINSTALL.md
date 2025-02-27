@@ -6,7 +6,7 @@ Follow the installation steps from the [Getting Started Docs](https://www.dogen.
 
 # What does it do?
 
-Dogen is a no-code CMS web client which manages any data structure out of the box. For more details, please visit the [Dogen website](https://dogen.io).
+Dogen is a no-code data management solution (like a CMS web client) which manages any Firestore data structure out of the box. For more details, please visit the [Dogen website](https://dogen.io).
 
 # How will this affect my Google billing?
 

@@ -4,7 +4,7 @@ import { Timestamp } from "firebase-admin/firestore";
 import * as fs from "fs";
 import * as path from "path";
 import { stringify } from "csv-stringify";
-const db = admin.firestore();
+import { getDatabaseByName, parseDatabasePath } from "../../utils/utils";
 
 interface CSVFieldExport {
   source: string; // Document field in dot notation
@@ -48,8 +48,12 @@ export async function handleExportCollectionCSV(
     );
   }
 
+  const [dbName, fsPath] = parseDatabasePath(input.collectionPath);
+  const db = getDatabaseByName(dbName);
+  
   const metadata = await exportCollection(
-    input.collectionPath,
+    db,
+    fsPath,
     input.bucketPathPrefix,
     input.fields,
     input.limit,
@@ -69,6 +73,7 @@ export async function handleExportCollectionCSV(
 }
 
 async function exportCollection(
+  db: admin.firestore.Firestore,
   collectionPath: string,
   bucketPathPrefix: string,
   fields: CSVFieldExport[],

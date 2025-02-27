@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import { logger } from "firebase-functions";
+import { logger } from "firebase-functions/v1";
 import { updateUserClaims } from "../utils/utils";
 import { FieldValue } from "firebase-admin/firestore";
 

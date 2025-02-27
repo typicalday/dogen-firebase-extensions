@@ -1,27 +1,40 @@
 import { JobTask } from "../jobTask";
 import * as admin from "firebase-admin";
-
-const db = admin.firestore();
+import { getDatabaseByName, parseDatabasePath } from "../../utils/utils";
 
 export async function handleListCollections(
   task: JobTask
 ): Promise<Record<string, any>> {
   const documentPath = task.input?.documentPath;
+  
+  // Use default database if no path provided
+  if (!documentPath) {
+    const db = admin.firestore();
+    return {
+      collections: await listTopLevelCollections(db),
+    };
+  }
+
+  const [dbName, fsPath] = parseDatabasePath(documentPath);
+  const db = getDatabaseByName(dbName);
 
   return {
-    collections: documentPath 
-      ? await listSubcollections(documentPath)
-      : await listTopLevelCollections(),
+    collections: fsPath 
+      ? await listSubcollections(db, fsPath)
+      : await listTopLevelCollections(db),
   };
 }
 
-async function listTopLevelCollections(): Promise<string[]> {
+async function listTopLevelCollections(db: admin.firestore.Firestore): Promise<string[]> {
   const collections = await db.listCollections();
   const collectionNames = collections.map((collectionRef) => collectionRef.id);
   return collectionNames;
 }
 
-async function listSubcollections(documentPath: string): Promise<string[]> {
+async function listSubcollections(
+  db: admin.firestore.Firestore,
+  documentPath: string
+): Promise<string[]> {
   const documentRef = db.doc(documentPath);
   const collections = await documentRef.listCollections();
   const collectionNames = collections.map((collectionRef) => collectionRef.id);
