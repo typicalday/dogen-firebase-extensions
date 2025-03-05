@@ -98,7 +98,7 @@ export async function updateUserClaims(user: UserRecord, roles: string[]) {
 }
 
 export function parseDatabasePath(path: string): [string, string] {
-  const match = path.match(/^firestore\/(.*?)\/data\/(.*?)$/);
+  const match = path.match(/^\/?firestore\/(.*?)\/data\/(.*?)$/);
   if (!match) {
     throw new Error(`Invalid path format: ${path}. Expected format: firestore/{database}/data/{firestore path}`);
   }
