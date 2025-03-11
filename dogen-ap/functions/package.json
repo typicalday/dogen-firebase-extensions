@@ -8,7 +8,9 @@
     "mocha": "mocha '**/*.spec.ts'",
     "test": "(cd integration-tests && firebase emulators:exec 'npm run mocha' -P demo-test)",
     "emulate": "npm run build:watch | (cd integration-tests && firebase emulators:start --only auth,functions,firestore,extensions --project=demo-test --import ./data --export-on-exit data)",
-    "test:storage": "TS_NODE_FILES=true mocha --require ts-node/register 'integration-tests/storage/*.spec.ts'"
+    "test:job:storage": "TS_NODE_FILES=true mocha --require ts-node/register 'integration-tests/storage/*.spec.ts'",
+    "test:job:firestore": "TS_NODE_FILES=true mocha --require ts-node/register 'integration-tests/firestore/*.spec.ts' --exclude 'integration-tests/storage/*.spec.ts'",
+    "test:job:handlers": "TS_NODE_FILES=true mocha --require ts-node/register 'integration-tests/storage/*.spec.ts' 'integration-tests/firestore/*.spec.ts'"
   },
   "main": "lib/index.js",
   "dependencies": {
