@@ -1,7 +1,7 @@
 import { JobTask } from "../../jobTask";
 import { BatchManager } from "../../../utils/batchManager";
 import * as admin from "firebase-admin";
-import { Timestamp } from "firebase-admin/firestore";
+import { Timestamp, GeoPoint } from "firebase-admin/firestore";
 import * as fs from 'fs';
 import * as path from 'path';
 import * as JSONStream from 'JSONStream';
@@ -64,9 +64,10 @@ async function importCollection(
         try {
           readStream.pause();
           
-          // docEntry.data is now a plain object ready for Firestore
+          // Transform data to convert special types back to Firestore types
+          const transformedData = transformData(docEntry.data);
           const docRef = db.collection(collectionPath).doc(docId);
-          await batchManager.add(docRef, docEntry.data);
+          await batchManager.add(docRef, transformedData);
           documentsProcessed++;
 
           if (docEntry.subcollections) {
@@ -120,9 +121,8 @@ async function importSubcollection(
   const batchManager = new BatchManager(db);
 
   for (const [docId, docData] of Object.entries(collectionData.documents)) {
-    // Transform ISO8601 strings to Timestamps for subcollection documents
+    // Transform data to convert special types back to Firestore types
     const transformedData = transformData(docData.data);
-    // Use the original document ID from the JSON instead of generating a new one
     const docRef = db.collection(path).doc(docId);
     await batchManager.add(docRef, transformedData);
 
@@ -140,32 +140,51 @@ async function importSubcollection(
   await batchManager.commit();
 }
 
-// Helper function to check if a string is a valid ISO8601 date
-function isValidISODate(str: string): boolean {
-  try {
-    const d = new Date(str);
-    return d instanceof Date && !isNaN(d.getTime()) && str.includes('T');
-  } catch {
-    return false;
-  }
-}
-
-// Helper function to transform ISO8601 strings back to Firestore Timestamps
+// Helper function to transform data back to Firestore types
 function transformData(obj: any): any {
+  // Handle primitive values
   if (obj === null || typeof obj !== 'object') {
-    if (typeof obj === 'string' && isValidISODate(obj)) {
-      return Timestamp.fromDate(new Date(obj));
-    }
     return obj;
   }
 
+  // Handle Firestore type identifiers
+  if (obj._firestore_type) {
+    switch (obj._firestore_type) {
+      case 'timestamp':
+        return new Timestamp(
+          Math.floor(new Date(obj.value).getTime() / 1000),
+          (new Date(obj.value).getTime() % 1000) * 1000000
+        );
+      
+      case 'reference':
+        return admin.firestore().doc(obj.path);
+      
+      case 'geopoint':
+        return new GeoPoint(obj.latitude, obj.longitude);
+      
+      case 'vector':
+        if (Array.isArray(obj.values)) {
+          return obj.values;
+        }
+        return [];
+      
+      case 'bytes':
+        return Buffer.from(obj.base64, 'base64');
+      
+      default:
+        return obj;
+    }
+  }
+
+  // Handle arrays
   if (Array.isArray(obj)) {
     return obj.map(item => transformData(item));
   }
 
-  const transformed: Record<string, any> = {};
+  // Handle objects
+  const result: Record<string, any> = {};
   for (const [key, value] of Object.entries(obj)) {
-    transformed[key] = transformData(value);
+    result[key] = transformData(value);
   }
-  return transformed;
+  return result;
 }

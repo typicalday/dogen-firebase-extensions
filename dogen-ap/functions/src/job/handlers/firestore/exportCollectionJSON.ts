@@ -1,5 +1,6 @@
 import { JobTask } from "../../jobTask";
-import { Timestamp } from "firebase-admin/firestore";
+import { DocumentReference, GeoPoint, Timestamp } from "firebase-admin/firestore";
+import { VectorValue } from "@google-cloud/firestore";
 import * as admin from "firebase-admin";
 import * as fs from 'fs';
 import * as path from 'path';
@@ -14,25 +15,72 @@ interface ExportTaskInput {
   orderByDirection?: 'asc' | 'desc';
 }
 
-function transformData(obj: any): any {
+function transformData(obj: any, seen = new WeakSet()): any {
+  // Return primitive values as-is
   if (obj === null || typeof obj !== 'object') {
     return obj;
   }
 
+  // Throw an error if a circular reference is detected
+  if (seen.has(obj)) {
+    throw new Error("Circular reference detected");
+  }
+  seen.add(obj);
+
+  // Handle Firestore Timestamp: convert to ISO string with type identifier
   if (obj instanceof Timestamp) {
-    return obj.toDate().toISOString();
+    return {
+      _firestore_type: 'timestamp',
+      value: obj.toDate().toISOString()
+    };
   }
 
+  // Handle Firestore DocumentReference: return its path with type identifier
+  if (obj instanceof DocumentReference) {
+    return {
+      _firestore_type: 'reference',
+      path: obj.path
+    };
+  }
+
+  // Handle Firestore GeoPoint: return latitude and longitude with type identifier
+  if (obj instanceof GeoPoint) {
+    return {
+      _firestore_type: 'geopoint',
+      latitude: obj.latitude, 
+      longitude: obj.longitude
+    };
+  }
+
+  // Handle Firestore VectorValue: return array representation with type identifier
+  if (obj instanceof VectorValue) {
+    return {
+      _firestore_type: 'vector',
+      values: obj.toArray()
+    };
+  }
+
+  // Handle Firestore Blob/Bytes: convert to base64 string with type identifier
+  if (obj instanceof Uint8Array || obj instanceof Buffer) {
+    return {
+      _firestore_type: 'bytes',
+      base64: Buffer.from(obj).toString('base64')
+    };
+  }
+
+  // Recursively transform arrays
   if (Array.isArray(obj)) {
-    return obj.map(item => transformData(item));
+    return obj.map(item => transformData(item, seen));
   }
 
+  // Process plain objects recursively
   const transformed: Record<string, any> = {};
   for (const [key, value] of Object.entries(obj)) {
-    transformed[key] = transformData(value);
+    transformed[key] = transformData(value, seen);
   }
   return transformed;
 }
+
 
 export async function handleExportCollectionJSON(task: JobTask): Promise<Record<string, any>> {
   const input = task.input as ExportTaskInput | undefined;

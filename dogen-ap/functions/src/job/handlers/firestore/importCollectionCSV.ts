@@ -75,24 +75,46 @@ function isISO8601(str: string): boolean {
 }
 
 function parseValue(value: any): any {
-  if (typeof value === "string") {
-    // Check for ISO8601 date strings first
-    if (isISO8601(value)) {
-      return Timestamp.fromDate(new Date(value));
-    }
+  if (typeof value !== "string" || value === "") {
+    return value;
+  }
 
-    // Try to parse JSON if it looks like a JSON string
-    if (
-      (value.startsWith("{") && value.endsWith("}")) ||
-      (value.startsWith("[") && value.endsWith("]"))
-    ) {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return value;
-      }
+  // Handle special Firestore types with prefixes
+  if (value.startsWith('__ref:')) {
+    const path = value.substring(6);
+    return admin.firestore().doc(path);
+  }
+
+  if (value.startsWith('__geo:')) {
+    const [lat, lng] = value.substring(6).split(',').map(Number);
+    return new admin.firestore.GeoPoint(lat, lng);
+  }
+
+  if (value.startsWith('__vector:')) {
+    const values = value.substring(9).split(',').map(Number);
+    return admin.firestore.FieldValue.arrayUnion(...values);
+  }
+
+  if (value.startsWith('__bytes:')) {
+    const base64 = value.substring(8);
+    return Buffer.from(base64, 'base64');
+  }
+
+  // Check for ISO8601 date strings
+  if (isISO8601(value)) {
+    return Timestamp.fromDate(new Date(value));
+  }
+
+  // Try to parse JSON if it looks like a JSON string
+  if ((value.startsWith("{") && value.endsWith("}")) || 
+      (value.startsWith("[") && value.endsWith("]"))) {
+    try {
+      return JSON.parse(value);
+    } catch {
+      return value;
     }
   }
+
   return value;
 }
 
