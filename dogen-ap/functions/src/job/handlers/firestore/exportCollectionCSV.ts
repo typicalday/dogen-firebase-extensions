@@ -1,10 +1,10 @@
-import { JobTask } from "../jobTask";
+import { JobTask } from "../../jobTask";
 import * as admin from "firebase-admin";
 import { Timestamp } from "firebase-admin/firestore";
 import * as fs from "fs";
 import * as path from "path";
 import { stringify } from "csv-stringify";
-import { getDatabaseByName, parseDatabasePath } from "../../utils/utils";
+import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 
 interface CSVFieldExport {
   source: string; // Document field in dot notation

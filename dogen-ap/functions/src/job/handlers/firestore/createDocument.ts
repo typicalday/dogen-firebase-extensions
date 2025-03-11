@@ -1,5 +1,5 @@
-import { JobTask } from "../jobTask";
-import { getDatabaseByName, parseDatabasePath } from "../../utils/utils";
+import { JobTask } from "../../jobTask";
+import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 
 export async function handleCreateDocument(
     task: JobTask

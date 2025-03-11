@@ -1,6 +1,6 @@
-import { JobTask } from "../jobTask";
+import { JobTask } from "../../jobTask";
 import { copyCollection } from "./copyCollection";
-import { getDatabaseByName, parseDatabasePath } from "../../utils/utils";
+import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 
 export async function handleCopyDocument(
     task: JobTask

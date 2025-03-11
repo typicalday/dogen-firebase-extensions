@@ -1,7 +1,7 @@
 /* eslint-disable max-len */
-import * as admin from "firebase-admin";
+import { initializeFirebase } from "./utils/firebase";
 
-export const firebaseApp = admin.initializeApp();
+initializeFirebase();
 
 // Firestore triggers
 export * from "./user/onAccountCreate";

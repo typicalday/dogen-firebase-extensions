@@ -1,11 +1,11 @@
-import { JobTask } from "../jobTask";
-import { BatchManager } from "../../utils/batchManager";
+import { JobTask } from "../../jobTask";
+import { BatchManager } from "../../../utils/batchManager";
 import { Timestamp, DocumentReference } from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
 import { parse } from "csv-parse";
-import { getDatabaseByName, parseDatabasePath } from "../../utils/utils";
+import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 
 // Special field identifiers
 const SPECIAL_FIELDS = {

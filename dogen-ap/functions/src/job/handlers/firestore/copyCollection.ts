@@ -1,6 +1,6 @@
-import { BatchManager } from "../../utils/batchManager";
-import { getDatabaseByName, parseDatabasePath } from "../../utils/utils";
-import { JobTask } from "../jobTask";
+import { BatchManager } from "../../../utils/batchManager";
+import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
+import { JobTask } from "../../jobTask";
 
 export async function handleCopyCollection(
   task: JobTask

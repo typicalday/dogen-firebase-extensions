@@ -1,11 +1,11 @@
-import { JobTask } from "../jobTask";
-import { BatchManager } from "../../utils/batchManager";
+import { JobTask } from "../../jobTask";
+import { BatchManager } from "../../../utils/batchManager";
 import * as admin from "firebase-admin";
 import { Timestamp } from "firebase-admin/firestore";
 import * as fs from 'fs';
 import * as path from 'path';
 import * as JSONStream from 'JSONStream';
-import { CollectionData, getDatabaseByName, parseDatabasePath } from "../../utils/utils";
+import { CollectionData, getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 
 interface ImportTaskInput {
   collectionPath: string;

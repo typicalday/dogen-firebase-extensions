@@ -1,6 +1,6 @@
-import { JobTask } from "../jobTask";
+import { JobTask } from "../../jobTask";
 import * as admin from "firebase-admin";
-import { getDatabaseByName, parseDatabasePath } from "../../utils/utils";
+import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 
 export async function handleDeletePath(task: JobTask): Promise<Record<string, any>> {
   const path = task.input?.path;

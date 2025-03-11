@@ -1,7 +1,7 @@
-import { BatchManager } from "../../utils/batchManager";
-import { JobTask } from "../jobTask";
+import { BatchManager } from "../../../utils/batchManager";
+import { JobTask } from "../../jobTask";
 import * as admin from "firebase-admin";
-import { getDatabaseByName, parseDatabasePath } from "../../utils/utils";
+import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 
 export async function handleDeleteDocuments(task: JobTask) : Promise<Record<string, any>> {
   const documentPaths: string[] = task.input?.paths;

@@ -1,9 +1,9 @@
-import * as admin from "firebase-admin";
+import { getFirestore } from 'firebase-admin/firestore';
+import { admin } from './firebase';
 import config from "../config";
 import * as crypto from 'crypto';
 import { UserRecord } from "firebase-admin/auth";
-import { getFirestore } from 'firebase-admin/firestore';
-import { firebaseApp } from "..";
+import { Bucket } from "@google-cloud/storage";
 
 const defaultDogenServiceUrl = "https://api.dogen.io/";
 
@@ -97,8 +97,27 @@ export async function updateUserClaims(user: UserRecord, roles: string[]) {
   await admin.auth().setCustomUserClaims(user.uid, updatedClaims);
 }
 
+export function parseStoragePath(path: string): [string, string] {
+  const match = path.match(/^\/?storage\/(.*?)\/data(?:\/(.*))?$/);
+  if (!match) {
+    throw new Error(`Invalid path format: ${path}. Expected format: storage/{bucket-name}/data/{storage path}`);
+  }
+  const bucketName = match[1];
+  const normalizedBucketName = bucketName === '(default)' || bucketName === '[default]' || bucketName === '-default-' 
+    ? '' // Default bucket doesn't need a name specified
+    : bucketName;
+  const filePath = match[2] || "";
+  return [normalizedBucketName, filePath];
+}
+
+export function getBucketByName(bucketName: string): Bucket {
+  return bucketName 
+    ? admin.storage().bucket(bucketName)
+    : admin.storage().bucket();
+}
+
 export function parseDatabasePath(path: string): [string, string] {
-  const match = path.match(/^\/?firestore\/(.*?)\/data\/(.*?)$/);
+  const match = path.match(/^\/?firestore\/(.*?)\/data(?:\/(.*))?$/);
   if (!match) {
     throw new Error(`Invalid path format: ${path}. Expected format: firestore/{database}/data/{firestore path}`);
   }
@@ -106,15 +125,15 @@ export function parseDatabasePath(path: string): [string, string] {
   const normalizedDbName = dbName === '(default)' || dbName === '[default]' || dbName === '-default-' 
     ? 'default' 
     : dbName;
-  const collectionPath = match[2];
+  const collectionPath = match[2] || "";
   return [normalizedDbName, collectionPath];
 }
 
 export function getDatabaseByName(dbName: string): admin.firestore.Firestore {
   if (dbName === 'default') {
-    return getFirestore(firebaseApp);
+    return getFirestore(admin.app());
   }
-  return getFirestore(firebaseApp, dbName);
+  return getFirestore(admin.app(), dbName);
 }
 
 export interface CollectionData {

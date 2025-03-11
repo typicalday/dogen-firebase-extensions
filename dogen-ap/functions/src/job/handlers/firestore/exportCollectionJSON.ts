@@ -1,9 +1,9 @@
-import { JobTask } from "../jobTask";
+import { JobTask } from "../../jobTask";
 import { Timestamp } from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
 import * as fs from 'fs';
 import * as path from 'path';
-import { CollectionData, getDatabaseByName, parseDatabasePath } from "../../utils/utils";
+import { CollectionData, getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 
 interface ExportTaskInput {
   collectionPath: string;

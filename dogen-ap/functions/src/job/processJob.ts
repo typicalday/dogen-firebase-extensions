@@ -1,17 +1,17 @@
 import * as functions from "firebase-functions/v1";
 import { DecodedIdToken } from "firebase-admin/auth";
 import { FirebaseTaskStatus, JobTask } from "./jobTask";
-import { handleCopyCollection } from "./handlers/copyCollection";
-import { handleDeletePath } from "./handlers/deletePath";
-import { handleDeleteDocuments } from "./handlers/deleteDocuments";
+import { handleCopyCollection } from "./handlers/firestore/copyCollection";
+import { handleDeletePath } from "./handlers/firestore/deletePath";
+import { handleDeleteDocuments } from "./handlers/firestore/deleteDocuments";
 import { Job, JobStatus } from "./job";
-import { handleListCollections } from "./handlers/listCollections";
-import { handleCreateDocument } from "./handlers/createDocument";
-import { handleCopyDocument } from "./handlers/copyDocument";
-import { handleExportCollectionCSV } from "./handlers/exportCollectionCSV";
-import { handleImportCollectionCSV } from "./handlers/importCollectionCSV";
-import { handleExportCollectionJSON } from "./handlers/exportCollectionJSON";
-import { handleImportCollectionJSON } from "./handlers/importCollectionJSON";
+import { handleListCollections } from "./handlers/firestore/listCollections";
+import { handleCreateDocument } from "./handlers/firestore/createDocument";
+import { handleCopyDocument } from "./handlers/firestore/copyDocument";
+import { handleExportCollectionCSV } from "./handlers/firestore/exportCollectionCSV";
+import { handleImportCollectionCSV } from "./handlers/firestore/importCollectionCSV";
+import { handleExportCollectionJSON } from "./handlers/firestore/exportCollectionJSON";
+import { handleImportCollectionJSON } from "./handlers/firestore/importCollectionJSON";
 
 const persistIntervalDuration = 10000;
 
