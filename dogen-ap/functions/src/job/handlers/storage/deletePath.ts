@@ -2,65 +2,68 @@ import { JobTask } from "../../jobTask";
 import { getBucketByName, parseStoragePath } from "../../../utils/utils";
 
 const BATCH_SIZE = 100; // Number of files to delete in parallel
-const MAX_FILES = 10000; // Safety limit to prevent runaway deletions
+const MAX_FILES = 1; // Safety limit to prevent runaway deletions
 
-export async function handleDeletePath(task: JobTask): Promise<Record<string, any>> {
+export async function handleDeleteStoragePath(task: JobTask): Promise<Record<string, any>> {
   const path = task.input?.path;
-  console.log("Handling delete path:", path);
+  const limit = task.input?.limit !== undefined ? parseInt(String(task.input.limit), 10) : MAX_FILES;
+  console.log(`Handling delete path: ${path} with limit: ${limit}`);
 
   if (!path) {
     throw new Error("Invalid input: path is required");
   }
 
   const [bucketName, filePath] = parseStoragePath(path);
-  console.log("Parsed path:", { bucketName, filePath });
-  
   const bucket = getBucketByName(bucketName);
-  console.log("Got bucket:", bucket.name);
-  
+
   let filesDeleted = 0;
   let pageToken: string | undefined;
-  
-  do {
-    console.log("Fetching files with prefix:", filePath);
-    // Get batch of files
-    const [files, _, nextPageToken] = await bucket.getFiles({ 
-      prefix: filePath,
-      maxResults: BATCH_SIZE,
-      pageToken
-    });
-    console.log("Found files:", files.length);
 
-    if (files.length === 0 && filesDeleted === 0) {
-      throw new Error(`No files found with prefix ${filePath} in bucket ${bucketName || 'default'}`);
+  try {
+    // Loop until we hit the limit or run out of files
+    while (filesDeleted < limit && (pageToken !== undefined || filesDeleted === 0)) {
+      // Get a batch of files (only get what we need)
+      const [files, , nextPageToken] = await bucket.getFiles({
+        prefix: filePath,
+        maxResults: Math.min(BATCH_SIZE, limit - filesDeleted),
+        pageToken
+      });
+      
+      pageToken = nextPageToken as string | undefined;
+      
+      // Check if we found anything on the first pass
+      if (files.length === 0 && filesDeleted === 0) {
+        throw new Error(`No files found with prefix: ${filePath}`);
+      }
+      
+      // If we have files to delete
+      if (files.length > 0) {
+        // Delete files in batch (already limited by maxResults above)
+        await Promise.all(files.map(file => file.delete()));
+        
+        // Update count
+        filesDeleted += files.length;
+        console.log(`Deleted batch: ${files.length} files, total: ${filesDeleted}`);
+      }
+      
+      // Exit if no more files or if we've hit our limit
+      if (files.length === 0 || filesDeleted >= limit) {
+        break;
+      }
     }
+  } catch (error) {
+    console.error(`Error deleting files: ${error}`);
+    throw error;
+  }
 
-    // If no files found but we've already deleted some, we're done
-    if (files.length === 0) {
-      break;
-    }
-
-    // Delete current batch
-    console.log("Deleting files...");
-    await Promise.all(files.map(file => file.delete()));
-    filesDeleted += files.length;
-    console.log("Files deleted:", filesDeleted);
-    
-    // Prepare for next batch
-    pageToken = nextPageToken as string | undefined;
-
-    // Safety check
-    if (filesDeleted >= MAX_FILES) {
-      console.warn(`Reached maximum file deletion limit of ${MAX_FILES}`);
-      break;
-    }
-  } while (pageToken);
+  console.log(`Completed: Deleted ${filesDeleted} files from ${path}`);
 
   return {
     deleted: path,
     bucket: bucketName || 'default',
     filePath: filePath,
     filesDeleted,
-    reachedLimit: filesDeleted >= MAX_FILES
+    limit: limit,
+    reachedLimit: filesDeleted >= limit
   };
 }

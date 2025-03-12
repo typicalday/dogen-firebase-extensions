@@ -98,19 +98,19 @@ export async function updateUserClaims(user: UserRecord, roles: string[]) {
 }
 
 export function parseStoragePath(path: string): [string, string] {
-  const match = path.match(/^\/?storage\/(.*?)\/data(?:\/(.*))?$/);
+  const match = path.match(/^gs:\/\/([^\/]*)\/?(.*)$/);
   if (!match) {
-    throw new Error(`Invalid path format: ${path}. Expected format: storage/{bucket-name}/data/{storage path}`);
+    throw new Error(`Invalid path format: ${path}. Expected format: gs://{bucket-name}/{storage path}`);
   }
   const bucketName = match[1];
-  const normalizedBucketName = bucketName === '(default)' || bucketName === '[default]' || bucketName === '-default-' 
+  const normalizedBucketName = bucketName === '(default)' || bucketName === '[default]' || bucketName === '-default-' || bucketName === 'default' 
     ? '' // Default bucket doesn't need a name specified
     : bucketName;
   const filePath = match[2] || "";
   return [normalizedBucketName, filePath];
 }
 
-export function getBucketByName(bucketName: string): Bucket {
+export function getBucketByName(bucketName?: string | null): Bucket {
   return bucketName 
     ? admin.storage().bucket(bucketName)
     : admin.storage().bucket();

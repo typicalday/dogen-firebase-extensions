@@ -5,7 +5,7 @@ import { Timestamp, GeoPoint } from "firebase-admin/firestore";
 import * as fs from 'fs';
 import * as path from 'path';
 import * as JSONStream from 'JSONStream';
-import { CollectionData, getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
+import { CollectionData, getDatabaseByName, parseDatabasePath, parseStoragePath, getBucketByName } from "../../../utils/utils";
 
 interface ImportTaskInput {
   collectionPath: string;
@@ -28,8 +28,11 @@ export async function handleImportCollectionJSON(task: JobTask): Promise<Record<
 
   const [dbName, fsPath] = parseDatabasePath(input.collectionPath);
   const db = getDatabaseByName(dbName);
+  
+  // Parse bucket path to get bucket name and path
+  const [bucketName, storagePath] = parseStoragePath(input.bucketPath);
 
-  const metadata = await importCollection(db, fsPath, input.bucketPath);
+  const metadata = await importCollection(db, fsPath, bucketName, storagePath);
   
   return {
     bucketPath: input.bucketPath,
@@ -43,11 +46,12 @@ export async function handleImportCollectionJSON(task: JobTask): Promise<Record<
 async function importCollection(
   db: admin.firestore.Firestore,
   collectionPath: string,
-  bucketPath: string
+  bucketName: string,
+  storagePath: string
 ): Promise<ImportMetadata> {
-  const bucket = admin.storage().bucket();
-  const file = bucket.file(bucketPath);
-  const tempFilePath = `/tmp/${path.basename(bucketPath)}`;
+  const bucket = getBucketByName(bucketName);
+  const file = bucket.file(storagePath);
+  const tempFilePath = `/tmp/${path.basename(storagePath)}`;
 
   try {
     await file.download({ destination: tempFilePath });

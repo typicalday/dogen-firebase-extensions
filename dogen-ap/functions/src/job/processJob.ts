@@ -12,6 +12,7 @@ import { handleExportCollectionCSV } from "./handlers/firestore/exportCollection
 import { handleImportCollectionCSV } from "./handlers/firestore/importCollectionCSV";
 import { handleExportCollectionJSON } from "./handlers/firestore/exportCollectionJSON";
 import { handleImportCollectionJSON } from "./handlers/firestore/importCollectionJSON";
+import { handleDeleteStoragePath } from "./handlers/storage/deletePath";
 
 const persistIntervalDuration = 10000;
 
@@ -199,6 +200,13 @@ async function processTask(task: JobTask): Promise<Record<string, any>> {
           return await handleListCollections(task);
         default:
           throw new Error(`Unsupported Firestore command: ${task.command}`);
+      }
+    case "storage":
+      switch (task.command) {
+        case "delete-path":
+          return await handleDeleteStoragePath(task);
+        default:
+          throw new Error(`Unsupported Storage command: ${task.command}`);
       }
     default:
       throw new Error(`Unsupported service: ${task.service}`);

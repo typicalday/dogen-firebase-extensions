@@ -168,8 +168,7 @@ describe("Firebase Admin Firestore Import Collection CSV Test", function() {
     }
   });
   
-  // Skip this test to avoid error logs in the output
-  it.skip("should throw error for non-existent file", async function() {
+  it("should throw error for non-existent file", async function() {
     const task = new JobTask({
       service: "firestore",
       command: "import-collection-csv",

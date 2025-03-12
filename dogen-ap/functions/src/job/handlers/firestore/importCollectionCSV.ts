@@ -5,7 +5,7 @@ import * as admin from "firebase-admin";
 import * as fs from "fs";
 import * as path from "path";
 import { parse } from "csv-parse";
-import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
+import { getDatabaseByName, parseDatabasePath, parseStoragePath, getBucketByName } from "../../../utils/utils";
 
 // Special field identifiers
 const SPECIAL_FIELDS = {
@@ -49,11 +49,15 @@ export async function handleImportCollectionCSV(
 
   const [dbName, fsPath] = parseDatabasePath(input.collectionPath);
   const db = getDatabaseByName(dbName);
+  
+  // Parse bucket path to get bucket name and path
+  const [bucketName, storagePath] = parseStoragePath(input.bucketPath);
 
   const metadata = await importCollection(
     db,
     fsPath,
-    input.bucketPath,
+    bucketName,
+    storagePath,
     input.fieldMappings ?? [],
     input.delimiter ?? ","
   );
@@ -224,24 +228,25 @@ function processRowData(
 async function importCollection(
   db: admin.firestore.Firestore,
   collectionPath: string,
-  bucketPath: string,
+  bucketName: string,
+  storagePath: string,
   fieldMappings: CSVFieldImport[],
   delimiter: string = ","
 ): Promise<ImportMetadata> {
-  const bucket = admin.storage().bucket();
-  const tempFilePath = `/tmp/${path.basename(bucketPath)}`;
+  const bucket = getBucketByName(bucketName);
+  const tempFilePath = `/tmp/${path.basename(storagePath)}`;
   let documentsProcessed = 0;
   let fileStream: fs.ReadStream | null = null;
   let mappingsByHeader = new Map<string, string | null | undefined>();
 
   try {
-    console.log(`Attempting to download from bucket path: ${bucketPath}`);
-    const file = bucket.file(bucketPath);
+    console.log(`Attempting to download from bucket path: ${storagePath}`);
+    const file = bucket.file(storagePath);
     const [exists] = await file.exists();
 
     if (!exists) {
       throw new Error(
-        `File ${bucketPath} not found in Firebase Storage bucket`
+        `File ${storagePath} not found in Firebase Storage bucket`
       );
     }
 

@@ -4,7 +4,7 @@ import { Timestamp, DocumentReference, GeoPoint } from "firebase-admin/firestore
 import { VectorValue } from "@google-cloud/firestore";
 import * as fs from "fs";
 import { stringify } from "csv-stringify";
-import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
+import { getDatabaseByName, parseDatabasePath, parseStoragePath, getBucketByName } from "../../../utils/utils";
 import * as path from "path";
 
 interface CSVFieldExport {
@@ -52,10 +52,14 @@ export async function handleExportCollectionCSV(
   const [dbName, fsPath] = parseDatabasePath(input.collectionPath);
   const db = getDatabaseByName(dbName);
   
+  // Parse bucket path to get bucket name and path
+  const [bucketName, pathPrefix] = parseStoragePath(input.bucketPathPrefix);
+  
   const metadata = await exportCollection(
     db,
     fsPath,
-    input.bucketPathPrefix,
+    bucketName,
+    pathPrefix,
     input.fields,
     input.delimiter ?? ",",
     input.limit,
@@ -76,19 +80,23 @@ export async function handleExportCollectionCSV(
 async function exportCollection(
   db: admin.firestore.Firestore,
   collectionPath: string,
-  bucketPathPrefix: string,
+  bucketName: string,
+  pathPrefix: string,
   fields: CSVFieldExport[],
   delimiter: string = ',',
   limit?: number,
   orderByField?: string,
   orderByDirection?: 'asc' | 'desc'
 ): Promise<ExportMetadata> {
-  const bucket = admin.storage().bucket();
+  const bucket = getBucketByName(bucketName);
   const timestamp = Math.floor(Date.now() / 1000);
   const baseFileName = collectionPath.replace(/\//g, "_");
   const fileName = `${baseFileName}_${timestamp}.csv`;
-  const exportName = `${bucketPathPrefix}/${fileName}`.replace(/\/+/g, "/");
-  const tempFilePath = `/tmp/${path.basename(exportName)}`;
+  const exportPath = `${pathPrefix}/${fileName}`.replace(/\/+/g, "/");
+  const tempFilePath = `/tmp/${path.basename(exportPath)}`;
+  
+  // Full storage path to return in the result
+  const fullExportPath = `gs://${bucket.name}/${exportPath}`;
   
   try {
     // Create a write stream to the temp file
@@ -202,7 +210,7 @@ async function exportCollection(
     });
     
     // Stream to Cloud Storage
-    const file = bucket.file(exportName);
+    const file = bucket.file(exportPath);
     await new Promise<void>((resolve, reject) => {
       fs.createReadStream(tempFilePath)
         .pipe(file.createWriteStream())
@@ -211,7 +219,7 @@ async function exportCollection(
     });
     
     return {
-      exportedTo: exportName,
+      exportedTo: fullExportPath,
       exportedAt: new Date().toISOString(),
       documentsProcessed,
     };
