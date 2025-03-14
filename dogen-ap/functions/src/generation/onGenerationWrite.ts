@@ -48,6 +48,8 @@ async function handleCreatedEvent(
   snapshot: Change<firestore.DocumentSnapshot>,
   context: EventContext
 ) {
+  const dogenApiKey = await utils.getApiKey();
+
   const generationId = getGenerationId(context);
 
   const dogenServiceUrl = utils.getDogenGenerateServiceUrl();
@@ -139,7 +141,7 @@ async function handleCreatedEvent(
       headers: {
         "Content-Encoding": "gzip",
         "Content-Type": "application/json",
-        "x-api-key": await utils.getApiKey(),
+        "x-api-key": dogenApiKey,
       },
       validateStatus: (_) => true,
     });
@@ -221,6 +223,7 @@ async function handlePromotionDemotionEvent(
   successStatus: string,
   getServiceUrl: () => string
 ) {
+  const dogenApiKey = await utils.getApiKey();
   if (documentData.status !== expectedStatus) {
     logger.info(
       `Skipping processing due to invalid status. Expected: ${expectedStatus}, found: ${documentData.status}`
@@ -244,7 +247,7 @@ async function handlePromotionDemotionEvent(
     const response = await axios.post(serviceUrl, body, {
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": await utils.getApiKey(),
+        "x-api-key": dogenApiKey,
       },
     });
 

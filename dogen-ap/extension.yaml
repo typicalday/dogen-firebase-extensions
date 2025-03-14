@@ -6,11 +6,11 @@ version: 3.0.0 # Follow semver versioning
 specVersion: v1beta # Version of the Firebase Extensions specification
 
 # Friendly display name for your extension (~3-5 words)
-displayName: Dogen Application Platform
+displayName: Turbocharge Firestore with Dogen's Application Platform
 
 # Brief description of the task your extension performs (~1 sentence)
 description: >-
-  Wave goodbye to custom coding and error prone data entry. Dogen automatically manages even the most intricate Firestore data, letting you focus on building your next big idea rather than customizing a CMS.
+  Dogen turbocharges your Firestore experience with its own custom types (Color, Email, Image, etc.), import/export CSV/JSON jobs, structured data (schemas), validations, and more.  Get started for free!
 
 license: Apache-2.0 # https://spdx.org/licenses/
 
@@ -112,9 +112,9 @@ params:
   - param: DOGEN_API_KEY
     label: Dogen API Key
     description: >-
-      The API Key to use when communicating with the Dogen service.
+      Optional API Key to use when generating a new client with the Dogen paid service.
     type: secret
-    required: true
+    required: false
 
   - param: LOCATION
     label: Cloud Location (Required)
