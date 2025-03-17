@@ -249,6 +249,7 @@ async function handlePromotionDemotionEvent(
         "Content-Type": "application/json",
         "x-api-key": dogenApiKey,
       },
+      validateStatus: (_) => true,
     });
 
     logger.info("Request sent successfully:", response.data);
@@ -270,7 +271,7 @@ async function handlePromotionDemotionEvent(
     await snapshot.after.ref
       .set(
         {
-          status: utils.GenerationStatus.FAILED,
+          // Do not fail the generation to allow retries.
           outputMessage: getErrorString(error),
         },
         { merge: true }
