@@ -39,7 +39,9 @@ export const runInstall = tasks
     }
 
     try {
-      await registerProjectConfig(config);
+      if (process.env.DOGEN_API_KEY && process.env.DOGEN_API_KEY.trim() !== '') {
+        await registerProjectConfig(config);
+      }
     } catch (e) {
       logger.error("Registration process failed with error:", e);
       return runtime.setProcessingState(
