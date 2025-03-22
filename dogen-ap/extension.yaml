@@ -6,11 +6,11 @@ version: 3.0.0 # Follow semver versioning
 specVersion: v1beta # Version of the Firebase Extensions specification
 
 # Friendly display name for your extension (~3-5 words)
-displayName: Turbocharge Firestore with Dogen's Application Platform
+displayName: Elevate Firebase with Dogen's Application Platform
 
 # Brief description of the task your extension performs (~1 sentence)
 description: >-
-  Dogen turbocharges your Firestore experience with its own custom types (Color, Email, Image, etc.), import/export CSV/JSON jobs, structured data (schemas), validations, and more.  Get started for free!
+  Dogen elevates your Firebase experience with its own custom types (Color, Email, Image, etc.), import/export CSV/JSON jobs, structured data (schemas), validations, and more.  Get started for free!
 
 license: Apache-2.0 # https://spdx.org/licenses/
 

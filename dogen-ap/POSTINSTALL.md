@@ -1,6 +1,6 @@
 # We're on it!
 
-We are setting up your Dogen Application Platform. You will receive an email shortly with detailed instructions on how to proceed.  In the meantime, you can check out the [Dogen docs](https://www.dogen.io/docs).
+Once the extension indicates a Runtime Status of "Processing Complete", you can head to your Dogen Dashboard to launch your client.  In the meantime, you can check out the [Dogen docs](https://www.dogen.io/docs).
 
 # Troubleshooting
 
