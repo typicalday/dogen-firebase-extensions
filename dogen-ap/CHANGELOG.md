@@ -1,3 +1,6 @@
+## Version 3.0.1
+- Added support for free dogen projects on storage CORS.
+
 ## Version 3.0.0
 - Simplified the extension installation flow to perform registration through website.
 - Added support for multiple databases.

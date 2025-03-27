@@ -176,23 +176,28 @@ async function updateStorageCors(projectAlias: string) {
 
     // Get existing metadata to check current CORS
     const [metadata] = await bucket.getMetadata();
-    const newDomain = `https://${projectAlias}.dogen.io`;
+    
+    // Create both domain URLs
+    const domains = [
+      `https://${projectAlias}.dogen.io`,
+      `https://${projectAlias}f.dogen.io`
+    ];
 
-    // Check if domain already exists in any CORS rule
-    const domainExists = metadata.cors?.some((rule) =>
-      rule.origin?.includes(newDomain)
+    // Check if both domains already exist in CORS rules
+    const newDomains = domains.filter(domain => 
+      !metadata.cors?.some(rule => rule.origin?.includes(domain))
     );
 
-    if (domainExists) {
-      logger.info(`Domain ${newDomain} already exists in CORS configuration`);
+    if (newDomains.length === 0) {
+      logger.info(`Both domains already exist in CORS configuration`);
       return;
     }
 
-    // Create new CORS entry
+    // Create new CORS entry with both domains
     const newCorsRule = {
       maxAgeSeconds: 3600,
       method: ["GET", "POST", "PUT", "DELETE", "HEAD"],
-      origin: [newDomain],
+      origin: domains,
       responseHeader: [
         "Content-Type",
         "Authorization",
@@ -207,7 +212,7 @@ async function updateStorageCors(projectAlias: string) {
 
     // Set the updated CORS configuration
     await bucket.setCorsConfiguration(corsConfig);
-    logger.info(`Added new CORS rule for domain: ${newDomain}`);
+    logger.info(`Added new CORS rule for domains: ${domains.join(', ')}`);
   } catch (error) {
     logger.error("Error updating CORS configuration:", error);
     throw error;
