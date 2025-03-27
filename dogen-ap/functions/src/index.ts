@@ -7,6 +7,7 @@ initializeFirebase();
 export * from "./user/onAccountCreate";
 export * from "./user/onAccountUpdate";
 export * from "./generation/onGenerationWrite";
+export * from "./install/onApplicationUpdate";
 
 // Extension lifecycle events
 export * from "./install/runInstall";

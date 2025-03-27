@@ -1,7 +1,6 @@
 /* eslint-disable max-len */
 import * as admin from "firebase-admin";
 import * as utils from "../utils/utils";
-import { Storage } from "@google-cloud/storage";
 import { getExtensions } from "firebase-admin/extensions";
 import { logger, tasks } from "firebase-functions/v1";
 import config, { IConfig } from "../config";
@@ -137,15 +136,27 @@ async function registerProjectConfig(
       );
     }
 
-    await updateStorageCors(projectAlias);
-
-    await applicationDoc.set(
-      {
-        alias: response.data.alias,
-        updatedAt: FieldValue.serverTimestamp(),
-      },
-      { merge: true }
-    );
+    // Get current document to check existing aliases
+    const appDoc = await applicationDoc.get();
+    const existingData = appDoc.exists ? appDoc.data() : {};
+    const existingAliases = Array.isArray(existingData?.aliases) ? existingData.aliases : [];
+    
+    // Only update the document if this alias isn't already included
+    if (!existingAliases.includes(projectAlias)) {
+      existingAliases.push(projectAlias);
+      
+      await applicationDoc.set(
+        {
+          aliases: existingAliases,
+          updatedAt: FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
+      
+      logger.info(`Added alias '${projectAlias}' to project aliases array`);
+    } else {
+      logger.info(`Alias '${projectAlias}' already exists in project aliases array`);
+    }
 
     logger.info(
       "Project registration response received successfully:",
@@ -166,55 +177,5 @@ async function registerProjectConfig(
     throw Error('Project registration failed: ' + errorMessage);
   } finally {
     logger.info("Project registration process completed.");
-  }
-}
-
-async function updateStorageCors(projectAlias: string) {
-  try {
-    const storage = new Storage();
-    const bucket = storage.bucket(config.firebaseConfigStorageBucket);
-
-    // Get existing metadata to check current CORS
-    const [metadata] = await bucket.getMetadata();
-    
-    // Create both domain URLs
-    const domains = [
-      `https://${projectAlias}.dogen.io`,
-      `https://${projectAlias}f.dogen.io`
-    ];
-
-    // Check if both domains already exist in CORS rules
-    const newDomains = domains.filter(domain => 
-      !metadata.cors?.some(rule => rule.origin?.includes(domain))
-    );
-
-    if (newDomains.length === 0) {
-      logger.info(`Both domains already exist in CORS configuration`);
-      return;
-    }
-
-    // Create new CORS entry with both domains
-    const newCorsRule = {
-      maxAgeSeconds: 3600,
-      method: ["GET", "POST", "PUT", "DELETE", "HEAD"],
-      origin: domains,
-      responseHeader: [
-        "Content-Type",
-        "Authorization",
-        "Content-Length",
-        "User-Agent",
-        "x-requested-with",
-      ],
-    };
-
-    // Combine existing rules with new rule
-    const corsConfig = [...(metadata.cors || []), newCorsRule];
-
-    // Set the updated CORS configuration
-    await bucket.setCorsConfiguration(corsConfig);
-    logger.info(`Added new CORS rule for domains: ${domains.join(', ')}`);
-  } catch (error) {
-    logger.error("Error updating CORS configuration:", error);
-    throw error;
   }
 }

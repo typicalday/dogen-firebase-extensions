@@ -1,3 +1,6 @@
+## Version 3.1.0
+- Added support for multiple project aliases (subdomains) to be able to access storage files.
+
 ## Version 3.0.1
 - Added support for free dogen projects on storage CORS.
 
