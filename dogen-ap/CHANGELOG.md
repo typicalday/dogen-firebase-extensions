@@ -1,3 +1,7 @@
+## Version 3.2.0
+- Added support for specifying the Firestore database ID where the Dogen will be installed.
+- Added updatedAt to getUserData function.
+
 ## Version 3.1.0
 - Added support for multiple project aliases (subdomains) to be able to access storage files.
 
