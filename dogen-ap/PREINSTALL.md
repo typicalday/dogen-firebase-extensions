@@ -14,3 +14,9 @@ This extension uses Firebase and Google Cloud Platform services which may have a
 - Task Queues to manage batch processes.
 
 Dogen provides advanced administrative capabilities, allowing you to perform complex actions (like import/export CSV/JSON jobs, batch deletions, etc.) on your cloud resources. While the extension itself has minimal billing impact, your actions using the extension and associated client will incur standard Firebase and Google Cloud Platform charges. It is recommended to frequently monitor your Firebase project's usage in the Firebase console.
+
+#### Note from Firebase
+
+To install this extension, your Firebase project must be on the Blaze (pay-as-you-go) plan. You will only be charged for the resources you use. Most Firebase services offer a free tier for low-volume use. [Learn more about Firebase billing.](https://firebase.google.com/pricing)
+
+You will be billed a small amount (typically less than $0.10) when you install or reconfigure this extension. See Cloud Functions under [Firebase Pricing](https://firebase.google.com/pricing) for a detailed explanation.
