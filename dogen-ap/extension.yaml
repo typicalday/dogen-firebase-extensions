@@ -64,7 +64,7 @@ resources:
       location: ${LOCATION}
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.write
-        resource: projects/${PROJECT_ID}/databases/(default)/documents/dogen/application
+        resource: projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/dogen/application
       runtime: "nodejs18"
   - name: onAccountCreate
     type: firebaseextensions.v1beta.function
@@ -74,7 +74,7 @@ resources:
       location: ${LOCATION}
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.create
-        resource: projects/${PROJECT_ID}/databases/(default)/documents/dogen/application/accounts/{accountId}
+        resource: projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/dogen/application/accounts/{accountId}
       runtime: "nodejs18"
   - name: onAccountUpdate
     type: firebaseextensions.v1beta.function
@@ -84,7 +84,7 @@ resources:
       location: ${LOCATION}
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.update
-        resource: projects/${PROJECT_ID}/databases/(default)/documents/dogen/application/accounts/{accountId}
+        resource: projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/dogen/application/accounts/{accountId}
       runtime: "nodejs18"
   - name: onGenerationWrite
     type: firebaseextensions.v1beta.function
@@ -94,7 +94,7 @@ resources:
       location: ${LOCATION}
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.write
-        resource: projects/${PROJECT_ID}/databases/(default)/documents/dogen/application/generations/{generationId}
+        resource: projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/dogen/application/generations/{generationId}
       runtime: "nodejs18"
   - name: processJob
     type: firebaseextensions.v1beta.function
@@ -125,6 +125,14 @@ params:
       Optional API Key to use when generating a new client with the Dogen paid service.
     type: secret
     required: false
+
+  - param: DATABASE_ID
+    label: Database ID
+    description: >
+      Enter the Firestore Database ID where the Dogen will be installed.
+    default: '(default)'
+    required: true
+    immutable: true
 
   - param: LOCATION
     label: Cloud Location (Required)
