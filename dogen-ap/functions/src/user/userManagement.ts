@@ -86,5 +86,6 @@ export const getUserData = (user: admin.auth.UserRecord, roles: string[] = ["reg
     email: user.email,
     displayName: user.displayName ?? null,
     createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
   };
 };
