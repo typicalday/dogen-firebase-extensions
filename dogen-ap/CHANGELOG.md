@@ -1,3 +1,6 @@
+## Version 3.2.1
+- Fixed potential issue with onApplicationUpdate function not triggering properly.
+
 ## Version 3.2.0
 - Added support for specifying the Firestore database ID where the Dogen will be installed.
 - Added updatedAt to getUserData function.

@@ -3,11 +3,11 @@ import { logger, firestore } from "firebase-functions/v1";
 import * as utils from "../utils/utils";
 import config from "../config";
 
-export const onApplicationUpdate = firestore
+export const onApplicationWrite = firestore
   .document(utils.applicationDocumentPath)
-  .onUpdate(async (change, _) => {
+  .onWrite(async (change, _) => {
     const newValue = change.after.data();
-    const aliases = Array.isArray(newValue.aliases) ? newValue.aliases : [];
+    const aliases = Array.isArray(newValue?.aliases) ? newValue.aliases : [];
     
     if (aliases.length === 0) {
       logger.info("No aliases found in application document");
