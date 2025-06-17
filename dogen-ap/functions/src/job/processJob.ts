@@ -13,6 +13,7 @@ import { handleImportCollectionCSV } from "./handlers/firestore/importCollection
 import { handleExportCollectionJSON } from "./handlers/firestore/exportCollectionJSON";
 import { handleImportCollectionJSON } from "./handlers/firestore/importCollectionJSON";
 import { handleDeleteStoragePath } from "./handlers/storage/deletePath";
+import { handleProcessInference } from "./handlers/ai/processInference";
 
 const persistIntervalDuration = 10000;
 
@@ -167,7 +168,7 @@ const verifyAdmin = async (authToken: DecodedIdToken) => {
       return false;
     }
 
-    return authToken.dogenRoles.includes("admin");
+    return authToken.dogenRoles.includes("admin") || authToken.dogenRoles.includes("ai");
   } catch (error) {
     console.error("Error verifying auth token:", error);
     return false;
@@ -207,6 +208,13 @@ async function processTask(task: JobTask): Promise<Record<string, any>> {
           return await handleDeleteStoragePath(task);
         default:
           throw new Error(`Unsupported Storage command: ${task.command}`);
+      }
+    case "ai":
+      switch (task.command) {
+        case "process-inference":
+          return await handleProcessInference(task);
+        default:
+          throw new Error(`Unsupported AI command: ${task.command}`);
       }
     default:
       throw new Error(`Unsupported service: ${task.service}`);

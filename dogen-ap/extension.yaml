@@ -40,6 +40,8 @@ roles:
     reason: Required to manage Authentication users.
   - role: storage.admin
     reason: "Dogen allows users to manage their files directly in the Dogen client.  The permission storage.admin is required to update CORS on the default bucket to allow your custom Dogen client's URL. This allows the client's signed in users the ability to manage these files.  For more details please visit: https://cloud.google.com/storage/docs/using-cors"
+  - role: aiplatform.user
+    reason: Required to use AI services.
 
 # Define external services the extension uses
 # Learn more in the docs:

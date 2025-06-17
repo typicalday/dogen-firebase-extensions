@@ -15,6 +15,7 @@
   "main": "lib/index.js",
   "dependencies": {
     "@google-cloud/storage": "^7.14.0",
+    "@google-cloud/vertexai": "^1.9.0",
     "axios": "^1.6.2",
     "csv-parse": "^5.6.0",
     "csv-stringify": "^6.5.2",
