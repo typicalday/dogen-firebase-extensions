@@ -59,7 +59,7 @@ resources:
     properties:
       location: ${LOCATION}
       taskQueueTrigger: {}
-      runtime: "nodejs18"
+      runtime: "nodejs20"
   - name: onApplicationWrite
     type: firebaseextensions.v1beta.function
     description: >-
@@ -69,7 +69,7 @@ resources:
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.write
         resource: projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/dogen/application
-      runtime: "nodejs18"
+      runtime: "nodejs20"
   - name: onAccountCreate
     type: firebaseextensions.v1beta.function
     description: >-
@@ -79,7 +79,7 @@ resources:
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.create
         resource: projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/dogen/application/accounts/{accountId}
-      runtime: "nodejs18"
+      runtime: "nodejs20"
   - name: onAccountUpdate
     type: firebaseextensions.v1beta.function
     description: >-
@@ -89,7 +89,7 @@ resources:
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.update
         resource: projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/dogen/application/accounts/{accountId}
-      runtime: "nodejs18"
+      runtime: "nodejs20"
   - name: onGenerationWrite
     type: firebaseextensions.v1beta.function
     description: >-
@@ -99,7 +99,7 @@ resources:
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.write
         resource: projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/dogen/application/generations/{generationId}
-      runtime: "nodejs18"
+      runtime: "nodejs20"
   - name: processJob
     type: firebaseextensions.v1beta.function
     description: >-
@@ -107,7 +107,7 @@ resources:
     properties:
       location: ${LOCATION}
       httpsTrigger: {}
-      runtime: "nodejs18"
+      runtime: "nodejs20"
       timeout: "540s"
       availableMemoryMb: 2048
   - name: updateGenerationWebhook
@@ -117,7 +117,7 @@ resources:
     properties:
       location: ${LOCATION}
       httpsTrigger: {}
-      runtime: "nodejs18"
+      runtime: "nodejs20"
 
 # In the `params` field, set up your extension's user-configured parameters.
 # Learn more in the docs:
