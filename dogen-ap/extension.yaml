@@ -10,7 +10,7 @@ displayName: Elevate Firebase with Dogen's Application Platform
 
 # Brief description of the task your extension performs (~1 sentence)
 description: >-
-  Dogen elevates your Firebase experience with its own custom types (Color, Email, Image, etc.), import/export CSV/JSON jobs, structured data (schemas), validations, and more.  Get started for free!
+  Dogen elevates your Firebase experience with a modular application backend and web GUI.  It includes its own custom types (Color, Email, Image, etc.), jobs (including import/export CSV/JSON), structured data (schemas), validations, and more.  Get started for free!
 
 license: Apache-2.0 # https://spdx.org/licenses/
 
