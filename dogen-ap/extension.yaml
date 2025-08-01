@@ -70,7 +70,7 @@ resources:
       location: ${LOCATION}
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.write
-        resource: projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/dogen/application
+        resource: projects/${PROJECT_ID}/databases/${FIRESTORE_DATABASE_ID}/documents/dogen/application
       runtime: "nodejs20"
   - name: onAccountCreate
     type: firebaseextensions.v1beta.function
@@ -80,7 +80,7 @@ resources:
       location: ${LOCATION}
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.create
-        resource: projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/dogen/application/accounts/{accountId}
+        resource: projects/${PROJECT_ID}/databases/${FIRESTORE_DATABASE_ID}/documents/dogen/application/accounts/{accountId}
       runtime: "nodejs20"
   - name: onAccountUpdate
     type: firebaseextensions.v1beta.function
@@ -90,7 +90,7 @@ resources:
       location: ${LOCATION}
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.update
-        resource: projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/dogen/application/accounts/{accountId}
+        resource: projects/${PROJECT_ID}/databases/${FIRESTORE_DATABASE_ID}/documents/dogen/application/accounts/{accountId}
       runtime: "nodejs20"
   - name: onGenerationWrite
     type: firebaseextensions.v1beta.function
@@ -100,7 +100,7 @@ resources:
       location: ${LOCATION}
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.write
-        resource: projects/${PROJECT_ID}/databases/${DATABASE_ID}/documents/dogen/application/generations/{generationId}
+        resource: projects/${PROJECT_ID}/databases/${FIRESTORE_DATABASE_ID}/documents/dogen/application/generations/{generationId}
       runtime: "nodejs20"
   - name: processJob
     type: firebaseextensions.v1beta.function
@@ -176,7 +176,7 @@ params:
     required: true
     immutable: true
 
-  - param: DATABASE_ID
+  - param: FIRESTORE_DATABASE_ID
     label: Database ID
     description: >
       Choose a database to install Dogen into.  Recommended to leave the "(default)" database.

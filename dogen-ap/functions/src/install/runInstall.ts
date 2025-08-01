@@ -100,8 +100,10 @@ async function registerProjectConfig(
 
   try {
     const body = {
+      firebaseProjectId: config.firebaseProjectId,
       firebaseConfigRegion: config.location,
       firebaseExtensionInstanceId: config.firebaseExtensionInstanceId,
+      firestoreDatabaseId: config.firestoreDatabaseId,
     };
 
     const response = await axios.patch(serviceUrl, body, {
