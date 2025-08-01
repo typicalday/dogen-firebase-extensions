@@ -284,13 +284,16 @@ async function handlePromotionDemotionEvent(
 
 async function processCollection(
   batchManager: BatchManager,
-  collectionName: string,
+  collectionPath: string,
   generationId: string
 ): Promise<Array<FirebaseFirestore.DocumentData>> {
   // Read all documents
-  const snapshot = await db.collection(collectionName).get();
+  const snapshot = await db.collection(collectionPath).get();
 
   const documents: FirebaseFirestore.DocumentData[] = [];
+
+  // Extract just the collection name from the full collection path
+  const collectionName = collectionPath.split('/').pop() || collectionPath;
 
   // Copy documents to generation document sub-collection
   for (const doc of snapshot.docs) {
