@@ -125,21 +125,6 @@ resources:
 # Learn more in the docs:
 # https://firebase.google.com/docs/extensions/reference/extension-yaml#params-field
 params:
-  - param: DOGEN_API_KEY
-    label: Dogen API Key
-    description: >-
-      Optional API Key to use when generating a new client with the Dogen paid service.
-    type: secret
-    required: false
-
-  - param: DATABASE_ID
-    label: Database ID
-    description: >
-      Enter the Firestore Database ID where the Dogen will be installed.
-    default: '(default)'
-    required: true
-    immutable: true
-
   - param: LOCATION
     label: Cloud Location (Required)
     description: >-
@@ -191,12 +176,27 @@ params:
     required: true
     immutable: true
 
+  - param: DATABASE_ID
+    label: Database ID
+    description: >
+      Choose a database to install Dogen into.  Recommended to leave the "(default)" database.
+    default: '(default)'
+    required: true
+    immutable: true
+
+  - param: DOGEN_API_KEY
+    label: Dogen API Key
+    description: >-
+      Enter a premium client's API key to mark this project as its host. If you're using the free tier, 
+      or if your premium client already has a host project, you can leave this blank.
+    type: secret
+    required: false
+
   - param: ADMIN_USER_EMAIL
     label: Admin User Email (Required)
     description: >-
-      The email address for an existing Firebase Auth User which will be granted 
-      the 'admin' Dogen role. This is essentially your first Dogen application 
-      user.
+      The email address of an existing Firebase Authentication User (in your project) which will be granted 
+      the 'admin' Dogen role in their token claims. This is essentially your first Dogen application user.
     type: string
     required: true
 
