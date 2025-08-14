@@ -168,7 +168,7 @@ const verifyAdmin = async (authToken: DecodedIdToken) => {
       return false;
     }
 
-    return authToken.dogenRoles.includes("admin") || authToken.dogenRoles.includes("ai");
+    return authToken.dogenRoles.includes("admin");
   } catch (error) {
     console.error("Error verifying auth token:", error);
     return false;
