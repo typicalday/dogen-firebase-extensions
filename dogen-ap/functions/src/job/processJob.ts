@@ -14,6 +14,13 @@ import { handleExportCollectionJSON } from "./handlers/firestore/exportCollectio
 import { handleImportCollectionJSON } from "./handlers/firestore/importCollectionJSON";
 import { handleDeleteStoragePath } from "./handlers/storage/deletePath";
 import { handleProcessInference } from "./handlers/ai/processInference";
+import { handleCreateUser } from "./handlers/authentication/createUser";
+import { handleGetUser } from "./handlers/authentication/getUser";
+import { handleUpdateUser } from "./handlers/authentication/updateUser";
+import { handleDeleteUser } from "./handlers/authentication/deleteUser";
+import { handleListUsers } from "./handlers/authentication/listUsers";
+import { handleGetUserClaims } from "./handlers/authentication/getUserClaims";
+import { handleSetUserClaims } from "./handlers/authentication/setUserClaims";
 
 const persistIntervalDuration = 10000;
 
@@ -215,6 +222,25 @@ async function processTask(task: JobTask): Promise<Record<string, any>> {
           return await handleProcessInference(task);
         default:
           throw new Error(`Unsupported AI command: ${task.command}`);
+      }
+    case "authentication":
+      switch (task.command) {
+        case "create-user":
+          return await handleCreateUser(task);
+        case "get-user":
+          return await handleGetUser(task);
+        case "update-user":
+          return await handleUpdateUser(task);
+        case "delete-user":
+          return await handleDeleteUser(task);
+        case "list-users":
+          return await handleListUsers(task);
+        case "get-user-claims":
+          return await handleGetUserClaims(task);
+        case "set-user-claims":
+          return await handleSetUserClaims(task);
+        default:
+          throw new Error(`Unsupported Authentication command: ${task.command}`);
       }
     default:
       throw new Error(`Unsupported service: ${task.service}`);

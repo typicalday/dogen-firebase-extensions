@@ -1,8 +1,8 @@
 import { describe, it, before, after } from "mocha";
 import { expect } from "chai";
-import { admin } from "../setup";
-import { JobTask } from "../../src/job/jobTask";
-import { handleDeletePath } from "../../src/job/handlers/firestore/deletePath";
+import { admin } from "../../setup";
+import { JobTask } from "../../../src/job/jobTask";
+import { handleDeletePath } from "../../../src/job/handlers/firestore/deletePath";
 
 describe("Firebase Admin Firestore Delete Path Test", function() {
   this.timeout(10000);

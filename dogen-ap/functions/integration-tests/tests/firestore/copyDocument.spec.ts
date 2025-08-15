@@ -1,8 +1,8 @@
 import { describe, it, before, after } from "mocha";
 import { expect } from "chai";
-import { admin } from "../setup";
-import { JobTask } from "../../src/job/jobTask";
-import { handleCopyDocument } from "../../src/job/handlers/firestore/copyDocument";
+import { admin } from "../../setup";
+import { JobTask } from "../../../src/job/jobTask";
+import { handleCopyDocument } from "../../../src/job/handlers/firestore/copyDocument";
 
 describe("Firebase Admin Firestore Copy Document Test", function() {
   this.timeout(10000);

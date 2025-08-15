@@ -1,9 +1,9 @@
 import { describe, it, before, after } from "mocha";
 import { expect } from "chai";
-import { admin } from "../setup";
-import { JobTask } from "../../src/job/jobTask";
-import { handleImportCollectionCSV } from "../../src/job/handlers/firestore/importCollectionCSV";
-import { handleExportCollectionCSV } from "../../src/job/handlers/firestore/exportCollectionCSV";
+import { admin } from "../../setup";
+import { JobTask } from "../../../src/job/jobTask";
+import { handleImportCollectionCSV } from "../../../src/job/handlers/firestore/importCollectionCSV";
+import { handleExportCollectionCSV } from "../../../src/job/handlers/firestore/exportCollectionCSV";
 
 describe("Firebase Admin Firestore Import Collection CSV Test", function() {
   this.timeout(15000);
@@ -12,7 +12,7 @@ describe("Firebase Admin Firestore Import Collection CSV Test", function() {
   const bucket = admin.storage().bucket();
   const sourceCollection = "test-export-csv-source";
   const importCollection = "test-import-csv-collection";
-  const exportBucketPrefix = "test-exports/csv";
+  const exportBucketPrefix = "gs://demo-test.appspot.com/test-exports/csv";
   const numDocs = 5;
   let exportedCsvPath: string;
   
@@ -174,7 +174,7 @@ describe("Firebase Admin Firestore Import Collection CSV Test", function() {
       command: "import-collection-csv",
       input: {
         collectionPath: `firestore/(default)/data/${importCollection}`,
-        bucketPath: "non-existent-path.csv"
+        bucketPath: "gs://demo-test.appspot.com/non-existent-path.csv"
       }
     });
     

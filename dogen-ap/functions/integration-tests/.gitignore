@@ -1,0 +1,17 @@
+# Local environment variables
+.env.local
+
+# Firebase emulator logs
+ui-debug.log
+firebase-debug.log
+
+# Node modules (if any)
+node_modules/
+
+# Temporary test files
+*.tmp
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db

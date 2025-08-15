@@ -103,11 +103,8 @@ export function parseStoragePath(path: string): [string, string] {
     throw new Error(`Invalid path format: ${path}. Expected format: gs://{bucket-name}/{storage path}`);
   }
   const bucketName = match[1];
-  const normalizedBucketName = bucketName === '(default)' || bucketName === '[default]' || bucketName === '-default-' || bucketName === 'default' 
-    ? '' // Default bucket doesn't need a name specified
-    : bucketName;
   const filePath = match[2] || "";
-  return [normalizedBucketName, filePath];
+  return [bucketName, filePath];
 }
 
 export function getBucketByName(bucketName?: string | null): Bucket {

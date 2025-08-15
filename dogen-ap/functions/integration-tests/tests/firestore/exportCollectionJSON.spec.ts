@@ -1,8 +1,8 @@
 import { describe, it, before, after } from "mocha";
 import { expect } from "chai";
-import { admin } from "../setup";
-import { JobTask } from "../../src/job/jobTask";
-import { handleExportCollectionJSON } from "../../src/job/handlers/firestore/exportCollectionJSON";
+import { admin } from "../../setup";
+import { JobTask } from "../../../src/job/jobTask";
+import { handleExportCollectionJSON } from "../../../src/job/handlers/firestore/exportCollectionJSON";
 import * as fs from "fs";
 
 describe("Firebase Admin Firestore Export Collection JSON Test", function() {
@@ -11,7 +11,7 @@ describe("Firebase Admin Firestore Export Collection JSON Test", function() {
   const db = admin.firestore();
   const bucket = admin.storage().bucket();
   const testCollection = "test-export-json-collection";
-  const exportPrefix = "exports/json";
+  const exportPrefix = "gs://demo-test.appspot.com/exports/json";
   const numDocs = 5;
   
   before(async function() {
@@ -131,12 +131,14 @@ describe("Firebase Admin Firestore Export Collection JSON Test", function() {
     expect(result.includesSubcollections).to.be.false;
     
     // Verify the file exists in storage
-    const [exists] = await bucket.file(result.exportedTo).exists();
+    // Extract path from gs:// URL (result.exportedTo is "gs://bucket/path", we need just "path")
+    const filePath = result.exportedTo.replace(/^gs:\/\/[^\/]+\//, '');
+    const [exists] = await bucket.file(filePath).exists();
     expect(exists).to.be.true;
     
     // Download the file and verify its contents
     const tempFilePath = `/tmp/export-json-test-${Date.now()}.json`;
-    await bucket.file(result.exportedTo).download({ destination: tempFilePath });
+    await bucket.file(filePath).download({ destination: tempFilePath });
     
     // Parse and verify JSON content
     const fileContent = fs.readFileSync(tempFilePath, "utf8");
@@ -253,7 +255,9 @@ describe("Firebase Admin Firestore Export Collection JSON Test", function() {
     
     // Download and verify file
     const tempFilePath = `/tmp/export-json-with-subcoll-${Date.now()}.json`;
-    await bucket.file(result.exportedTo).download({ destination: tempFilePath });
+    // Extract path from gs:// URL (result.exportedTo is "gs://bucket/path", we need just "path")
+    const filePath = result.exportedTo.replace(/^gs:\/\/[^\/]+\//, '');
+    await bucket.file(filePath).download({ destination: tempFilePath });
     
     // Parse and verify JSON content
     const jsonData = JSON.parse(fs.readFileSync(tempFilePath, "utf8"));

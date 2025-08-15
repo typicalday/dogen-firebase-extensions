@@ -1,20 +1,25 @@
 {
   "emulators": {
     "auth": {
-      "port": 5099
-    },
-    "functions": {
-      "port": 5051
+      "port": 5018
     },
     "firestore": {
-      "port": 5080
+      "port": 5019
+    },
+    "storage": {
+      "port": 5020
     },
     "ui": {
-      "enabled": true
+      "enabled": true,
+      "port": 5017
     },
     "singleProjectMode": true
   },
-  "extensions": {
-    "dogen-ap": "../.."
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
   }
 }

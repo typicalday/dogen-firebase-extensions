@@ -1,8 +1,8 @@
 import { describe, it, before, after } from "mocha";
 import { expect } from "chai";
-import { admin } from "../setup";
-import { JobTask } from "../../src/job/jobTask";
-import { handleCreateDocument } from "../../src/job/handlers/firestore/createDocument";
+import { admin } from "../../setup";
+import { JobTask } from "../../../src/job/jobTask";
+import { handleCreateDocument } from "../../../src/job/handlers/firestore/createDocument";
 
 describe("Firebase Admin Firestore Create Document Test", function() {
   this.timeout(10000);

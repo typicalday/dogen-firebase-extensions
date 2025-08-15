@@ -1,8 +1,8 @@
 import { describe, it, before, after } from "mocha";
 import { expect } from "chai";
-import { admin } from "../setup";
-import { JobTask } from "../../src/job/jobTask";
-import { handleExportCollectionCSV } from "../../src/job/handlers/firestore/exportCollectionCSV";
+import { admin } from "../../setup";
+import { JobTask } from "../../../src/job/jobTask";
+import { handleExportCollectionCSV } from "../../../src/job/handlers/firestore/exportCollectionCSV";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 
@@ -12,7 +12,7 @@ describe("Firebase Admin Firestore Export Collection CSV Test", function() {
   const db = admin.firestore();
   const bucket = admin.storage().bucket();
   const testCollection = "test-export-csv-collection";
-  const exportPrefix = "exports/csv";
+  const exportPrefix = "gs://demo-test.appspot.com/exports/csv";
   const numDocs = 10;
   
   before(async function() {
@@ -100,12 +100,14 @@ describe("Firebase Admin Firestore Export Collection CSV Test", function() {
     expect(result.fields).to.deep.equal(task.input?.fields);
     
     // Verify the file exists in storage
-    const [exists] = await bucket.file(result.exportedTo).exists();
+    // Extract path from gs:// URL (result.exportedTo is "gs://bucket/path", we need just "path")
+    const filePath = result.exportedTo.replace(/^gs:\/\/[^\/]+\//, '');
+    const [exists] = await bucket.file(filePath).exists();
     expect(exists).to.be.true;
     
     // Download the file and verify its contents
     const tempFilePath = `/tmp/export-csv-test-${Date.now()}.csv`;
-    await bucket.file(result.exportedTo).download({ destination: tempFilePath });
+    await bucket.file(filePath).download({ destination: tempFilePath });
     
     // Verify file contents (basic check)
     const fileContent = fs.readFileSync(tempFilePath, "utf8");
@@ -164,7 +166,9 @@ describe("Firebase Admin Firestore Export Collection CSV Test", function() {
     
     // Download the file
     const tempFilePath = `/tmp/export-csv-delim-${Date.now()}.csv`;
-    await bucket.file(result.exportedTo).download({ destination: tempFilePath });
+    // Extract path from gs:// URL (result.exportedTo is "gs://bucket/path", we need just "path")
+    const filePath = result.exportedTo.replace(/^gs:\/\/[^\/]+\//, '');
+    await bucket.file(filePath).download({ destination: tempFilePath });
     
     // Verify content uses semicolon delimiter
     const fileContent = fs.readFileSync(tempFilePath, "utf8");
@@ -212,12 +216,14 @@ describe("Firebase Admin Firestore Export Collection CSV Test", function() {
     expect(result.documentsProcessed).to.equal(3); // Should match the limit
     
     // Verify the file exists in storage
-    const [exists] = await bucket.file(result.exportedTo).exists();
+    // Extract path from gs:// URL (result.exportedTo is "gs://bucket/path", we need just "path")
+    const filePath = result.exportedTo.replace(/^gs:\/\/[^\/]+\//, '');
+    const [exists] = await bucket.file(filePath).exists();
     expect(exists).to.be.true;
     
     // Download the file and verify its contents
     const tempFilePath = `/tmp/export-csv-limit-test-${Date.now()}.csv`;
-    await bucket.file(result.exportedTo).download({ destination: tempFilePath });
+    await bucket.file(filePath).download({ destination: tempFilePath });
     
     // Read and parse CSV
     const fileContent = fs.readFileSync(tempFilePath, "utf8");
@@ -266,7 +272,9 @@ describe("Firebase Admin Firestore Export Collection CSV Test", function() {
     
     // Download the file
     const tempFilePath = `/tmp/export-csv-nested-${Date.now()}.csv`;
-    await bucket.file(result.exportedTo).download({ destination: tempFilePath });
+    // Extract path from gs:// URL (result.exportedTo is "gs://bucket/path", we need just "path")
+    const filePath = result.exportedTo.replace(/^gs:\/\/[^\/]+\//, '');
+    await bucket.file(filePath).download({ destination: tempFilePath });
     
     // Parse the CSV
     const records = parse(fs.readFileSync(tempFilePath, "utf8"), {

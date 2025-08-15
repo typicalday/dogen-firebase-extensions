@@ -5,12 +5,13 @@
     "lint:fix": "eslint \"src/**/*\" --fix",
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "mocha": "mocha '**/*.spec.ts'",
-    "test": "(cd integration-tests && firebase emulators:exec 'npm run mocha' -P demo-test)",
-    "emulate": "npm run build:watch | (cd integration-tests && firebase emulators:start --only auth,functions,firestore,extensions --project=demo-test --import ./data --export-on-exit data)",
-    "test:job:storage": "TS_NODE_FILES=true mocha --require ts-node/register 'integration-tests/storage/*.spec.ts'",
-    "test:job:firestore": "TS_NODE_FILES=true mocha --require ts-node/register 'integration-tests/firestore/*.spec.ts' --exclude 'integration-tests/storage/*.spec.ts'",
-    "test:job:handlers": "TS_NODE_FILES=true mocha --require ts-node/register 'integration-tests/storage/*.spec.ts' 'integration-tests/firestore/*.spec.ts'"
+    "clean": "rm -rf lib",
+    "test": "npm run test:all",
+    "test:all": "./integration-tests/scripts/test-with-emulator.sh all",
+    "test:firestore": "./integration-tests/scripts/test-with-emulator.sh firestore",
+    "test:storage": "./integration-tests/scripts/test-with-emulator.sh storage",
+    "test:auth": "./integration-tests/scripts/test-with-emulator.sh authentication",
+    "test:watch": "npm run test:unit -- --watch"
   },
   "main": "lib/index.js",
   "dependencies": {
@@ -26,10 +27,12 @@
   },
   "devDependencies": {
     "@types/chai": "^4.3.4",
+    "@types/jsonstream": "^0.8.33",
     "@types/mocha": "^10.0.1",
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.12.0",
     "chai": "^4.3.7",
+    "concurrently": "^8.2.2",
     "eslint": "^8.15.1",
     "eslint-config-google": "^0.14.0",
     "eslint-plugin-import": "^2.26.0",

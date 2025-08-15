@@ -1,8 +1,8 @@
 import { describe, it, before, after } from "mocha";
 import { expect } from "chai";
-import { admin } from "../setup";
-import { JobTask } from "../../src/job/jobTask";
-import { handleDeleteDocuments } from "../../src/job/handlers/firestore/deleteDocuments";
+import { admin } from "../../setup";
+import { JobTask } from "../../../src/job/jobTask";
+import { handleDeleteDocuments } from "../../../src/job/handlers/firestore/deleteDocuments";
 
 describe("Firebase Admin Firestore Delete Documents Test", function() {
   this.timeout(10000);

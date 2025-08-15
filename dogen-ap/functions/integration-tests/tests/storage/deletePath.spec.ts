@@ -1,8 +1,8 @@
 import { describe, it, before } from "mocha";
 import { expect } from "chai";
-import { admin } from "../setup";
-import { JobTask } from "../../src/job/jobTask";
-import { handleDeleteStoragePath } from "../../src/job/handlers/storage/deletePath";
+import { admin } from "../../setup";
+import { JobTask } from "../../../src/job/jobTask";
+import { handleDeleteStoragePath } from "../../../src/job/handlers/storage/deletePath";
 
 describe("Firebase Admin Storage Test", function() {
   this.timeout(10000);

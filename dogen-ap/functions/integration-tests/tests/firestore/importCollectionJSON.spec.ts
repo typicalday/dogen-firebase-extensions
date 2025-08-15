@@ -1,9 +1,9 @@
 import { describe, it, before, after } from "mocha";
 import { expect } from "chai";
-import { admin } from "../setup";
-import { JobTask } from "../../src/job/jobTask";
-import { handleExportCollectionJSON } from "../../src/job/handlers/firestore/exportCollectionJSON";
-import { handleImportCollectionJSON } from "../../src/job/handlers/firestore/importCollectionJSON";
+import { admin } from "../../setup";
+import { JobTask } from "../../../src/job/jobTask";
+import { handleExportCollectionJSON } from "../../../src/job/handlers/firestore/exportCollectionJSON";
+import { handleImportCollectionJSON } from "../../../src/job/handlers/firestore/importCollectionJSON";
 
 describe("Firebase Admin Firestore Import Collection JSON Test", function() {
   this.timeout(15000);
@@ -12,7 +12,7 @@ describe("Firebase Admin Firestore Import Collection JSON Test", function() {
   const bucket = admin.storage().bucket();
   const sourceCollection = "test-export-json-source";
   const importCollection = "test-import-json-collection";
-  const exportBucketPrefix = "test-exports/json";
+  const exportBucketPrefix = "gs://demo-test.appspot.com/test-exports/json";
   const numDocs = 3;
   let exportedJsonPath: string;
   let exportedWithSubcollectionsPath: string;
@@ -235,7 +235,7 @@ describe("Firebase Admin Firestore Import Collection JSON Test", function() {
       command: "import-collection-json",
       input: {
         collectionPath: `firestore/(default)/data/${importCollection}`,
-        bucketPath: "non-existent-path.json"
+        bucketPath: "gs://demo-test.appspot.com/non-existent-path.json"
       }
     });
     

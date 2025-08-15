@@ -4,7 +4,7 @@ import * as admin from "firebase-admin";
 import { Timestamp, GeoPoint } from "firebase-admin/firestore";
 import * as fs from 'fs';
 import * as path from 'path';
-import * as JSONStream from 'JSONStream';
+import * as JSONStream from 'jsonstream';
 import { CollectionData, getDatabaseByName, parseDatabasePath, parseStoragePath, getBucketByName } from "../../../utils/utils";
 
 interface ImportTaskInput {
@@ -64,7 +64,7 @@ async function importCollection(
       // Use array syntax to properly get document ID and data
       const parser = JSONStream.parse(['documents', {emitKey: true}]);
 
-      parser.on('data', async ({key: docId, value: docEntry}) => {
+      parser.on('data', async ({key: docId, value: docEntry}: {key: string, value: any}) => {
         try {
           readStream.pause();
           
@@ -94,7 +94,7 @@ async function importCollection(
       });
 
       parser.on('end', () => resolve());
-      parser.on('error', (error) => reject(error));
+      parser.on('error', (error: Error) => reject(error));
       readStream.pipe(parser);
     });
 
