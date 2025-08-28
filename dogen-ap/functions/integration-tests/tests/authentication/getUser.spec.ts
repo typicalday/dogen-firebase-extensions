@@ -56,8 +56,8 @@ describe("Firebase Admin Authentication Get User Test", function() {
     expect(result.emailVerified).to.equal(true);
     expect(result.disabled).to.equal(false);
     expect(result.customClaims).to.deep.equal({ testClaim: "testValue" });
-    expect(result.metadata).to.have.property("creationTime");
-    expect(result.metadata).to.have.property("lastSignInTime");
+    expect(result.creationTime).to.be.a("string");
+    expect(result.lastSignInTime).to.be.a("string");
   });
   
   it("should read a user by email", async function() {

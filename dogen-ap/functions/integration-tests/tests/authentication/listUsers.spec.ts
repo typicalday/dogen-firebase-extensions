@@ -79,8 +79,7 @@ describe("Firebase Admin Authentication List Users Test", function() {
     // Each user should have expected properties
     for (const user of result.users) {
       expect(user).to.have.property("uid");
-      expect(user).to.have.property("metadata");
-      expect(user.metadata).to.have.property("creationTime");
+      expect(user.creationTime).to.be.a("string");
     }
   });
   
@@ -142,8 +141,8 @@ describe("Firebase Admin Authentication List Users Test", function() {
     expect(testUser).to.exist;
     expect(testUser.customClaims).to.have.property("testUser", true);
     expect(testUser.customClaims).to.have.property("index");
-    expect(testUser.metadata).to.have.property("creationTime");
-    expect(testUser.metadata).to.have.property("lastSignInTime");
+    expect(testUser.creationTime).to.be.a("string");
+    expect(testUser.lastSignInTime).to.be.a("string");
     expect(testUser).to.have.property("providerData");
   });
   

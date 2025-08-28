@@ -31,26 +31,53 @@ export async function handleUpdateUser(task: JobTask): Promise<Record<string, an
       finalUser = await admin.auth().getUser(uid);
     }
     
-    const response: Record<string, any> = {
+    const response: any = {
       uid: finalUser.uid,
-      email: finalUser.email,
       emailVerified: finalUser.emailVerified,
-      phoneNumber: finalUser.phoneNumber,
       disabled: finalUser.disabled,
-      displayName: finalUser.displayName,
-      photoURL: finalUser.photoURL,
-      metadata: {
-        creationTime: finalUser.metadata.creationTime,
-        lastSignInTime: finalUser.metadata.lastSignInTime,
-        lastRefreshTime: finalUser.metadata.lastRefreshTime,
-      },
-      providerData: finalUser.providerData,
-      tokensValidAfterTime: finalUser.tokensValidAfterTime,
     };
     
+    // Convert dates to ISO strings for FirestoreTimestampWrapper
+    if (finalUser.metadata.creationTime) {
+      response.creationTime = new Date(finalUser.metadata.creationTime).toISOString();
+    }
+    if (finalUser.metadata.lastSignInTime) {
+      response.lastSignInTime = new Date(finalUser.metadata.lastSignInTime).toISOString();
+    }
+    
+    // Only add optional fields if they are defined
+    if (finalUser.email !== undefined) response.email = finalUser.email;
+    if (finalUser.phoneNumber !== undefined) response.phoneNumber = finalUser.phoneNumber;
+    if (finalUser.displayName !== undefined) response.displayName = finalUser.displayName;
+    if (finalUser.photoURL !== undefined) response.photoURL = finalUser.photoURL;
+    if (finalUser.metadata.lastRefreshTime !== undefined && finalUser.metadata.lastRefreshTime !== null) {
+      response.lastRefreshTime = new Date(finalUser.metadata.lastRefreshTime).toISOString();
+    }
+    if (finalUser.tokensValidAfterTime !== undefined) {
+      response.tokensValidAfterTime = new Date(finalUser.tokensValidAfterTime).toISOString();
+    }
+    
     // Only include customClaims if they exist and are not empty
-    if (finalUser.customClaims && Object.keys(finalUser.customClaims).length > 0) {
+    if (finalUser.customClaims !== undefined && Object.keys(finalUser.customClaims).length > 0) {
       response.customClaims = finalUser.customClaims;
+    }
+    
+    // Convert providerData to plain objects if it exists
+    if (finalUser.providerData !== undefined && Array.isArray(finalUser.providerData)) {
+      response.providerData = finalUser.providerData.map(provider => {
+        const providerInfo: any = {
+          uid: provider.uid,
+          providerId: provider.providerId,
+        };
+        
+        // Only add optional provider fields if they are defined
+        if (provider.email !== undefined) providerInfo.email = provider.email;
+        if (provider.displayName !== undefined) providerInfo.displayName = provider.displayName;
+        if (provider.photoURL !== undefined) providerInfo.photoURL = provider.photoURL;
+        if (provider.phoneNumber !== undefined) providerInfo.phoneNumber = provider.phoneNumber;
+        
+        return providerInfo;
+      });
     }
     
     return response;

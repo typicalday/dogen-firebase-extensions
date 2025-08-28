@@ -43,7 +43,7 @@ describe("Firebase Admin Authentication Create User Test", function() {
     expect(result.email).to.equal(userRecord.email);
     expect(result.emailVerified).to.equal(false);
     expect(result.disabled).to.equal(false);
-    expect(result.metadata).to.have.property("creationTime");
+    expect(result.creationTime).to.be.a("string");
     
     testUsers.push(result.uid);
   });
@@ -66,7 +66,7 @@ describe("Firebase Admin Authentication Create User Test", function() {
     
     expect(result).to.have.property("uid");
     expect(result.phoneNumber).to.equal(userRecord.phoneNumber);
-    expect(result.metadata).to.have.property("creationTime");
+    expect(result.creationTime).to.be.a("string");
     
     testUsers.push(result.uid);
   });
