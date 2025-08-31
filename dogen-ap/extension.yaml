@@ -39,9 +39,9 @@ roles:
   - role: firebaseauth.admin
     reason: Required to manage Authentication users.
   - role: storage.admin
-    reason: "Dogen allows users to manage their files directly in the Dogen client.  The permission storage.admin is required to update CORS on the default bucket to allow your custom Dogen client's URL. This allows the client's signed in users the ability to manage these files.  For more details please visit: https://cloud.google.com/storage/docs/using-cors"
+    reason: "Dogen allows users to manage their files directly in the Dogen client.  The permission storage.admin is required to update CORS on the default bucket to which allows connecting from the Dogen client URL. This allows the client's signed in users the ability to manage these files.  For more details please visit: https://cloud.google.com/storage/docs/using-cors"
   - role: aiplatform.user
-    reason: Required to use AI services.
+    reason: Required to provide AI services in the Dogen client.
 
 # Define external services the extension uses
 # Learn more in the docs:
@@ -71,26 +71,6 @@ resources:
       eventTrigger:
         eventType: providers/cloud.firestore/eventTypes/document.write
         resource: projects/${PROJECT_ID}/databases/${FIRESTORE_DATABASE_ID}/documents/dogen/application
-      runtime: "nodejs20"
-  - name: onAccountCreate
-    type: firebaseextensions.v1beta.function
-    description: >-
-      Firestore triggered function which creates an Auth user from the corresponding accounts document.
-    properties:
-      location: ${LOCATION}
-      eventTrigger:
-        eventType: providers/cloud.firestore/eventTypes/document.create
-        resource: projects/${PROJECT_ID}/databases/${FIRESTORE_DATABASE_ID}/documents/dogen/application/accounts/{accountId}
-      runtime: "nodejs20"
-  - name: onAccountUpdate
-    type: firebaseextensions.v1beta.function
-    description: >-
-      Firestore triggered function which updates Auth user details from the corresponding accounts document changes.
-    properties:
-      location: ${LOCATION}
-      eventTrigger:
-        eventType: providers/cloud.firestore/eventTypes/document.update
-        resource: projects/${PROJECT_ID}/databases/${FIRESTORE_DATABASE_ID}/documents/dogen/application/accounts/{accountId}
       runtime: "nodejs20"
   - name: onGenerationWrite
     type: firebaseextensions.v1beta.function

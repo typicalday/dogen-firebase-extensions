@@ -6,7 +6,6 @@ import { logger, tasks } from "firebase-functions/v1";
 import config, { IConfig } from "../config";
 import axios from "axios";
 import { FieldValue } from "firebase-admin/firestore";
-import { getUserData } from "../user/userManagement";
 
 const auth = admin.auth();
 const db = admin.firestore();
@@ -72,21 +71,12 @@ async function processAdminUser(
     );
   }
 
-  // Create an application account document reference for the admin user.
-  const adminUserDocumentRef = accountsCollection.doc(adminUser.uid);
+  // Update the dogenRoles claim for the admin user
+  await auth.setCustomUserClaims(adminUser.uid, {
+    dogenRoles: ["admin"],
+  });
 
-  // Check if the admin user already exists in the accounts collection
-  const adminUserSnapshot = await adminUserDocumentRef.get();
-
-  if (!adminUserSnapshot.exists) {
-    // Create the admin user in the accounts collection
-    await adminUserDocumentRef.set(getUserData(adminUser, ["admin"]), {
-      merge: true,
-    });
-    logger.info("Admin user created in the accounts collection.");
-  } else {
-    logger.info("Admin user already exists in the accounts collection.");
-  }
+  logger.info("Dogen admin user created.");
 }
 
 async function registerProjectConfig(
