@@ -1,3 +1,9 @@
+## Version 4.0.0
+- Removed legacy Dogen account management.
+- Added Authentication job to support Firebase Authentication user management.
+- Added AI job to allow for AI services in the Dogen client.
+- Fixed backup document creation paths.
+
 ## Version 3.2.1
 - Fixed potential issue with onApplicationUpdate function not triggering properly.
 
