@@ -4,7 +4,7 @@ import * as admin from "firebase-admin";
 import { Timestamp, GeoPoint } from "firebase-admin/firestore";
 import * as fs from 'fs';
 import * as path from 'path';
-import * as JSONStream from 'jsonstream';
+import * as JSONStream from 'JSONStream';
 import { CollectionData, getDatabaseByName, parseDatabasePath, parseStoragePath, getBucketByName } from "../../../utils/utils";
 
 interface ImportTaskInput {
