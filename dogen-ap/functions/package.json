@@ -11,6 +11,7 @@
     "test:firestore": "./integration-tests/scripts/test-with-emulator.sh firestore",
     "test:storage": "./integration-tests/scripts/test-with-emulator.sh storage",
     "test:auth": "./integration-tests/scripts/test-with-emulator.sh authentication",
+    "test:install": "./integration-tests/scripts/test-with-emulator.sh install",
     "test:watch": "npm run test:unit -- --watch"
   },
   "main": "lib/index.js",

@@ -6,6 +6,7 @@ import { logger, tasks } from "firebase-functions/v1";
 import config, { IConfig } from "../config";
 import axios from "axios";
 import { FieldValue } from "firebase-admin/firestore";
+import { configureDogenSecurityRules } from "../utils/securityRules";
 
 const auth = admin.auth();
 const db = admin.firestore();
@@ -45,6 +46,20 @@ export const runInstall = tasks
       return runtime.setProcessingState(
         "PROCESSING_FAILED",
         `Registration failed, try again by reconfiguring or reinstalling the extension.`
+      );
+    }
+
+    try {
+      if (config.enableDogenSecurityRules) {
+        await configureDogenSecurityRules();
+      } else {
+        logger.info("Dogen security rules configuration skipped (disabled by user).");
+      }
+    } catch (e) {
+      logger.error("Security rules configuration failed with error:", e);
+      return runtime.setProcessingState(
+        "PROCESSING_FAILED",
+        `Security rules configuration failed. Please configure Firestore security rules manually or try again by reconfiguring the extension.`
       );
     }
 

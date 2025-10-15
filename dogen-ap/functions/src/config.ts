@@ -7,6 +7,7 @@ interface IConfig {
   webhookValidationSalt: string;
   firebaseProjectId: string;
   firestoreDatabaseId: string;
+  enableDogenSecurityRules: boolean;
   }
 
 const config: IConfig = {
@@ -18,6 +19,7 @@ const config: IConfig = {
   webhookValidationSalt: process.env.WEBHOOK_VALIDATION_SALT!,
   firebaseProjectId: process.env.GCLOUD_PROJECT!,
   firestoreDatabaseId: process.env.FIRESTORE_DATABASE_ID!,
+  enableDogenSecurityRules: process.env.ENABLE_DOGEN_SECURITY_RULES === 'true',
 };
 
 export {IConfig};

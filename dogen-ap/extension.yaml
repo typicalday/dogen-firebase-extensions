@@ -42,6 +42,8 @@ roles:
     reason: "Dogen allows users to manage their files directly in the Dogen client.  The permission storage.admin is required to update CORS on the default bucket to which allows connecting from the Dogen client URL. This allows the client's signed in users the ability to manage these files.  For more details please visit: https://cloud.google.com/storage/docs/using-cors"
   - role: aiplatform.user
     reason: Required to provide AI services in the Dogen client.
+  - role: firebaserules.developer
+    reason: Required to configure Firestore Security Rules that grant authenticated Dogen admins appropriate access to the database. The Dogen web client operates as a registered Firebase application and respects all security rules.
 
 # Define external services the extension uses
 # Learn more in the docs:
@@ -185,6 +187,21 @@ params:
     description: >-
       A unique string value that helps validate webhook URLs - can be any text, but changing it will invalidate all existing webhookUrls.
     type: string
+    required: true
+
+  - param: ENABLE_DOGEN_SECURITY_RULES
+    label: Configure Dogen Security Rules
+    description: >-
+      Automatically configure Firestore Security Rules to grant authenticated Dogen admins access to the database.
+      The Dogen web client is a registered Firebase application and operates within the security rules framework.
+      This adds helper functions (isDogenAuthenticated, isDogenAuthorized) and access rules for users with Dogen roles.
+    type: select
+    options:
+      - label: Yes - Configure security rules automatically
+        value: true
+      - label: No - I will configure security rules manually
+        value: false
+    default: true
     required: true
 
 lifecycleEvents:

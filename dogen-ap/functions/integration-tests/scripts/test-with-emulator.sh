@@ -196,13 +196,17 @@ run_tests() {
             print_status "Running Authentication tests..."
             test_files_list=$(find integration-tests/tests/authentication -name "*.spec.ts" -type f | tr '\n' ' ')
             ;;
+        "install")
+            print_status "Running Installation/Setup tests..."
+            test_files_list=$(find integration-tests/tests/install -name "*.spec.ts" -type f | tr '\n' ' ')
+            ;;
         "all")
             print_status "Running all integration tests..."
             test_files_list=$(find integration-tests/tests -name "*.spec.ts" -type f | tr '\n' ' ')
             ;;
         *)
             print_error "Unknown test type: $test_type"
-            print_status "Available: firestore, storage, authentication, all"
+            print_status "Available: firestore, storage, authentication, install, all"
             return 1
             ;;
     esac
@@ -241,6 +245,9 @@ show_test_files() {
         "authentication" | "auth")
             find integration-tests/tests/authentication -name "*.spec.ts" -type f 2>/dev/null | sort || echo "  No authentication tests found"
             ;;
+        "install")
+            find integration-tests/tests/install -name "*.spec.ts" -type f 2>/dev/null | sort || echo "  No install tests found"
+            ;;
         "all")
             find integration-tests/tests -name "*.spec.ts" -type f 2>/dev/null | sort || echo "  No test files found"
             ;;
@@ -278,12 +285,12 @@ main() {
     
     # Validate test type early
     case $test_type in
-        "firestore"|"storage"|"authentication"|"auth"|"all")
+        "firestore"|"storage"|"authentication"|"auth"|"install"|"all")
             # Valid test types
             ;;
         *)
             print_error "Invalid test type: $test_type"
-            print_status "Valid types: firestore, storage, authentication, all"
+            print_status "Valid types: firestore, storage, authentication, install, all"
             exit 1
             ;;
     esac
@@ -331,8 +338,9 @@ USAGE:
 
 TEST TYPES:
     firestore       Run Firestore tests only
-    storage         Run Storage tests only  
+    storage         Run Storage tests only
     authentication  Run Authentication tests only
+    install         Run Installation/Setup tests only
     all             Run all integration tests (default)
 
 OPTIONS:
@@ -372,7 +380,7 @@ parse_args() {
                 start_emulators="false"
                 shift
                 ;;
-            firestore|storage|authentication|auth|all)
+            firestore|storage|authentication|auth|install|all)
                 test_type="$1"
                 shift
                 ;;
