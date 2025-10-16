@@ -192,7 +192,7 @@ params:
   - param: ENABLE_DOGEN_SECURITY_RULES
     label: Configure Dogen Security Rules
     description: >-
-      Automatically configure Firestore Security Rules to grant authenticated Dogen admins access to the database.
+      Automatically configure Firestore and Storage Security Rules to grant authenticated Dogen admins access to the database and storage buckets.
       The Dogen web client is a registered Firebase application and operates within the security rules framework.
       This adds helper functions (isDogenAuthenticated, isDogenAuthorized) and access rules for users with Dogen roles.
     type: select

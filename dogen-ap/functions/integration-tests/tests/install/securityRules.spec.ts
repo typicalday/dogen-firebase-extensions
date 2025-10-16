@@ -1,13 +1,13 @@
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { generateDefaultRules, injectDogenRules } from "../../../src/utils/securityRules";
+import { generateDefaultFirestoreRules, injectDogenFirestoreRules } from "../../../src/utils/securityRules";
 
 describe("Security Rules Injection Logic Tests", function() {
 
   describe("Basic Injection", function() {
     it("should inject Dogen rules into default rules", function() {
-      const defaultRules = generateDefaultRules();
-      const result = injectDogenRules(defaultRules);
+      const defaultRules = generateDefaultFirestoreRules();
+      const result = injectDogenFirestoreRules(defaultRules);
 
       expect(result).to.include("isDogenAuthenticated");
       expect(result).to.include("isDogenAuthorized");
@@ -23,15 +23,15 @@ service cloud.firestore {
     }
   }
 }`;
-      const result = injectDogenRules(minimalRules);
+      const result = injectDogenFirestoreRules(minimalRules);
 
       expect(result).to.include("function isDogenAuthenticated()");
       expect(result).to.include("function isDogenAuthorized(role)");
     });
 
     it("should inject rules at the correct position (after service opening)", function() {
-      const defaultRules = generateDefaultRules();
-      const result = injectDogenRules(defaultRules);
+      const defaultRules = generateDefaultFirestoreRules();
+      const result = injectDogenFirestoreRules(defaultRules);
 
       const serviceIndex = result.indexOf("service cloud.firestore {");
       const dogenFunctionIndex = result.indexOf("function isDogenAuthenticated");
@@ -53,7 +53,7 @@ service cloud.firestore {
     }
   }
 }`;
-      const result = injectDogenRules(customRules);
+      const result = injectDogenFirestoreRules(customRules);
 
       // Check Dogen rules are present
       expect(result).to.include("isDogenAuthenticated");
@@ -80,7 +80,7 @@ service cloud.firestore {
     }
   }
 }`;
-      const result = injectDogenRules(multiMatchRules);
+      const result = injectDogenFirestoreRules(multiMatchRules);
 
       expect(result).to.include("match /users/{userId}");
       expect(result).to.include("match /posts/{postId}");
@@ -106,7 +106,7 @@ service cloud.firestore {
     }
   }
 }`;
-      const result = injectDogenRules(rulesWithHelpers);
+      const result = injectDogenFirestoreRules(rulesWithHelpers);
 
       // Check Dogen functions are added
       expect(result).to.include("isDogenAuthenticated");
@@ -140,7 +140,7 @@ service cloud.firestore {
     }
   }
 }`;
-      const result = injectDogenRules(complexRules);
+      const result = injectDogenFirestoreRules(complexRules);
 
       expect(result).to.include("match /organizations/{orgId}");
       expect(result).to.include("match /teams/{teamId}");
@@ -152,8 +152,8 @@ service cloud.firestore {
 
   describe("Helper Function Logic", function() {
     it("should inject isDogenAuthenticated with correct logic", function() {
-      const defaultRules = generateDefaultRules();
-      const result = injectDogenRules(defaultRules);
+      const defaultRules = generateDefaultFirestoreRules();
+      const result = injectDogenFirestoreRules(defaultRules);
 
       expect(result).to.include("function isDogenAuthenticated()");
       expect(result).to.include("request.auth != null");
@@ -161,8 +161,8 @@ service cloud.firestore {
     });
 
     it("should inject isDogenAuthorized with correct logic", function() {
-      const defaultRules = generateDefaultRules();
-      const result = injectDogenRules(defaultRules);
+      const defaultRules = generateDefaultFirestoreRules();
+      const result = injectDogenFirestoreRules(defaultRules);
 
       expect(result).to.include("function isDogenAuthorized(role)");
       expect(result).to.include("isDogenAuthenticated()");
@@ -171,8 +171,8 @@ service cloud.firestore {
     });
 
     it("should create isDogenAuthorized that checks for admin or role", function() {
-      const defaultRules = generateDefaultRules();
-      const result = injectDogenRules(defaultRules);
+      const defaultRules = generateDefaultFirestoreRules();
+      const result = injectDogenFirestoreRules(defaultRules);
 
       // The function should use OR logic
       const functionMatch = result.match(/function isDogenAuthorized\(role\)\s*\{[\s\S]*?\}/);
@@ -185,15 +185,15 @@ service cloud.firestore {
 
   describe("Access Rules", function() {
     it("should inject admin access rules", function() {
-      const defaultRules = generateDefaultRules();
-      const result = injectDogenRules(defaultRules);
+      const defaultRules = generateDefaultFirestoreRules();
+      const result = injectDogenFirestoreRules(defaultRules);
 
       expect(result).to.include("allow read, write: if isDogenAuthorized('admin')");
     });
 
     it("should create its own match /databases/{database}/documents block", function() {
-      const defaultRules = generateDefaultRules();
-      const result = injectDogenRules(defaultRules);
+      const defaultRules = generateDefaultFirestoreRules();
+      const result = injectDogenFirestoreRules(defaultRules);
 
       // Count how many times the match /databases pattern appears
       const matches = result.match(/match \/databases\/\{database\}\/documents/g);
@@ -201,8 +201,8 @@ service cloud.firestore {
     });
 
     it("should use wildcard match for all documents", function() {
-      const defaultRules = generateDefaultRules();
-      const result = injectDogenRules(defaultRules);
+      const defaultRules = generateDefaultFirestoreRules();
+      const result = injectDogenFirestoreRules(defaultRules);
 
       expect(result).to.include("match /{document=**}");
     });
@@ -230,7 +230,7 @@ service cloud.firestore {
     }
   }
 }`;
-      const result = injectDogenRules(rulesWithComments);
+      const result = injectDogenFirestoreRules(rulesWithComments);
 
       expect(result).to.include("// Main authentication check");
       expect(result).to.include("// Public documents - anyone can read");
@@ -247,14 +247,14 @@ service cloud.firestore {
     }
   }
 }`;
-      const result = injectDogenRules(rules);
+      const result = injectDogenFirestoreRules(rules);
 
       expect(result).to.include("rules_version = '2'");
     });
 
     it("should add Dogen comments for clarity", function() {
-      const defaultRules = generateDefaultRules();
-      const result = injectDogenRules(defaultRules);
+      const defaultRules = generateDefaultFirestoreRules();
+      const result = injectDogenFirestoreRules(defaultRules);
 
       expect(result).to.include("// Dogen helper functions");
       expect(result).to.include("// Dogen access rules");
@@ -276,7 +276,7 @@ service cloud.firestore {
   }
 
 }`;
-      const result = injectDogenRules(rulesWithWhitespace);
+      const result = injectDogenFirestoreRules(rulesWithWhitespace);
 
       expect(result).to.include("isDogenAuthenticated");
       expect(result).to.include("isDogenAuthorized");
@@ -291,7 +291,7 @@ service cloud.firestore {
 \t\t}
 \t}
 }`;
-      const result = injectDogenRules(rulesWithTabs);
+      const result = injectDogenFirestoreRules(rulesWithTabs);
 
       expect(result).to.include("isDogenAuthenticated");
       expect(result).to.include("match /{document=**}");
@@ -300,14 +300,14 @@ service cloud.firestore {
     it("should handle rules with Windows line endings", function() {
       const rulesWithCRLF = "rules_version = '2';\r\nservice cloud.firestore {\r\n  match /databases/{database}/documents {\r\n    match /{document=**} {\r\n      allow read, write: if false;\r\n    }\r\n  }\r\n}";
 
-      const result = injectDogenRules(rulesWithCRLF);
+      const result = injectDogenFirestoreRules(rulesWithCRLF);
 
       expect(result).to.include("isDogenAuthenticated");
     });
 
     it("should handle empty rules by generating defaults", function() {
       const emptyRules = "";
-      const result = injectDogenRules(emptyRules);
+      const result = injectDogenFirestoreRules(emptyRules);
 
       expect(result).to.include("rules_version = '2'");
       expect(result).to.include("service cloud.firestore");
@@ -316,7 +316,7 @@ service cloud.firestore {
 
     it("should handle whitespace-only rules by generating defaults", function() {
       const whitespaceRules = "   \n\n  \t\t  \n  ";
-      const result = injectDogenRules(whitespaceRules);
+      const result = injectDogenFirestoreRules(whitespaceRules);
 
       expect(result).to.include("rules_version = '2'");
       expect(result).to.include("service cloud.firestore");
@@ -343,7 +343,7 @@ service cloud.firestore {
     }
   }
 }`;
-      const result = injectDogenRules(rulesWithSimilarFunctions);
+      const result = injectDogenFirestoreRules(rulesWithSimilarFunctions);
 
       // Both sets of functions should exist
       expect(result).to.include("function isAuthenticated()");
@@ -373,7 +373,7 @@ service cloud.firestore {
     }
   }
 }`;
-      const result = injectDogenRules(complexFunctions);
+      const result = injectDogenFirestoreRules(complexFunctions);
 
       expect(result).to.include("function hasRole(role)");
       expect(result).to.include("function canAccess(resource, action)");
@@ -402,7 +402,7 @@ service cloud.firestore {
     }
   }
 }`;
-      const result = injectDogenRules(multiTenancyRules);
+      const result = injectDogenFirestoreRules(multiTenancyRules);
 
       expect(result).to.include("belongsToTenant");
       expect(result).to.include("match /tenants/{tenantId}/users/{userId}");
@@ -432,7 +432,7 @@ service cloud.firestore {
     }
   }
 }`;
-      const result = injectDogenRules(rbacRules);
+      const result = injectDogenFirestoreRules(rbacRules);
 
       expect(result).to.include("function hasRole(role)");
       expect(result).to.include("function isAdmin()");
@@ -460,7 +460,7 @@ service cloud.firestore {
     }
   }
 }`;
-      const result = injectDogenRules(timeBasedRules);
+      const result = injectDogenFirestoreRules(timeBasedRules);
 
       expect(result).to.include("isWithinBusinessHours");
       expect(result).to.include("isNotExpired");
@@ -478,7 +478,7 @@ match /databases/{database}/documents {
   }
 }`;
 
-      expect(() => injectDogenRules(invalidRules)).to.throw("missing 'service cloud.firestore' declaration");
+      expect(() => injectDogenFirestoreRules(invalidRules)).to.throw("missing 'service cloud.firestore' declaration");
     });
 
     it("should throw error for malformed service declaration", function() {
@@ -491,11 +491,11 @@ service firestore {
   }
 }`;
 
-      expect(() => injectDogenRules(malformedRules)).to.throw("missing 'service cloud.firestore' declaration");
+      expect(() => injectDogenFirestoreRules(malformedRules)).to.throw("missing 'service cloud.firestore' declaration");
     });
 
     it("should handle null input gracefully", function() {
-      const result = injectDogenRules(null as any);
+      const result = injectDogenFirestoreRules(null as any);
 
       expect(result).to.include("rules_version = '2'");
       expect(result).to.include("service cloud.firestore");
@@ -503,7 +503,7 @@ service firestore {
     });
 
     it("should handle undefined input gracefully", function() {
-      const result = injectDogenRules(undefined as any);
+      const result = injectDogenFirestoreRules(undefined as any);
 
       expect(result).to.include("rules_version = '2'");
       expect(result).to.include("service cloud.firestore");
@@ -513,8 +513,8 @@ service firestore {
 
   describe("Idempotency Check", function() {
     it("should detect if Dogen rules already exist", function() {
-      const defaultRules = generateDefaultRules();
-      const withDogenRules = injectDogenRules(defaultRules);
+      const defaultRules = generateDefaultFirestoreRules();
+      const withDogenRules = injectDogenFirestoreRules(defaultRules);
 
       // Check if rules already contain isDogenAuthenticated
       const alreadyHasDogen = withDogenRules.includes("isDogenAuthenticated");
@@ -523,8 +523,8 @@ service firestore {
     });
 
     it("should not inject duplicate rules when already present", function() {
-      const defaultRules = generateDefaultRules();
-      const withDogenRules = injectDogenRules(defaultRules);
+      const defaultRules = generateDefaultFirestoreRules();
+      const withDogenRules = injectDogenFirestoreRules(defaultRules);
 
       // Simulate checking before injection (as done in configureDogenSecurityRules)
       if (withDogenRules.includes("isDogenAuthenticated")) {

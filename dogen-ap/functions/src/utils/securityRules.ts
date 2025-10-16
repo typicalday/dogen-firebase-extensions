@@ -2,7 +2,7 @@
 import * as admin from "firebase-admin";
 import { logger } from "firebase-functions/v1";
 
-const DOGEN_RULES = `
+const DOGEN_FIRESTORE_RULES = `
   // Dogen helper functions
   function isDogenAuthenticated() {
     return request.auth != null && ('dogenRoles' in request.auth.token);
@@ -21,30 +21,49 @@ const DOGEN_RULES = `
   }
 `;
 
+const DOGEN_STORAGE_RULES = `
+    // Dogen helper functions
+    function isDogenAuthenticated() {
+        return request.auth != null && ('dogenRoles' in request.auth.token);
+    }
+
+    function isDogenAuthorized(role) {
+        return isDogenAuthenticated() &&
+            ('admin' in request.auth.token.dogenRoles || role in request.auth.token.dogenRoles);
+    }
+
+    // Dogen access rules
+    match /b/{bucket}/o {
+        match /{allPaths=**} {
+            allow read, write: if isDogenAuthorized('admin');
+        }
+    }
+`;
+
 /**
  * Configures Firestore Security Rules to include Dogen authentication helpers
  * and admin access rules.
  */
-export async function configureDogenSecurityRules(): Promise<void> {
+export async function configureDogenFirestoreRules(): Promise<void> {
   try {
-    logger.info("Configuring Dogen security rules...");
+    logger.info("Configuring Dogen Firestore security rules...");
 
     // Get the current ruleset
-    const currentRules = await getCurrentSecurityRules();
+    const currentRules = await getCurrentFirestoreRules();
 
     // Check if rules already contain Dogen functions
     if (currentRules.includes("isDogenAuthenticated")) {
-      logger.info("Dogen security rules already configured. Skipping.");
+      logger.info("Dogen Firestore security rules already configured. Skipping.");
       return;
     }
 
     // Validate and update rules
-    const updatedRules = injectDogenRules(currentRules);
-    await updateSecurityRules(updatedRules);
+    const updatedRules = injectDogenFirestoreRules(currentRules);
+    await updateFirestoreRules(updatedRules);
 
-    logger.info("Dogen security rules configured successfully.");
+    logger.info("Dogen Firestore security rules configured successfully.");
   } catch (error) {
-    logger.error("Error configuring Dogen security rules:", error);
+    logger.error("Error configuring Dogen Firestore security rules:", error);
     throw error;
   }
 }
@@ -52,7 +71,7 @@ export async function configureDogenSecurityRules(): Promise<void> {
 /**
  * Retrieves the current Firestore Security Rules.
  */
-async function getCurrentSecurityRules(): Promise<string> {
+async function getCurrentFirestoreRules(): Promise<string> {
   try {
     const securityRules = admin.securityRules();
 
@@ -66,7 +85,7 @@ async function getCurrentSecurityRules(): Promise<string> {
 
     if (!rulesFile || !rulesFile.content) {
       logger.warn("No existing Firestore rules found. Creating default rules.");
-      return generateDefaultRules();
+      return generateDefaultFirestoreRules();
     }
 
     return rulesFile.content;
@@ -74,7 +93,7 @@ async function getCurrentSecurityRules(): Promise<string> {
     // If no ruleset exists, return default rules
     if (error.code === 5 || error.message?.includes('not found') || error.message?.includes('NOT_FOUND')) {
       logger.warn("No existing Firestore rules found. Creating default rules.");
-      return generateDefaultRules();
+      return generateDefaultFirestoreRules();
     }
     logger.error("Error fetching current security rules:", error);
     throw error;
@@ -84,7 +103,7 @@ async function getCurrentSecurityRules(): Promise<string> {
 /**
  * Generates default Firestore Security Rules structure.
  */
-export function generateDefaultRules(): string {
+export function generateDefaultFirestoreRules(): string {
   return `rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -97,13 +116,13 @@ service cloud.firestore {
 }
 
 /**
- * Injects Dogen authentication helpers and access rules into existing rules.
+ * Injects Dogen authentication helpers and access rules into existing Firestore rules.
  */
-export function injectDogenRules(currentRules: string): string {
+export function injectDogenFirestoreRules(currentRules: string): string {
   // Validate that rules aren't completely empty or malformed
   if (!currentRules || currentRules.trim().length === 0) {
     logger.warn("Empty rules detected. Using default rules template.");
-    currentRules = generateDefaultRules();
+    currentRules = generateDefaultFirestoreRules();
   }
 
   // Check if rules have proper structure
@@ -125,7 +144,7 @@ export function injectDogenRules(currentRules: string): string {
   const updatedRules =
     currentRules.slice(0, insertPosition) +
     "\n" +
-    DOGEN_RULES +
+    DOGEN_FIRESTORE_RULES +
     "\n" +
     currentRules.slice(insertPosition);
 
@@ -135,7 +154,7 @@ export function injectDogenRules(currentRules: string): string {
 /**
  * Updates the Firestore Security Rules.
  */
-async function updateSecurityRules(rules: string): Promise<void> {
+async function updateFirestoreRules(rules: string): Promise<void> {
   try {
     const securityRules = admin.securityRules();
 
@@ -145,6 +164,134 @@ async function updateSecurityRules(rules: string): Promise<void> {
     logger.info("Security rules updated successfully.");
   } catch (error) {
     logger.error("Error updating security rules:", error);
+    throw error;
+  }
+}
+
+/**
+ * Configures Firebase Storage Security Rules to include Dogen authentication helpers
+ * and admin access rules.
+ */
+export async function configureDogenStorageRules(): Promise<void> {
+  try {
+    logger.info("Configuring Dogen storage rules...");
+
+    // Get the current ruleset
+    const currentRules = await getCurrentStorageRules();
+
+    // Check if rules already contain Dogen functions
+    if (currentRules.includes("isDogenAuthenticated")) {
+      logger.info("Dogen storage rules already configured. Skipping.");
+      return;
+    }
+
+    // Validate and update rules
+    const updatedRules = injectDogenStorageRules(currentRules);
+    await updateStorageRules(updatedRules);
+
+    logger.info("Dogen storage rules configured successfully.");
+  } catch (error) {
+    logger.error("Error configuring Dogen storage rules:", error);
+    throw error;
+  }
+}
+
+/**
+ * Retrieves the current Firebase Storage Security Rules.
+ */
+async function getCurrentStorageRules(): Promise<string> {
+  try {
+    const securityRules = admin.securityRules();
+
+    // Get the current Storage ruleset - returns a Ruleset which includes source
+    const ruleset = await securityRules.getStorageRuleset();
+
+    // Find the Storage rules file
+    const rulesFile = ruleset.source.find(
+      (file) => file.name === 'storage.rules' || file.name?.includes('storage')
+    );
+
+    if (!rulesFile || !rulesFile.content) {
+      logger.warn("No existing Storage rules found. Creating default rules.");
+      return generateDefaultStorageRules();
+    }
+
+    return rulesFile.content;
+  } catch (error: any) {
+    // If no ruleset exists, return default rules
+    if (error.code === 5 || error.message?.includes('not found') || error.message?.includes('NOT_FOUND')) {
+      logger.warn("No existing Storage rules found. Creating default rules.");
+      return generateDefaultStorageRules();
+    }
+    logger.error("Error fetching current storage rules:", error);
+    throw error;
+  }
+}
+
+/**
+ * Generates default Firebase Storage Security Rules structure.
+ */
+export function generateDefaultStorageRules(): string {
+  return `rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Default: deny all access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}`;
+}
+
+/**
+ * Injects Dogen authentication helpers and access rules into existing Storage rules.
+ */
+export function injectDogenStorageRules(currentRules: string): string {
+  // Validate that rules aren't completely empty or malformed
+  if (!currentRules || currentRules.trim().length === 0) {
+    logger.warn("Empty rules detected. Using default rules template.");
+    currentRules = generateDefaultStorageRules();
+  }
+
+  // Check if rules have proper structure
+  if (!currentRules.includes("service firebase.storage")) {
+    throw new Error("Invalid Storage rules structure: missing 'service firebase.storage' declaration");
+  }
+
+  // Find the position to inject right after the service firebase.storage opening brace
+  const serviceBlockRegex = /service\s+firebase\.storage\s*\{/;
+  const serviceMatch = currentRules.match(serviceBlockRegex);
+
+  if (!serviceMatch || serviceMatch.index === undefined) {
+    throw new Error("Invalid Storage rules structure: unable to locate service block");
+  }
+
+  const insertPosition = serviceMatch.index + serviceMatch[0].length;
+
+  // Insert Dogen rules (helper functions + match block) right after the service block opening
+  const updatedRules =
+    currentRules.slice(0, insertPosition) +
+    "\n" +
+    DOGEN_STORAGE_RULES +
+    "\n" +
+    currentRules.slice(insertPosition);
+
+  return updatedRules;
+}
+
+/**
+ * Updates the Firebase Storage Security Rules.
+ */
+async function updateStorageRules(rules: string): Promise<void> {
+  try {
+    const securityRules = admin.securityRules();
+
+    // Release the new ruleset to Storage using the SDK method
+    await securityRules.releaseStorageRulesetFromSource(rules);
+
+    logger.info("Storage rules updated successfully.");
+  } catch (error) {
+    logger.error("Error updating storage rules:", error);
     throw error;
   }
 }

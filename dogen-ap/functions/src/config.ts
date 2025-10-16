@@ -8,7 +8,7 @@ interface IConfig {
   firebaseProjectId: string;
   firestoreDatabaseId: string;
   enableDogenSecurityRules: boolean;
-  }
+}
 
 const config: IConfig = {
   dogenApiKey: process.env.DOGEN_API_KEY,
