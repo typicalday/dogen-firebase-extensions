@@ -1,3 +1,6 @@
+## Version 4.1.0
+- Added support for configuring Dogen security rules automatically.
+
 ## Version 4.0.0
 - Removed legacy Dogen account management.
 - Added Authentication job to support Firebase Authentication user management.
