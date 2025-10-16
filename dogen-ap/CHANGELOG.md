@@ -1,3 +1,6 @@
+## Version 4.1.1
+- Fixed issue with error when deploying Firestore and Storage Security Rules.
+ 
 ## Version 4.1.0
 - Added support for configuring Dogen security rules automatically.
 
