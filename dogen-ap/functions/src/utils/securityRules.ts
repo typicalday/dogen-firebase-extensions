@@ -171,13 +171,14 @@ async function updateFirestoreRules(rules: string): Promise<void> {
 /**
  * Configures Firebase Storage Security Rules to include Dogen authentication helpers
  * and admin access rules.
+ * @param bucketName - Optional bucket name. If not provided, uses default bucket from admin app config.
  */
-export async function configureDogenStorageRules(): Promise<void> {
+export async function configureDogenStorageRules(bucketName?: string): Promise<void> {
   try {
-    logger.info("Configuring Dogen storage rules...");
+    logger.info("Configuring Dogen storage rules...", { bucket: bucketName || 'default' });
 
     // Get the current ruleset
-    const currentRules = await getCurrentStorageRules();
+    const currentRules = await getCurrentStorageRules(bucketName);
 
     // Check if rules already contain Dogen functions
     if (currentRules.includes("isDogenAuthenticated")) {
@@ -187,7 +188,7 @@ export async function configureDogenStorageRules(): Promise<void> {
 
     // Validate and update rules
     const updatedRules = injectDogenStorageRules(currentRules);
-    await updateStorageRules(updatedRules);
+    await updateStorageRules(updatedRules, bucketName);
 
     logger.info("Dogen storage rules configured successfully.");
   } catch (error) {
@@ -198,13 +199,15 @@ export async function configureDogenStorageRules(): Promise<void> {
 
 /**
  * Retrieves the current Firebase Storage Security Rules.
+ * @param bucketName - Optional bucket name. If not provided, uses default bucket from admin app config.
  */
-async function getCurrentStorageRules(): Promise<string> {
+async function getCurrentStorageRules(bucketName?: string): Promise<string> {
   try {
     const securityRules = admin.securityRules();
 
     // Get the current Storage ruleset - returns a Ruleset which includes source
-    const ruleset = await securityRules.getStorageRuleset();
+    // Pass the bucket name to target the correct bucket
+    const ruleset = await securityRules.getStorageRuleset(bucketName);
 
     // Find the Storage rules file
     const rulesFile = ruleset.source.find(
@@ -281,15 +284,18 @@ export function injectDogenStorageRules(currentRules: string): string {
 
 /**
  * Updates the Firebase Storage Security Rules.
+ * @param rules - The security rules content to deploy.
+ * @param bucketName - Optional bucket name. If not provided, uses default bucket from admin app config.
  */
-async function updateStorageRules(rules: string): Promise<void> {
+async function updateStorageRules(rules: string, bucketName?: string): Promise<void> {
   try {
     const securityRules = admin.securityRules();
 
     // Release the new ruleset to Storage using the SDK method
-    await securityRules.releaseStorageRulesetFromSource(rules);
+    // Pass the bucket name to target the correct bucket
+    await securityRules.releaseStorageRulesetFromSource(rules, bucketName);
 
-    logger.info("Storage rules updated successfully.");
+    logger.info("Storage rules updated successfully.", { bucket: bucketName || 'default' });
   } catch (error) {
     logger.error("Error updating storage rules:", error);
     throw error;

@@ -1,3 +1,6 @@
+## Version 4.1.3
+- Fixed issue where Storage Security Rules were not being updated properly.
+  
 ## Version 4.1.2
 - Updated Firestore Security Rules role to firebaserules.admin since the Firebase docs were incorrect.
 

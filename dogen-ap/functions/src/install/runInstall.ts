@@ -52,7 +52,7 @@ export const runInstall = tasks
     try {
       if (config.enableDogenSecurityRules) {
         await configureDogenFirestoreRules();
-        await configureDogenStorageRules();
+        await configureDogenStorageRules(config.firebaseConfigStorageBucket);
       } else {
         logger.info("Dogen security rules configuration skipped (disabled by user).");
       }
