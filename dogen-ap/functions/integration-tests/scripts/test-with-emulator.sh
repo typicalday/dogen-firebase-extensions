@@ -200,13 +200,17 @@ run_tests() {
             print_status "Running Installation/Setup tests..."
             test_files_list=$(find integration-tests/tests/install -name "*.spec.ts" -type f | tr '\n' ' ')
             ;;
+        "job")
+            print_status "Running Job orchestration tests..."
+            test_files_list=$(find integration-tests/tests/job -name "*.spec.ts" -type f | tr '\n' ' ')
+            ;;
         "all")
             print_status "Running all integration tests..."
             test_files_list=$(find integration-tests/tests -name "*.spec.ts" -type f | tr '\n' ' ')
             ;;
         *)
             print_error "Unknown test type: $test_type"
-            print_status "Available: firestore, storage, authentication, install, all"
+            print_status "Available: firestore, storage, authentication, install, job, all"
             return 1
             ;;
     esac
@@ -234,7 +238,7 @@ run_tests() {
 show_test_files() {
     local test_type="$1"
     print_status "Debug mode - showing test files:"
-    
+
     case $test_type in
         "firestore")
             find integration-tests/tests/firestore -name "*.spec.ts" -type f 2>/dev/null | sort || echo "  No firestore tests found"
@@ -247,6 +251,9 @@ show_test_files() {
             ;;
         "install")
             find integration-tests/tests/install -name "*.spec.ts" -type f 2>/dev/null | sort || echo "  No install tests found"
+            ;;
+        "job")
+            find integration-tests/tests/job -name "*.spec.ts" -type f 2>/dev/null | sort || echo "  No job tests found"
             ;;
         "all")
             find integration-tests/tests -name "*.spec.ts" -type f 2>/dev/null | sort || echo "  No test files found"
@@ -285,12 +292,12 @@ main() {
     
     # Validate test type early
     case $test_type in
-        "firestore"|"storage"|"authentication"|"auth"|"install"|"all")
+        "firestore"|"storage"|"authentication"|"auth"|"install"|"job"|"all")
             # Valid test types
             ;;
         *)
             print_error "Invalid test type: $test_type"
-            print_status "Valid types: firestore, storage, authentication, install, all"
+            print_status "Valid types: firestore, storage, authentication, install, job, all"
             exit 1
             ;;
     esac
@@ -341,6 +348,7 @@ TEST TYPES:
     storage         Run Storage tests only
     authentication  Run Authentication tests only
     install         Run Installation/Setup tests only
+    job             Run Job orchestration tests only
     all             Run all integration tests (default)
 
 OPTIONS:
@@ -380,7 +388,7 @@ parse_args() {
                 start_emulators="false"
                 shift
                 ;;
-            firestore|storage|authentication|auth|install|all)
+            firestore|storage|authentication|auth|install|job|all)
                 test_type="$1"
                 shift
                 ;;

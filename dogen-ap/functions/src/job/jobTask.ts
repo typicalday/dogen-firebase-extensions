@@ -8,6 +8,7 @@ export enum FirebaseTaskStatus {
 }
 
 export class JobTask {
+  id: string;
   service: string;
   command: string;
   input?: Record<string, any>;
@@ -15,8 +16,11 @@ export class JobTask {
   status?: FirebaseTaskStatus = FirebaseTaskStatus.Started;
   startedAt?: Date;
   completedAt?: Date;
+  dependsOn?: string[];
+  depth: number;
 
   constructor({
+    id,
     service,
     command,
     input,
@@ -24,7 +28,10 @@ export class JobTask {
     status,
     startedAt,
     completedAt,
+    dependsOn,
+    depth,
   }: {
+    id?: string;
     service: string;
     command: string;
     ref?: DocumentReference;
@@ -33,17 +40,20 @@ export class JobTask {
     status?: FirebaseTaskStatus;
     startedAt?: Date;
     completedAt?: Date;
+    dependsOn?: string[];
+    depth?: number;
   }) {
     let error: string | null = null;
 
     if (typeof service !== "string" || service.trim() === "") {
       error = "Invalid input: service must be a non-empty string";
     }
-  
+
     if (typeof command !== "string" || command.trim() === "") {
       error = "Invalid input: command must be a non-empty string";
     }
 
+    this.id = id || "";
     this.service = service;
     this.command = command;
     this.input = input || {};
@@ -51,6 +61,8 @@ export class JobTask {
     this.status = status || (error ? FirebaseTaskStatus.Failed : FirebaseTaskStatus.Started);
     this.startedAt = startedAt;
     this.completedAt = completedAt;
+    this.dependsOn = dependsOn;
+    this.depth = depth ?? 0;
   }
 
   update({
@@ -74,6 +86,7 @@ export class JobTask {
 
   toFirestore(): Record<string, any> {
     return {
+      id: this.id,
       service: this.service,
       command: this.command,
       input: this.input,
@@ -81,6 +94,8 @@ export class JobTask {
       status: this.status,
       startedAt: this.startedAt ? Timestamp.fromDate(this.startedAt) : null,
       completedAt: this.completedAt ? Timestamp.fromDate(this.completedAt) : null,
+      dependsOn: this.dependsOn || [],
+      depth: this.depth,
     };
   }
 }

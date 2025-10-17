@@ -19,6 +19,9 @@ export class Job {
   status: JobStatus;
   createdAt: Date;
   updatedAt: Date;
+  maxTasks: number;
+  maxDepth: number;
+  timeout?: number;
 
   constructor({
     ref,
@@ -28,6 +31,9 @@ export class Job {
     status,
     createdAt,
     updatedAt,
+    maxTasks,
+    maxDepth,
+    timeout,
   }: {
     abortOnFailure: boolean;
     name: String;
@@ -37,11 +43,30 @@ export class Job {
     status?: JobStatus;
     createdAt?: Date;
     updatedAt?: Date;
+    maxTasks?: number;
+    maxDepth?: number;
+    timeout?: number;
   }) {
     this.ref = ref ?? db.collection(utils.jobCollectionPath).doc();
     this.abortOnFailure = abortOnFailure;
     this.name = name;
-    this.tasks = tasks;
+    this.maxTasks = maxTasks ?? 1000;
+    this.maxDepth = maxDepth ?? 10;
+    this.timeout = timeout;
+
+    // Auto-generate IDs for tasks without explicit IDs
+    // Root tasks always have depth 0
+    this.tasks = tasks.map((task, index) => {
+      if (!task.id || task.id === "") {
+        task.id = String(index);
+      }
+      // Ensure root tasks have depth 0 if not explicitly set
+      if (task.depth === undefined) {
+        task.depth = 0;
+      }
+      return task;
+    });
+
     this.status = status || JobStatus.Started;
     this.createdAt = createdAt || new Date();
     this.updatedAt = updatedAt || new Date();
@@ -70,6 +95,9 @@ export class Job {
       abortOnFailure: this.abortOnFailure,
       status: this.status,
       tasks: this.tasks.map((task) => task.toFirestore()),
+      maxTasks: this.maxTasks,
+      maxDepth: this.maxDepth,
+      timeout: this.timeout,
       createdAt: Timestamp.fromDate(this.createdAt),
       updatedAt: Timestamp.fromDate(this.updatedAt),
     };
