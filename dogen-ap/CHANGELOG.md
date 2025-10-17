@@ -1,3 +1,6 @@
+## Version 4.1.4
+- Added support for AI orchestration.
+
 ## Version 4.1.3
 - Fixed issue where Storage Security Rules were not being updated properly.
   
