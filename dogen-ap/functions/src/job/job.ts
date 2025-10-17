@@ -50,7 +50,7 @@ export class Job {
     this.ref = ref ?? db.collection(utils.jobCollectionPath).doc();
     this.abortOnFailure = abortOnFailure;
     this.name = name;
-    this.maxTasks = maxTasks ?? 1000;
+    this.maxTasks = maxTasks ?? 100;
     this.maxDepth = maxDepth ?? 10;
     this.timeout = timeout;
 

@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "declaration": true,
     "forceConsistentCasingInFileNames": true,
     "module": "commonjs",
     "noImplicitReturns": true,
@@ -11,7 +12,7 @@
     "typeRoots": [
       "./node_modules/@types",
       "./src/types"
-    ]    
+    ]
   },
   "compileOnSave": true,
   "include": [

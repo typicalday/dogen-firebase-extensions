@@ -204,6 +204,10 @@ run_tests() {
             print_status "Running Job orchestration tests..."
             test_files_list=$(find integration-tests/tests/job -name "*.spec.ts" -type f | tr '\n' ' ')
             ;;
+        "ai")
+            print_status "Running AI tests..."
+            test_files_list=$(find integration-tests/tests/ai -name "*.spec.ts" -type f | tr '\n' ' ')
+            ;;
         "all")
             print_status "Running all integration tests..."
             test_files_list=$(find integration-tests/tests -name "*.spec.ts" -type f | tr '\n' ' ')
@@ -255,6 +259,9 @@ show_test_files() {
         "job")
             find integration-tests/tests/job -name "*.spec.ts" -type f 2>/dev/null | sort || echo "  No job tests found"
             ;;
+        "ai")
+            find integration-tests/tests/ai -name "*.spec.ts" -type f 2>/dev/null | sort || echo "  No ai tests found"
+            ;;
         "all")
             find integration-tests/tests -name "*.spec.ts" -type f 2>/dev/null | sort || echo "  No test files found"
             ;;
@@ -292,12 +299,12 @@ main() {
     
     # Validate test type early
     case $test_type in
-        "firestore"|"storage"|"authentication"|"auth"|"install"|"job"|"all")
+        "firestore"|"storage"|"authentication"|"auth"|"install"|"job"|"ai"|"all")
             # Valid test types
             ;;
         *)
             print_error "Invalid test type: $test_type"
-            print_status "Valid types: firestore, storage, authentication, install, job, all"
+            print_status "Valid types: firestore, storage, authentication, install, job, ai, all"
             exit 1
             ;;
     esac
@@ -349,6 +356,7 @@ TEST TYPES:
     authentication  Run Authentication tests only
     install         Run Installation/Setup tests only
     job             Run Job orchestration tests only
+    ai              Run AI tests only
     all             Run all integration tests (default)
 
 OPTIONS:
@@ -388,7 +396,7 @@ parse_args() {
                 start_emulators="false"
                 shift
                 ;;
-            firestore|storage|authentication|auth|install|job|all)
+            firestore|storage|authentication|auth|install|job|ai|all)
                 test_type="$1"
                 shift
                 ;;

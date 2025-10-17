@@ -571,7 +571,7 @@ describe("Job Orchestration & Task Graph System", function () {
         tasks: [createMockTask("0", "mock", "noop")],
       });
 
-      expect(job.maxTasks).to.equal(1000);
+      expect(job.maxTasks).to.equal(100);
       expect(job.maxDepth).to.equal(10);
     });
 
@@ -1202,7 +1202,7 @@ describe("Job Orchestration & Task Graph System", function () {
         tasks: [createMockTask("0", "mock", "noop")],
       });
 
-      expect(job.maxTasks).to.equal(1000);
+      expect(job.maxTasks).to.equal(100);
       expect(job.maxDepth).to.equal(10);
       expect(job.timeout).to.be.undefined;
     });

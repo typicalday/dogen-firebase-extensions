@@ -2,27 +2,10 @@ import * as functions from "firebase-functions/v1";
 import { DecodedIdToken } from "firebase-admin/auth";
 import { Mutex } from "async-mutex";
 import { FirebaseTaskStatus, JobTask } from "./jobTask";
-import { handleCopyCollection } from "./handlers/firestore/copyCollection";
-import { handleDeletePath } from "./handlers/firestore/deletePath";
-import { handleDeleteDocuments } from "./handlers/firestore/deleteDocuments";
 import { Job, JobStatus } from "./job";
-import { handleListCollections } from "./handlers/firestore/listCollections";
-import { handleCreateDocument } from "./handlers/firestore/createDocument";
-import { handleCopyDocument } from "./handlers/firestore/copyDocument";
-import { handleExportCollectionCSV } from "./handlers/firestore/exportCollectionCSV";
-import { handleImportCollectionCSV } from "./handlers/firestore/importCollectionCSV";
-import { handleExportCollectionJSON } from "./handlers/firestore/exportCollectionJSON";
-import { handleImportCollectionJSON } from "./handlers/firestore/importCollectionJSON";
-import { handleDeleteStoragePath } from "./handlers/storage/deletePath";
-import { handleProcessInference } from "./handlers/ai/processInference";
-import { handleCreateUser } from "./handlers/authentication/createUser";
-import { handleGetUser } from "./handlers/authentication/getUser";
-import { handleUpdateUser } from "./handlers/authentication/updateUser";
-import { handleDeleteUser } from "./handlers/authentication/deleteUser";
-import { handleListUsers } from "./handlers/authentication/listUsers";
-import { handleGetUserClaims } from "./handlers/authentication/getUserClaims";
-import { handleSetUserClaims } from "./handlers/authentication/setUserClaims";
 import { TaskGraph } from "./taskGraph";
+import { getHandler, getUnsupportedTaskError } from "./handlers/registry";
+import { validateTaskInput } from "./handlers/ai/orchestrate/validator";
 
 const persistIntervalDuration = 10000;
 
@@ -328,66 +311,28 @@ const verifyAdmin = async (authToken: DecodedIdToken) => {
 };
 
 async function processTask(task: JobTask): Promise<Record<string, any>> {
-  switch (task.service) {
-    case "firestore":
-      switch (task.command) {
-        case "copy-collection":
-          return await handleCopyCollection(task);
-        case "copy-document":
-          return await handleCopyDocument(task);
-        case "create-document":
-          return await handleCreateDocument(task);
-        case "delete-path":
-          return await handleDeletePath(task);
-        case "delete-documents":
-          return await handleDeleteDocuments(task);
-        case "export-collection-csv":
-          return await handleExportCollectionCSV(task);
-        case "export-collection-json":
-          return await handleExportCollectionJSON(task);
-        case "import-collection-csv":
-          return await handleImportCollectionCSV(task);
-        case "import-collection-json":
-          return await handleImportCollectionJSON(task);
-        case "list-collections":
-          return await handleListCollections(task);
-        default:
-          throw new Error(`Unsupported Firestore command: ${task.command}`);
-      }
-    case "storage":
-      switch (task.command) {
-        case "delete-path":
-          return await handleDeleteStoragePath(task);
-        default:
-          throw new Error(`Unsupported Storage command: ${task.command}`);
-      }
-    case "ai":
-      switch (task.command) {
-        case "process-inference":
-          return await handleProcessInference(task);
-        default:
-          throw new Error(`Unsupported AI command: ${task.command}`);
-      }
-    case "authentication":
-      switch (task.command) {
-        case "create-user":
-          return await handleCreateUser(task);
-        case "get-user":
-          return await handleGetUser(task);
-        case "update-user":
-          return await handleUpdateUser(task);
-        case "delete-user":
-          return await handleDeleteUser(task);
-        case "list-users":
-          return await handleListUsers(task);
-        case "get-user-claims":
-          return await handleGetUserClaims(task);
-        case "set-user-claims":
-          return await handleSetUserClaims(task);
-        default:
-          throw new Error(`Unsupported Authentication command: ${task.command}`);
-      }
-    default:
-      throw new Error(`Unsupported service: ${task.service}`);
+  // Look up handler in centralized registry
+  const handler = getHandler(task.service, task.command);
+
+  if (!handler) {
+    // Generate descriptive error message with available options
+    throw new Error(getUnsupportedTaskError(task.service, task.command));
   }
+
+  // Validate task input before execution
+  const validationErrors = validateTaskInput(
+    task.service,
+    task.command,
+    task.input || {}
+  );
+
+  if (validationErrors.length > 0) {
+    throw new Error(
+      `Task validation failed for ${task.service}/${task.command}:\n` +
+      validationErrors.map(e => `  - ${e}`).join('\n')
+    );
+  }
+
+  // Execute the handler
+  return await handler(task);
 }
