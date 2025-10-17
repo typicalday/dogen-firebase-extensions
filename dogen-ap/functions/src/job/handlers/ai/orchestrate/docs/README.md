@@ -6,6 +6,7 @@ The AI Task Orchestration system enables natural language-driven task planning a
 
 ## Key Features
 
+- **Human-in-the-Loop by Default**: Dry run mode (default) returns plans for review before execution
 - **Natural Language Input**: Describe tasks in plain English
 - **Intelligent Planning**: AI generates optimized task plans with dependencies
 - **Comprehensive Validation**: Multi-layer validation ensures task correctness
@@ -16,7 +17,9 @@ The AI Task Orchestration system enables natural language-driven task planning a
 
 ## Quick Start
 
-### Basic Usage
+### Basic Usage (Dry Run - Default)
+
+By default, orchestration runs in **dry run mode** for safety. This returns a plan for human review without executing:
 
 ```typescript
 {
@@ -24,29 +27,67 @@ The AI Task Orchestration system enables natural language-driven task planning a
   command: "orchestrate",
   input: {
     prompt: "Copy the users collection to users_backup",
+    // dryRun defaults to true - returns plannedTasks for review
     temperature: 0.2,
     maxRetries: 3
   }
 }
 ```
 
-### With Context
+**Output**: Contains `plannedTasks` array for human review. No tasks are executed.
+
+### Human-in-the-Loop Workflow
+
+1. **Preview Phase**: Run orchestration with `dryRun: true` (or omit for default)
+2. **Review**: Examine the `plannedTasks` in the output to verify the AI's plan
+3. **Execute Phase**: If approved, create a new job with `dryRun: false` to execute
+4. **Monitor**: Track execution through the job system
+
+```typescript
+// Step 1: Preview what AI will do
+{
+  service: "ai",
+  command: "orchestrate",
+  input: {
+    prompt: "Export products to JSON and create a backup in Firestore",
+    dryRun: true  // Explicitly enable preview mode
+  }
+}
+
+// Step 2: After reviewing plannedTasks, execute if approved
+{
+  service: "ai",
+  command: "orchestrate",
+  input: {
+    prompt: "Export products to JSON and create a backup in Firestore",
+    dryRun: false,  // Execute the plan
+    context: {
+      reason: "monthly backup",
+      requestedBy: "admin",
+      approvedAt: "2025-01-17T10:30:00Z"
+    }
+  }
+}
+```
+
+### Automatic Execution (Skip Human Review)
+
+For trusted operations, use `dryRun: false` to execute immediately:
 
 ```typescript
 {
   service: "ai",
   command: "orchestrate",
   input: {
-    prompt: "Export products to JSON and create a backup in Firestore",
-    context: {
-      reason: "monthly backup",
-      requestedBy: "admin"
-    },
+    prompt: "Create daily backup of users collection",
+    dryRun: false,  // Execute without preview
     maxChildTasks: 10,
     timeout: 120000
   }
 }
 ```
+
+**Output**: Contains `childTasks` array that will be automatically executed.
 
 ## Architecture
 
@@ -78,6 +119,10 @@ See [Architecture Documentation](./architecture.md) for detailed component descr
 
 ### Optional Parameters
 
+- `dryRun` (boolean) - Human-in-the-loop mode control (default: true)
+  - **true** (default): Returns `plannedTasks` for human review without executing
+  - **false**: Returns `childTasks` for automatic execution
+  - Use dry run mode to preview AI-generated plans before execution
 - `maxRetries` (number, 0-10) - Maximum retry attempts for validation failures (default: 3)
 - `temperature` (number, 0.0-1.0) - AI temperature for response generation (default: 0.2)
 - `context` (object) - Additional context information for the AI
@@ -89,24 +134,42 @@ See [Architecture Documentation](./architecture.md) for detailed component descr
 
 ### Built-in Protections
 
-1. **Task Limit Enforcement** - Prevents spawning too many tasks (default: 100)
-2. **Depth Validation** - Blocks orchestration when at max depth (default: 10)
-3. **Timeout Protection** - AI calls timeout after configured period (default: 60s)
-4. **Schema Validation** - All task inputs validated before execution
-5. **Dependency Validation** - Circular dependencies and invalid references rejected
-6. **Retry Logic** - Automatic retry with feedback for validation failures (max: 3)
+1. **Human-in-the-Loop by Default** - Dry run mode (dryRun: true) prevents automatic execution without human approval
+2. **Task Limit Enforcement** - Prevents spawning too many tasks (default: 100)
+3. **Depth Validation** - Blocks orchestration when at max depth (default: 10)
+4. **Timeout Protection** - AI calls timeout after configured period (default: 60s)
+5. **Schema Validation** - All task inputs validated before execution
+6. **Dependency Validation** - Circular dependencies and invalid references rejected
+7. **Retry Logic** - Automatic retry with feedback for validation failures (max: 3)
 
 See [Safety Limits Documentation](./safety-limits.md) for detailed information.
 
 ## Output Format
 
-### Successful Orchestration
+### Successful Orchestration (Dry Run Mode - Default)
+
+When `dryRun: true` (default), the output contains `plannedTasks` for human review:
 
 ```json
 {
-  "childTasks": [
+  "prompt": "Copy the users collection to users_backup",
+  "plan": {
+    "tasks": [
+      {
+        "service": "firestore",
+        "command": "copy-collection",
+        "input": {
+          "sourcePath": "firestore/(default)/data/users",
+          "destinationPath": "firestore/(default)/data/users_backup"
+        }
+      }
+    ],
+    "reasoning": "Creating a backup copy of the users collection"
+  },
+  "reasoning": "Creating a backup copy of the users collection",
+  "dryRun": true,
+  "plannedTasks": [
     {
-      "id": "task-0",
       "service": "firestore",
       "command": "copy-collection",
       "input": {
@@ -116,10 +179,68 @@ See [Safety Limits Documentation](./safety-limits.md) for detailed information.
       "dependsOn": []
     }
   ],
+  "retriesUsed": 1,
+  "validationReport": {
+    "isValid": true,
+    "errors": [],
+    "warnings": [],
+    "tasksValidated": 1,
+    "timestamp": "2025-01-17T10:30:00Z"
+  },
+  "usage": {
+    "promptTokenCount": 500,
+    "candidatesTokenCount": 200,
+    "totalTokenCount": 700
+  }
+}
+```
+
+### Successful Orchestration (Execute Mode)
+
+When `dryRun: false`, the output contains `childTasks` for automatic execution:
+
+```json
+{
+  "prompt": "Copy the users collection to users_backup",
+  "plan": {
+    "tasks": [
+      {
+        "service": "firestore",
+        "command": "copy-collection",
+        "input": {
+          "sourcePath": "firestore/(default)/data/users",
+          "destinationPath": "firestore/(default)/data/users_backup"
+        }
+      }
+    ],
+    "reasoning": "Creating a backup copy of the users collection"
+  },
   "reasoning": "Creating a backup copy of the users collection",
-  "model": "gemini-2.0-flash-thinking-exp-01-21",
-  "aiCallDuration": 1245,
-  "validationAttempts": 1
+  "dryRun": false,
+  "childTasks": [
+    {
+      "service": "firestore",
+      "command": "copy-collection",
+      "input": {
+        "sourcePath": "firestore/(default)/data/users",
+        "destinationPath": "firestore/(default)/data/users_backup"
+      },
+      "dependsOn": []
+    }
+  ],
+  "retriesUsed": 1,
+  "validationReport": {
+    "isValid": true,
+    "errors": [],
+    "warnings": [],
+    "tasksValidated": 1,
+    "timestamp": "2025-01-17T10:30:00Z"
+  },
+  "usage": {
+    "promptTokenCount": 500,
+    "candidatesTokenCount": 200,
+    "totalTokenCount": 700
+  }
 }
 ```
 

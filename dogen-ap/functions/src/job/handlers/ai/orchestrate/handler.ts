@@ -76,6 +76,7 @@ export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutpu
     throw new Error("Invalid input: prompt is required");
   }
 
+  const dryRun = input.dryRun ?? true;  // Default to true for safety (human-in-the-loop)
   const maxRetries = input.maxRetries ?? DEFAULT_MAX_RETRIES;
   const temperature = input.temperature ?? DEFAULT_TEMPERATURE;
   const maxChildTasks = input.maxChildTasks ?? DEFAULT_MAX_CHILD_TASKS;
@@ -219,11 +220,13 @@ export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutpu
       const childTasks = planToChildTasks(aiPlan, task.id);
 
       // Return successful orchestration output
-      return {
+      // If dryRun: true (default), return plannedTasks for review without executing
+      // If dryRun: false, return childTasks to trigger automatic execution
+      const output: OrchestrateOutput = {
         prompt: input.prompt,
         plan: aiPlan,
         reasoning: aiPlan.reasoning,
-        childTasks,
+        dryRun,
         retriesUsed,
         validationReport,
         usage: response.usageMetadata ? {
@@ -232,6 +235,17 @@ export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutpu
           totalTokenCount: response.usageMetadata.totalTokenCount,
         } : undefined
       };
+
+      // Add tasks to appropriate field based on dryRun mode
+      if (dryRun) {
+        // Dry run: return planned tasks for human review (won't execute)
+        output.plannedTasks = childTasks;
+      } else {
+        // Execute: return child tasks for automatic execution by job system
+        output.childTasks = childTasks;
+      }
+
+      return output;
 
     } catch (error: any) {
       console.error(`Orchestration attempt ${attempt}/${maxRetries} error:`, error);

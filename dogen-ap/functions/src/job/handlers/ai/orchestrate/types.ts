@@ -9,6 +9,13 @@ export interface OrchestrateInput {
   /** Natural language prompt describing what needs to be done */
   prompt: string;
 
+  /**
+   * Dry run mode for human-in-the-loop workflows (default: true)
+   * - true: Returns planned tasks for review without executing them
+   * - false: Executes the generated tasks automatically
+   */
+  dryRun?: boolean;
+
   /** Maximum number of retry attempts on validation failure (default: 3) */
   maxRetries?: number;
 
@@ -41,8 +48,20 @@ export interface OrchestrateOutput {
   /** AI's reasoning for the plan (if provided) */
   reasoning?: string;
 
-  /** Child tasks to be spawned (validated and ready) */
-  childTasks: ChildTaskSpec[];
+  /** Whether this was a dry run (human-in-the-loop mode) */
+  dryRun: boolean;
+
+  /**
+   * Child tasks to be spawned and executed automatically
+   * Only present when dryRun: false
+   */
+  childTasks?: ChildTaskSpec[];
+
+  /**
+   * Planned tasks returned for human review
+   * Only present when dryRun: true
+   */
+  plannedTasks?: ChildTaskSpec[];
 
   /** Number of retry attempts used */
   retriesUsed: number;

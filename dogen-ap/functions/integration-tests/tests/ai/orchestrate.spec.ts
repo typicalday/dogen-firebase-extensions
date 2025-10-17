@@ -828,7 +828,8 @@ describe("AI Orchestration - Validation Logic", () => {
           command: "orchestrate",
           input: {
             prompt: "Create test tasks",
-            maxDepth: 10
+            maxDepth: 10,
+            dryRun: false  // Execute mode to test depth validation
           },
           depth: 9
         });
@@ -919,7 +920,8 @@ describe("AI Orchestration - Validation Logic", () => {
           command: "orchestrate",
           input: {
             prompt: "Create test tasks",
-            maxDepth: 20 // Custom higher limit
+            maxDepth: 20, // Custom higher limit
+            dryRun: false  // Execute mode to test depth validation
           },
           depth: 15
         });
@@ -1010,7 +1012,8 @@ describe("AI Orchestration - Validation Logic", () => {
           command: "orchestrate",
           input: {
             prompt: "Create test tasks",
-            maxDepth: 10
+            maxDepth: 10,
+            dryRun: false  // Execute mode to test depth validation
           }
           // depth not specified - should default to 0 in JobTask constructor
         });
@@ -1260,7 +1263,8 @@ describe("AI Orchestration - Validation Logic", () => {
           command: "orchestrate",
           input: {
             prompt: "Copy users collection",
-            maxRetries: 2
+            maxRetries: 2,
+            dryRun: false  // Need childTasks for test assertions
           },
           depth: 0
         });
@@ -1294,6 +1298,381 @@ describe("AI Orchestration - Validation Logic", () => {
       const report = await validateTaskPlan(plan, "orchestrator-0");
       expect(report.isValid).to.be.true;
       expect(report.errors).to.be.empty;
+    });
+  });
+
+  describe("Handler - DryRun Mode (Human-in-the-Loop)", () => {
+    it("should return plannedTasks when dryRun=true (default)", async function() {
+      this.timeout(10000);
+
+      const { handleOrchestrate } = await import("../../../lib/job/handlers/ai/orchestrate/handler");
+      const { VertexAI } = await import("@google-cloud/vertexai");
+      const { JobTask } = await import("../../../lib/job/jobTask");
+
+      const originalGetGenerativeModel = VertexAI.prototype.getGenerativeModel;
+
+      try {
+        const mockAIPlan = {
+          tasks: [{
+            service: "firestore",
+            command: "create-document",
+            input: {
+              documentPath: "firestore/(default)/data/test/doc1",
+              documentData: { name: "Test" }
+            }
+          }],
+          reasoning: "Creating a test document for preview"
+        };
+
+        VertexAI.prototype.getGenerativeModel = function() {
+          return {
+            generateContent: async () => ({
+              response: {
+                candidates: [{
+                  content: {
+                    parts: [{ text: JSON.stringify(mockAIPlan) }]
+                  }
+                }],
+                usageMetadata: {
+                  promptTokenCount: 100,
+                  candidatesTokenCount: 50,
+                  totalTokenCount: 150
+                }
+              }
+            })
+          };
+        } as any;
+
+        // Test with dryRun explicitly set to true
+        const task = new JobTask({
+          id: "preview-orchestrator",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Create test document",
+            dryRun: true
+          },
+          depth: 0
+        });
+
+        const result = await handleOrchestrate(task);
+
+        // Should return plannedTasks for human review
+        expect(result.dryRun).to.be.true;
+        expect(result.plannedTasks).to.exist;
+        expect(result.plannedTasks).to.have.lengthOf(1);
+        expect(result.childTasks).to.be.undefined;
+        expect(result.plannedTasks![0].service).to.equal("firestore");
+        expect(result.plannedTasks![0].command).to.equal("create-document");
+      } finally {
+        VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
+      }
+    });
+
+    it("should return plannedTasks when dryRun not specified (default behavior)", async function() {
+      this.timeout(10000);
+
+      const { handleOrchestrate } = await import("../../../lib/job/handlers/ai/orchestrate/handler");
+      const { VertexAI } = await import("@google-cloud/vertexai");
+      const { JobTask } = await import("../../../lib/job/jobTask");
+
+      const originalGetGenerativeModel = VertexAI.prototype.getGenerativeModel;
+
+      try {
+        const mockAIPlan = {
+          tasks: [{
+            service: "firestore",
+            command: "copy-collection",
+            input: {
+              sourcePath: "firestore/(default)/data/users",
+              destinationPath: "firestore/(default)/data/users_backup"
+            }
+          }],
+          reasoning: "Backing up users collection"
+        };
+
+        VertexAI.prototype.getGenerativeModel = function() {
+          return {
+            generateContent: async () => ({
+              response: {
+                candidates: [{
+                  content: {
+                    parts: [{ text: JSON.stringify(mockAIPlan) }]
+                  }
+                }],
+                usageMetadata: {
+                  promptTokenCount: 100,
+                  candidatesTokenCount: 50,
+                  totalTokenCount: 150
+                }
+              }
+            })
+          };
+        } as any;
+
+        // Test without dryRun specified - should default to true
+        const task = new JobTask({
+          id: "default-orchestrator",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Copy users to backup"
+            // dryRun not specified - should default to true
+          },
+          depth: 0
+        });
+
+        const result = await handleOrchestrate(task);
+
+        // Should default to dryRun=true and return plannedTasks
+        expect(result.dryRun).to.be.true;
+        expect(result.plannedTasks).to.exist;
+        expect(result.plannedTasks).to.have.lengthOf(1);
+        expect(result.childTasks).to.be.undefined;
+      } finally {
+        VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
+      }
+    });
+
+    it("should return childTasks when dryRun=false (auto-execute mode)", async function() {
+      this.timeout(10000);
+
+      const { handleOrchestrate } = await import("../../../lib/job/handlers/ai/orchestrate/handler");
+      const { VertexAI } = await import("@google-cloud/vertexai");
+      const { JobTask } = await import("../../../lib/job/jobTask");
+
+      const originalGetGenerativeModel = VertexAI.prototype.getGenerativeModel;
+
+      try {
+        const mockAIPlan = {
+          tasks: [
+            {
+              service: "firestore",
+              command: "create-document",
+              input: {
+                documentPath: "firestore/(default)/data/test/doc1",
+                documentData: { name: "Test 1" }
+              }
+            },
+            {
+              service: "firestore",
+              command: "create-document",
+              input: {
+                documentPath: "firestore/(default)/data/test/doc2",
+                documentData: { name: "Test 2" }
+              }
+            }
+          ],
+          reasoning: "Creating test documents automatically"
+        };
+
+        VertexAI.prototype.getGenerativeModel = function() {
+          return {
+            generateContent: async () => ({
+              response: {
+                candidates: [{
+                  content: {
+                    parts: [{ text: JSON.stringify(mockAIPlan) }]
+                  }
+                }],
+                usageMetadata: {
+                  promptTokenCount: 100,
+                  candidatesTokenCount: 50,
+                  totalTokenCount: 150
+                }
+              }
+            })
+          };
+        } as any;
+
+        // Test with dryRun explicitly set to false
+        const task = new JobTask({
+          id: "execute-orchestrator",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Create test documents",
+            dryRun: false
+          },
+          depth: 0
+        });
+
+        const result = await handleOrchestrate(task);
+
+        // Should return childTasks for automatic execution
+        expect(result.dryRun).to.be.false;
+        expect(result.childTasks).to.exist;
+        expect(result.childTasks).to.have.lengthOf(2);
+        expect(result.plannedTasks).to.be.undefined;
+        expect(result.childTasks![0].service).to.equal("firestore");
+        expect(result.childTasks![1].service).to.equal("firestore");
+      } finally {
+        VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
+      }
+    });
+
+    it("should preserve dryRun field in output for both modes", async function() {
+      this.timeout(10000);
+
+      const { handleOrchestrate } = await import("../../../lib/job/handlers/ai/orchestrate/handler");
+      const { VertexAI } = await import("@google-cloud/vertexai");
+      const { JobTask } = await import("../../../lib/job/jobTask");
+
+      const originalGetGenerativeModel = VertexAI.prototype.getGenerativeModel;
+
+      try {
+        const mockAIPlan = {
+          tasks: [{
+            service: "firestore",
+            command: "create-document",
+            input: {
+              documentPath: "firestore/(default)/data/test/doc1",
+              documentData: { name: "Test" }
+            }
+          }]
+        };
+
+        VertexAI.prototype.getGenerativeModel = function() {
+          return {
+            generateContent: async () => ({
+              response: {
+                candidates: [{
+                  content: {
+                    parts: [{ text: JSON.stringify(mockAIPlan) }]
+                  }
+                }],
+                usageMetadata: {
+                  promptTokenCount: 100,
+                  candidatesTokenCount: 50,
+                  totalTokenCount: 150
+                }
+              }
+            })
+          };
+        } as any;
+
+        // Test dryRun=true output
+        const dryRunTask = new JobTask({
+          id: "dry-run-test",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Test",
+            dryRun: true
+          },
+          depth: 0
+        });
+
+        const dryRunResult = await handleOrchestrate(dryRunTask);
+        expect(dryRunResult.dryRun).to.equal(true);
+        expect(dryRunResult.dryRun).to.be.a('boolean');
+
+        // Test dryRun=false output
+        const executeTask = new JobTask({
+          id: "execute-test",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Test",
+            dryRun: false
+          },
+          depth: 0
+        });
+
+        const executeResult = await handleOrchestrate(executeTask);
+        expect(executeResult.dryRun).to.equal(false);
+        expect(executeResult.dryRun).to.be.a('boolean');
+      } finally {
+        VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
+      }
+    });
+
+    it("should validate tasks in both dryRun modes", async function() {
+      this.timeout(10000);
+
+      const { handleOrchestrate } = await import("../../../lib/job/handlers/ai/orchestrate/handler");
+      const { VertexAI } = await import("@google-cloud/vertexai");
+      const { JobTask } = await import("../../../lib/job/jobTask");
+
+      const originalGetGenerativeModel = VertexAI.prototype.getGenerativeModel;
+
+      try {
+        // Mock AI to return invalid task (will fail validation)
+        const mockInvalidPlan = {
+          tasks: [{
+            service: "invalid-service",
+            command: "invalid-command",
+            input: {}
+          }]
+        };
+
+        VertexAI.prototype.getGenerativeModel = function() {
+          return {
+            generateContent: async () => ({
+              response: {
+                candidates: [{
+                  content: {
+                    parts: [{ text: JSON.stringify(mockInvalidPlan) }]
+                  }
+                }],
+                usageMetadata: {
+                  promptTokenCount: 100,
+                  candidatesTokenCount: 50,
+                  totalTokenCount: 150
+                }
+              }
+            })
+          };
+        } as any;
+
+        // Test that validation happens in dryRun=true mode
+        const dryRunTask = new JobTask({
+          id: "validation-dry-run",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Invalid task",
+            dryRun: true,
+            maxRetries: 1
+          },
+          depth: 0
+        });
+
+        let dryRunError: any;
+        try {
+          await handleOrchestrate(dryRunTask);
+        } catch (error) {
+          dryRunError = error;
+        }
+
+        expect(dryRunError).to.exist;
+        expect(dryRunError.message).to.include("orchestration failed");
+
+        // Test that validation happens in dryRun=false mode
+        const executeTask = new JobTask({
+          id: "validation-execute",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Invalid task",
+            dryRun: false,
+            maxRetries: 1
+          },
+          depth: 0
+        });
+
+        let executeError: any;
+        try {
+          await handleOrchestrate(executeTask);
+        } catch (error) {
+          executeError = error;
+        }
+
+        expect(executeError).to.exist;
+        expect(executeError.message).to.include("orchestration failed");
+      } finally {
+        VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
+      }
     });
   });
 
@@ -1454,7 +1833,8 @@ describe("AI Orchestration - Validation Logic", () => {
           command: "orchestrate",
           input: {
             prompt: "Create test documents",
-            maxChildTasks: 3 // AI will create 2 tasks, limit is 3 - should succeed
+            maxChildTasks: 3, // AI will create 2 tasks, limit is 3 - should succeed
+            dryRun: false  // Need childTasks for test assertions
           },
           depth: 0
         });

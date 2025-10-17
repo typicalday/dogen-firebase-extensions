@@ -834,9 +834,10 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
     orchestrate: {
       handler: handleOrchestrate,
       description:
-        "AI-powered task orchestration that analyzes a natural language prompt and generates a validated plan of child tasks to execute. Can spawn multiple tasks with dependencies. Use this for complex multi-step workflows that can benefit from AI decision-making. Limited to maxChildTasks (default: 100) to prevent resource exhaustion. AI calls have timeout protection (default: 60 seconds) to prevent hung requests. Depth validation ensures tasks don't exceed maxDepth limit (default: 10) before expensive AI operations.",
+        "AI-powered task orchestration that analyzes a natural language prompt and generates a validated plan of child tasks. By default (dryRun: true), returns the plan for human review without executing tasks. Set dryRun: false to execute tasks automatically. Supports complex multi-step workflows with dependencies and AI decision-making. Limited to maxChildTasks (default: 100) to prevent resource exhaustion. AI calls have timeout protection (default: 60 seconds) to prevent hung requests. Depth validation ensures tasks don't exceed maxDepth limit (default: 10) before expensive AI operations.",
       requiredParams: ["prompt"],
       optionalParams: [
+        "dryRun",
         "maxRetries",
         "temperature",
         "context",
@@ -850,6 +851,10 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
           prompt: {
             type: 'string',
             description: 'Natural language description of tasks to orchestrate'
+          },
+          dryRun: {
+            type: 'boolean',
+            description: 'When true (default), returns planned tasks for review without executing them (human-in-the-loop). When false, executes the generated tasks automatically. Use dryRun mode to preview AI-generated plans before execution.'
           },
           maxRetries: {
             type: 'number',
@@ -894,10 +899,9 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
           input: {
             prompt:
               "Copy the users collection to users_backup and create an audit log entry",
-            maxRetries: 3,
-            temperature: 0.2,
+            dryRun: true,
           },
-          description: "Orchestrate a backup operation with audit logging",
+          description: "Preview backup operation plan for human review (default behavior)",
         },
         {
           input: {
@@ -907,18 +911,21 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
               reason: "monthly backup",
               requestedBy: "admin",
             },
+            dryRun: false,
             maxChildTasks: 10,
           },
           description:
-            "Multi-step data export and backup with limited child tasks",
+            "Execute multi-step data export and backup automatically (dryRun: false)",
         },
         {
           input: {
             prompt: "Analyze and process large dataset with AI",
             timeout: 120000,
+            maxRetries: 3,
+            temperature: 0.2,
           },
           description:
-            "Complex AI operation with extended timeout (120 seconds)",
+            "Preview complex AI operation with extended timeout and custom parameters",
         },
       ],
     },
