@@ -1,3 +1,8 @@
+## Version 4.1.8
+- Fix registry firestore paths validations.
+- Add support for logAiResponses flag to ai orchestrate validations.
+- Add vertex AI API to extension.yaml.
+
 ## Version 4.1.7
 - Add verbose flag to job and ai orchestrate task.
 - Include dependency task results in AI orchestrate prompt.

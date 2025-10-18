@@ -139,12 +139,12 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
         properties: {
           sourcePath: {
             type: 'string',
-            pattern: '^firestore/[^/]+/data/.+',
+            pattern: '^\/?firestore/[^/]+/data/.+',
             description: 'Source collection path in format: firestore/{database}/data/{collection}'
           },
           destinationPath: {
             type: 'string',
-            pattern: '^firestore/[^/]+/data/.+',
+            pattern: '^\/?firestore/[^/]+/data/.+',
             description: 'Destination collection path in format: firestore/{database}/data/{collection}'
           }
         },
@@ -181,12 +181,12 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
         properties: {
           sourcePath: {
             type: 'string',
-            pattern: '^firestore/[^/]+/data/.+',
+            pattern: '^\/?firestore/[^/]+/data/.+',
             description: 'Source document path in format: firestore/{database}/data/{collection}/{docId}. Must have an even number of path segments (collection/doc pairs).'
           },
           destinationPath: {
             type: 'string',
-            pattern: '^firestore/[^/]+/data/.+',
+            pattern: '^\/?firestore/[^/]+/data/.+',
             description: 'Destination document path in format: firestore/{database}/data/{collection}/{docId}. Must have an even number of path segments (collection/doc pairs).'
           }
         },
@@ -222,7 +222,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
         properties: {
           documentPath: {
             type: 'string',
-            pattern: '^firestore/[^/]+/data/.+',
+            pattern: '^\/?firestore/[^/]+/data/.+',
             description: 'Document path in format: firestore/{database}/data/{collection}/{docId}. Must have an even number of path segments (collection/doc pairs).'
           },
           documentData: {
@@ -270,7 +270,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
         properties: {
           path: {
             type: 'string',
-            pattern: '^firestore/[^/]+/data/.+',
+            pattern: '^\/?firestore/[^/]+/data/.+',
             description: 'Firestore path to delete in format: firestore/{database}/data/{collection} or firestore/{database}/data/{collection}/{docId}. Can be a collection or document path. All subcollections and documents will be recursively deleted.'
           }
         },
@@ -305,7 +305,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
             type: 'array',
             items: {
               type: 'string',
-              pattern: '^firestore/[^/]+/data/.+',
+              pattern: '^\/?firestore/[^/]+/data/.+',
               description: 'Document path in format: firestore/{database}/data/{collection}/{docId}'
             },
             description: 'Array of Firestore document paths to delete. Must be a non-empty array. Documents can be from different databases.'
@@ -339,7 +339,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
         properties: {
           collectionPath: {
             type: 'string',
-            pattern: '^firestore/[^/]+/data/.+',
+            pattern: '^\/?firestore/[^/]+/data/.+',
             description: 'Firestore collection path in format: firestore/{database}/data/{collection}. Must be a collection path (odd number of segments).'
           },
           bucketPathPrefix: {
@@ -430,7 +430,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
         properties: {
           collectionPath: {
             type: 'string',
-            pattern: '^firestore/[^/]+/data/.+',
+            pattern: '^\/?firestore/[^/]+/data/.+',
             description: 'Firestore collection path in format: firestore/{database}/data/{collection}. Must be a collection path (odd number of segments).'
           },
           bucketPathPrefix: {
@@ -500,7 +500,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
         properties: {
           collectionPath: {
             type: 'string',
-            pattern: '^firestore/[^/]+/data/.+',
+            pattern: '^\/?firestore/[^/]+/data/.+',
             description: 'Firestore collection path in format: firestore/{database}/data/{collection}. Must be a collection path (odd number of segments).'
           },
           bucketPath: {
@@ -580,7 +580,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
         properties: {
           collectionPath: {
             type: 'string',
-            pattern: '^firestore/[^/]+/data/.+',
+            pattern: '^\/?firestore/[^/]+/data/.+',
             description: 'Firestore collection path in format: firestore/{database}/data/{collection}. Must be a collection path (odd number of segments). All documents from the JSON file will be imported into this collection.'
           },
           bucketPath: {
@@ -620,7 +620,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
         properties: {
           documentPath: {
             type: 'string',
-            pattern: '^firestore/[^/]+/data(/.*)?$',
+            pattern: '^\/?firestore/[^/]+/data(/.*)?$',
             description: 'Optional Firestore path. Format: firestore/{database}/data/ to list top-level collections in a specific database, or firestore/{database}/data/{collection}/{docId}/... to list subcollections under a document. If omitted, lists top-level collections in default database.'
           }
         },
@@ -846,6 +846,8 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
         "maxChildTasks",
         "timeout",
         "maxDepth",
+        "logAiResponses",
+        "verbose",
       ],
       inputSchema: {
         type: 'object',
@@ -891,6 +893,14 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
             minimum: 0,
             maximum: 100,
             description: 'Maximum task depth allowed for child tasks'
+          },
+          logAiResponses: {
+            type: 'boolean',
+            description: 'Log AI responses to console for debugging. When true, outputs the full AI response including token usage. Defaults to false.'
+          },
+          verbose: {
+            type: 'boolean',
+            description: 'Enable verbose logging throughout orchestration. When true, outputs detailed logging at each step including dependency collection, AI calls, validation, and task creation. Defaults to context.verbose if not specified.'
           }
         },
         required: ['prompt'],
