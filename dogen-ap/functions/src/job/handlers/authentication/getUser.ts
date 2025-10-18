@@ -1,7 +1,8 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import * as admin from "firebase-admin";
 
-export async function handleGetUser(task: JobTask): Promise<Record<string, any>> {
+export async function handleGetUser(task: JobTask, context: JobContext): Promise<Record<string, any>> {
   const uid = task.input?.uid;
   const email = task.input?.email;
   const phoneNumber = task.input?.phoneNumber;

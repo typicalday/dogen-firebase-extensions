@@ -1,7 +1,8 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import * as admin from "firebase-admin";
 
-export async function handleUpdateUser(task: JobTask): Promise<Record<string, any>> {
+export async function handleUpdateUser(task: JobTask, context: JobContext): Promise<Record<string, any>> {
   const uid = task.input?.uid;
   const updateRequest = task.input?.updateRequest;
   const customClaims = task.input?.customClaims;

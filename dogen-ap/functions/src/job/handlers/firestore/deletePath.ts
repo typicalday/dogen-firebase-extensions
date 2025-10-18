@@ -1,8 +1,9 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import * as admin from "firebase-admin";
 import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 
-export async function handleDeletePath(task: JobTask): Promise<Record<string, any>> {
+export async function handleDeletePath(task: JobTask, context: JobContext): Promise<Record<string, any>> {
   const path = task.input?.path;
 
   if (!path) {

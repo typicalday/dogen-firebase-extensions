@@ -22,6 +22,7 @@ export class Job {
   maxTasks: number;
   maxDepth: number;
   timeout?: number;
+  verbose: boolean;
 
   constructor({
     ref,
@@ -34,6 +35,7 @@ export class Job {
     maxTasks,
     maxDepth,
     timeout,
+    verbose,
   }: {
     abortOnFailure: boolean;
     name: String;
@@ -46,6 +48,7 @@ export class Job {
     maxTasks?: number;
     maxDepth?: number;
     timeout?: number;
+    verbose?: boolean;
   }) {
     this.ref = ref ?? db.collection(utils.jobCollectionPath).doc();
     this.abortOnFailure = abortOnFailure;
@@ -53,6 +56,7 @@ export class Job {
     this.maxTasks = maxTasks ?? 100;
     this.maxDepth = maxDepth ?? 10;
     this.timeout = timeout;
+    this.verbose = verbose ?? false;
 
     // Auto-generate IDs for tasks without explicit IDs
     // Root tasks always have depth 0
@@ -98,6 +102,7 @@ export class Job {
       maxTasks: this.maxTasks,
       maxDepth: this.maxDepth,
       timeout: this.timeout,
+      verbose: this.verbose,
       createdAt: Timestamp.fromDate(this.createdAt),
       updatedAt: Timestamp.fromDate(this.updatedAt),
     };

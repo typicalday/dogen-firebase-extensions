@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleGetUser } from "../../../src/job/handlers/authentication/getUser";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Authentication Get User Test", function() {
   this.timeout(10000);
@@ -47,7 +48,8 @@ describe("Firebase Admin Authentication Get User Test", function() {
       }
     });
     
-    const result = await handleGetUser(task);
+    const context = createMockJobContext();
+    const result = await handleGetUser(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.email).to.equal(testEmail);
@@ -69,7 +71,8 @@ describe("Firebase Admin Authentication Get User Test", function() {
       }
     });
     
-    const result = await handleGetUser(task);
+    const context = createMockJobContext();
+    const result = await handleGetUser(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.email).to.equal(testEmail);
@@ -85,7 +88,8 @@ describe("Firebase Admin Authentication Get User Test", function() {
       }
     });
     
-    const result = await handleGetUser(task);
+    const context = createMockJobContext();
+    const result = await handleGetUser(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.email).to.equal(testEmail);
@@ -98,9 +102,10 @@ describe("Firebase Admin Authentication Get User Test", function() {
       command: "get-user",
       input: {}
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleGetUser(task);
+      await handleGetUser(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.equal("Invalid input: uid, email, or phoneNumber is required");
@@ -115,9 +120,10 @@ describe("Firebase Admin Authentication Get User Test", function() {
         uid: "non-existent-uid"
       }
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleGetUser(task);
+      await handleGetUser(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.include("no user record");
@@ -132,9 +138,10 @@ describe("Firebase Admin Authentication Get User Test", function() {
         email: "nonexistent@example.com"
       }
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleGetUser(task);
+      await handleGetUser(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.include("no user record");

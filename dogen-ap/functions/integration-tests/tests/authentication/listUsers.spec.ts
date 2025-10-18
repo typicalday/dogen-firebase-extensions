@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleListUsers } from "../../../src/job/handlers/authentication/listUsers";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Authentication List Users Test", function() {
   this.timeout(10000);
@@ -46,7 +47,8 @@ describe("Firebase Admin Authentication List Users Test", function() {
       input: {}
     });
     
-    const result = await handleListUsers(task);
+    const context = createMockJobContext();
+    const result = await handleListUsers(task, context);
     
     expect(result).to.have.property("users");
     expect(result.users).to.be.an("array");
@@ -71,7 +73,8 @@ describe("Firebase Admin Authentication List Users Test", function() {
       }
     });
     
-    const result = await handleListUsers(task);
+    const context = createMockJobContext();
+    const result = await handleListUsers(task, context);
     
     expect(result.users).to.have.length.at.most(3);
     expect(result.userCount).to.equal(result.users.length);
@@ -92,11 +95,12 @@ describe("Firebase Admin Authentication List Users Test", function() {
         maxResults: 2
       }
     });
-    
-    const result1 = await handleListUsers(task1);
-    
+
+    const context = createMockJobContext();
+    const result1 = await handleListUsers(task1, context);
+
     expect(result1.users).to.have.length(2);
-    
+
     if (result1.pageToken) {
       // Second request with pageToken
       const task2 = new JobTask({
@@ -107,15 +111,15 @@ describe("Firebase Admin Authentication List Users Test", function() {
           pageToken: result1.pageToken
         }
       });
-      
-      const result2 = await handleListUsers(task2);
-      
+
+      const result2 = await handleListUsers(task2, context);
+
       expect(result2.users).to.have.length.at.least(1);
-      
+
       // Verify we got different users
       const uids1 = result1.users.map((u: any) => u.uid);
       const uids2 = result2.users.map((u: any) => u.uid);
-      
+
       for (const uid of uids2) {
         expect(uids1).to.not.include(uid);
       }
@@ -131,7 +135,8 @@ describe("Firebase Admin Authentication List Users Test", function() {
       }
     });
     
-    const result = await handleListUsers(task);
+    const context = createMockJobContext();
+    const result = await handleListUsers(task, context);
     
     // Find one of our test users
     const testUser = result.users.find((u: any) => 
@@ -156,7 +161,8 @@ describe("Firebase Admin Authentication List Users Test", function() {
       }
     });
     
-    const result = await handleListUsers(task);
+    const context = createMockJobContext();
+    const result = await handleListUsers(task, context);
     
     expect(result.users).to.be.an("array");
     expect(result.userCount).to.be.at.least(0);

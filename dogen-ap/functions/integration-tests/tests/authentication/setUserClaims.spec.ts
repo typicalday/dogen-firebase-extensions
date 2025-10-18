@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleSetUserClaims } from "../../../src/job/handlers/authentication/setUserClaims";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Authentication Set User Claims Test", function() {
   this.timeout(10000);
@@ -44,7 +45,8 @@ describe("Firebase Admin Authentication Set User Claims Test", function() {
       }
     });
     
-    const result = await handleSetUserClaims(task);
+    const context = createMockJobContext();
+    const result = await handleSetUserClaims(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.email).to.equal("test-claims-set@example.com");
@@ -74,7 +76,8 @@ describe("Firebase Admin Authentication Set User Claims Test", function() {
       }
     });
     
-    const result = await handleSetUserClaims(task);
+    const context = createMockJobContext();
+    const result = await handleSetUserClaims(task, context);
     
     expect(result.customClaims).to.deep.equal(updatedClaims);
     expect(result.success).to.equal(true);
@@ -95,7 +98,8 @@ describe("Firebase Admin Authentication Set User Claims Test", function() {
       }
     });
     
-    const result = await handleSetUserClaims(task);
+    const context = createMockJobContext();
+    const result = await handleSetUserClaims(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.customClaims).to.deep.equal({});
@@ -116,7 +120,8 @@ describe("Firebase Admin Authentication Set User Claims Test", function() {
       }
     });
     
-    const result = await handleSetUserClaims(task);
+    const context = createMockJobContext();
+    const result = await handleSetUserClaims(task, context);
     
     expect(result.customClaims).to.deep.equal({});
     expect(result.success).to.equal(true);
@@ -148,7 +153,8 @@ describe("Firebase Admin Authentication Set User Claims Test", function() {
       }
     });
     
-    const result = await handleSetUserClaims(task);
+    const context = createMockJobContext();
+    const result = await handleSetUserClaims(task, context);
     
     expect(result.customClaims).to.deep.equal(complexClaims);
     expect(result.success).to.equal(true);
@@ -166,9 +172,10 @@ describe("Firebase Admin Authentication Set User Claims Test", function() {
         customClaims: { role: "test" }
       }
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleSetUserClaims(task);
+      await handleSetUserClaims(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.equal("Invalid input: uid is required");
@@ -183,9 +190,10 @@ describe("Firebase Admin Authentication Set User Claims Test", function() {
         uid: testUserUid
       }
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleSetUserClaims(task);
+      await handleSetUserClaims(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.equal("Invalid input: customClaims is required (can be null to clear claims)");
@@ -201,9 +209,10 @@ describe("Firebase Admin Authentication Set User Claims Test", function() {
         customClaims: { role: "test" }
       }
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleSetUserClaims(task);
+      await handleSetUserClaims(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.include("no user record");

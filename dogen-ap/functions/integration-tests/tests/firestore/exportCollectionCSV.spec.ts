@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleExportCollectionCSV } from "../../../src/job/handlers/firestore/exportCollectionCSV";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
 
@@ -90,7 +91,8 @@ describe("Firebase Admin Firestore Export Collection CSV Test", function() {
     });
     
     // Execute the handler
-    const result = await handleExportCollectionCSV(task);
+    const context = createMockJobContext();
+    const result = await handleExportCollectionCSV(task, context);
     
     // Verify response structure
     expect(result.collectionPath).to.equal(`firestore/(default)/data/${testCollection}`);
@@ -162,7 +164,8 @@ describe("Firebase Admin Firestore Export Collection CSV Test", function() {
     });
     
     // Execute the handler
-    const result = await handleExportCollectionCSV(task);
+    const context = createMockJobContext();
+    const result = await handleExportCollectionCSV(task, context);
     
     // Download the file
     const tempFilePath = `/tmp/export-csv-delim-${Date.now()}.csv`;
@@ -207,7 +210,8 @@ describe("Firebase Admin Firestore Export Collection CSV Test", function() {
     });
     
     // Execute the handler
-    const result = await handleExportCollectionCSV(task);
+    const context = createMockJobContext();
+    const result = await handleExportCollectionCSV(task, context);
     
     // Verify response structure
     expect(result.collectionPath).to.equal(`firestore/(default)/data/${testCollection}`);
@@ -268,7 +272,8 @@ describe("Firebase Admin Firestore Export Collection CSV Test", function() {
     });
     
     // Execute the handler
-    const result = await handleExportCollectionCSV(task);
+    const context = createMockJobContext();
+    const result = await handleExportCollectionCSV(task, context);
     
     // Download the file
     const tempFilePath = `/tmp/export-csv-nested-${Date.now()}.csv`;
@@ -313,7 +318,8 @@ describe("Firebase Admin Firestore Export Collection CSV Test", function() {
     });
     
     try {
-      await handleExportCollectionCSV(task1);
+      const context = createMockJobContext();
+      await handleExportCollectionCSV(task1, context);
       expect.fail("Expected an error for missing collectionPath");
     } catch (error) {
       expect((error as Error).message).to.include("collectionPath, bucketPathPrefix, and fields are required");
@@ -330,7 +336,8 @@ describe("Firebase Admin Firestore Export Collection CSV Test", function() {
     });
     
     try {
-      await handleExportCollectionCSV(task2);
+      const context = createMockJobContext();
+      await handleExportCollectionCSV(task2, context);
       expect.fail("Expected an error for missing bucketPathPrefix");
     } catch (error) {
       expect((error as Error).message).to.include("collectionPath, bucketPathPrefix, and fields are required");
@@ -347,7 +354,8 @@ describe("Firebase Admin Firestore Export Collection CSV Test", function() {
     });
     
     try {
-      await handleExportCollectionCSV(task3);
+      const context = createMockJobContext();
+      await handleExportCollectionCSV(task3, context);
       expect.fail("Expected an error for missing fields");
     } catch (error) {
       expect((error as Error).message).to.include("collectionPath, bucketPathPrefix, and fields are required");
@@ -365,7 +373,8 @@ describe("Firebase Admin Firestore Export Collection CSV Test", function() {
     });
     
     try {
-      await handleExportCollectionCSV(task4);
+      const context = createMockJobContext();
+      await handleExportCollectionCSV(task4, context);
       expect.fail("Expected an error for empty fields array");
     } catch (error) {
       expect((error as Error).message).to.include("fields are required");

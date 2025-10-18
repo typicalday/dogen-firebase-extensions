@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleExportCollectionJSON } from "../../../src/job/handlers/firestore/exportCollectionJSON";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 import * as fs from "fs";
 
 describe("Firebase Admin Firestore Export Collection JSON Test", function() {
@@ -121,7 +122,8 @@ describe("Firebase Admin Firestore Export Collection JSON Test", function() {
     });
     
     // Execute the handler
-    const result = await handleExportCollectionJSON(task);
+    const context = createMockJobContext();
+    const result = await handleExportCollectionJSON(task, context);
     
     // Verify response structure
     expect(result.collectionPath).to.equal(`firestore/(default)/data/${testCollection}`);
@@ -248,7 +250,8 @@ describe("Firebase Admin Firestore Export Collection JSON Test", function() {
     });
     
     // Execute the handler
-    const result = await handleExportCollectionJSON(task);
+    const context = createMockJobContext();
+    const result = await handleExportCollectionJSON(task, context);
     
     // Verify response includes subcollections flag
     expect(result.includesSubcollections).to.be.true;
@@ -320,7 +323,8 @@ describe("Firebase Admin Firestore Export Collection JSON Test", function() {
     });
     
     try {
-      await handleExportCollectionJSON(task1);
+      const context = createMockJobContext();
+      await handleExportCollectionJSON(task1, context);
       expect.fail("Expected an error for missing collectionPath");
     } catch (error) {
       expect((error as Error).message).to.include("collectionPath and bucketPathPrefix are required");
@@ -336,7 +340,8 @@ describe("Firebase Admin Firestore Export Collection JSON Test", function() {
     });
     
     try {
-      await handleExportCollectionJSON(task2);
+      const context = createMockJobContext();
+      await handleExportCollectionJSON(task2, context);
       expect.fail("Expected an error for missing bucketPathPrefix");
     } catch (error) {
       expect((error as Error).message).to.include("collectionPath and bucketPathPrefix are required");

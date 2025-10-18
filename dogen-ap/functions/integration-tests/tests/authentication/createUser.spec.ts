@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleCreateUser } from "../../../src/job/handlers/authentication/createUser";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Authentication Create User Test", function() {
   this.timeout(10000);
@@ -28,7 +29,7 @@ describe("Firebase Admin Authentication Create User Test", function() {
       emailVerified: false,
       disabled: false
     };
-    
+
     const task = new JobTask({
       service: "authentication",
       command: "create-user",
@@ -36,8 +37,9 @@ describe("Firebase Admin Authentication Create User Test", function() {
         userRecord: userRecord
       }
     });
-    
-    const result = await handleCreateUser(task);
+
+    const context = createMockJobContext();
+    const result = await handleCreateUser(task, context);
     
     expect(result).to.have.property("uid");
     expect(result.email).to.equal(userRecord.email);
@@ -62,7 +64,8 @@ describe("Firebase Admin Authentication Create User Test", function() {
       }
     });
     
-    const result = await handleCreateUser(task);
+    const context = createMockJobContext();
+    const result = await handleCreateUser(task, context);
     
     expect(result).to.have.property("uid");
     expect(result.phoneNumber).to.equal(userRecord.phoneNumber);
@@ -91,7 +94,8 @@ describe("Firebase Admin Authentication Create User Test", function() {
       }
     });
     
-    const result = await handleCreateUser(task);
+    const context = createMockJobContext();
+    const result = await handleCreateUser(task, context);
     
     expect(result).to.have.property("uid");
     expect(result.customClaims).to.deep.equal(customClaims);
@@ -118,7 +122,8 @@ describe("Firebase Admin Authentication Create User Test", function() {
       }
     });
     
-    const result = await handleCreateUser(task);
+    const context = createMockJobContext();
+    const result = await handleCreateUser(task, context);
     
     expect(result).to.have.property("uid");
     expect(result.customClaims).to.be.undefined;
@@ -136,9 +141,11 @@ describe("Firebase Admin Authentication Create User Test", function() {
       command: "create-user",
       input: {}
     });
-    
+
+    const context = createMockJobContext();
+
     try {
-      await handleCreateUser(task);
+      await handleCreateUser(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.equal("Invalid input: userRecord is required");
@@ -158,10 +165,12 @@ describe("Firebase Admin Authentication Create User Test", function() {
         userRecord: userRecord
       }
     });
-    
-    const result1 = await handleCreateUser(task1);
+
+    const context = createMockJobContext();
+
+    const result1 = await handleCreateUser(task1, context);
     testUsers.push(result1.uid);
-    
+
     const task2 = new JobTask({
       service: "authentication",
       command: "create-user",
@@ -169,9 +178,9 @@ describe("Firebase Admin Authentication Create User Test", function() {
         userRecord: userRecord
       }
     });
-    
+
     try {
-      await handleCreateUser(task2);
+      await handleCreateUser(task2, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.include("already in use");

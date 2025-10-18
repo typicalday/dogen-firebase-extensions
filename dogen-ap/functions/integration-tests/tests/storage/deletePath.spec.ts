@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleDeleteStoragePath } from "../../../src/job/handlers/storage/deletePath";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Storage Test", function() {
   this.timeout(10000);
@@ -73,7 +74,8 @@ describe("Firebase Admin Storage Test", function() {
       });
       
       // Execute the handler
-      const result = await handleDeleteStoragePath(task);
+      const context = createMockJobContext();
+      const result = await handleDeleteStoragePath(task, context);
       
       // Verify results
       expect(result.filesDeleted).to.equal(3);
@@ -119,7 +121,8 @@ describe("Firebase Admin Storage Test", function() {
       });
       
       // Execute the handler
-      const result = await handleDeleteStoragePath(task);
+      const context = createMockJobContext();
+      const result = await handleDeleteStoragePath(task, context);
       
       // Verify results
       expect(result.filesDeleted).to.equal(1);
@@ -152,7 +155,8 @@ describe("Firebase Admin Storage Test", function() {
       });
       
       // Execute the handler and expect it to throw
-      await handleDeleteStoragePath(task);
+      const context = createMockJobContext();
+      await handleDeleteStoragePath(task, context);
       // If we get here, the test should fail
       expect.fail("Expected an error for non-existent path");
     } catch (error) {
@@ -193,7 +197,8 @@ describe("Firebase Admin Storage Test", function() {
       });
       
       // Execute the handler
-      const result = await handleDeleteStoragePath(task);
+      const context = createMockJobContext();
+      const result = await handleDeleteStoragePath(task, context);
       
       // Verify results
       expect(result.filesDeleted).to.equal(fileLimit);

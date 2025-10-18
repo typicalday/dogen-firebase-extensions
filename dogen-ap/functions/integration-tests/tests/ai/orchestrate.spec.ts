@@ -15,6 +15,8 @@ import {
   findTaskCapability
 } from "../../../lib/job/handlers/ai/orchestrate/catalog";
 import { AITaskPlan } from "../../../lib/job/handlers/ai/orchestrate/types";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
+import { FirebaseTaskStatus } from "../../../src/job/jobTask";
 
 describe("AI Orchestration - Validation Logic", () => {
   describe("Task Catalog", () => {
@@ -768,9 +770,10 @@ describe("AI Orchestration - Validation Logic", () => {
         depth: 10 // Already at max depth
       });
 
+      const context = createMockJobContext();
       let errorThrown = false;
       try {
-        await handleOrchestrate(task);
+        await handleOrchestrate(task, context);
       } catch (error: any) {
         errorThrown = true;
         expect(error.message).to.include("Cannot orchestrate at depth 10");
@@ -836,7 +839,8 @@ describe("AI Orchestration - Validation Logic", () => {
           depth: 9
         });
 
-        const result = await handleOrchestrate(task);
+        const context = createMockJobContext();
+        const result = await handleOrchestrate(task, context);
 
         expect(result).to.exist;
         expect(result.childTasks).to.have.lengthOf(1);
@@ -863,9 +867,10 @@ describe("AI Orchestration - Validation Logic", () => {
         depth: 10
       });
 
+      const context = createMockJobContext();
       let errorThrown = false;
       try {
-        await handleOrchestrate(task);
+        await handleOrchestrate(task, context);
       } catch (error: any) {
         errorThrown = true;
         expect(error.message).to.include("Cannot orchestrate at depth 10");
@@ -928,7 +933,8 @@ describe("AI Orchestration - Validation Logic", () => {
           depth: 15
         });
 
-        const result = await handleOrchestrate(task);
+        const context = createMockJobContext();
+        const result = await handleOrchestrate(task, context);
 
         expect(result).to.exist;
         expect(result.childTasks).to.have.lengthOf(1);
@@ -955,9 +961,10 @@ describe("AI Orchestration - Validation Logic", () => {
         depth: 0
       });
 
+      const context = createMockJobContext();
       let errorThrown = false;
       try {
-        await handleOrchestrate(task);
+        await handleOrchestrate(task, context);
       } catch (error: any) {
         errorThrown = true;
         expect(error.message).to.include("Cannot orchestrate at depth 0");
@@ -1020,7 +1027,8 @@ describe("AI Orchestration - Validation Logic", () => {
           // depth not specified - should default to 0 in JobTask constructor
         });
 
-        const result = await handleOrchestrate(task);
+        const context = createMockJobContext();
+        const result = await handleOrchestrate(task, context);
 
         expect(result).to.exist;
         expect(result.childTasks).to.have.lengthOf(1);
@@ -1271,7 +1279,8 @@ describe("AI Orchestration - Validation Logic", () => {
           depth: 0
         });
 
-        const result = await handleOrchestrate(task);
+        const context = createMockJobContext();
+        const result = await handleOrchestrate(task, context);
 
         // Should have succeeded after retry
         expect(result).to.exist;
@@ -1357,7 +1366,8 @@ describe("AI Orchestration - Validation Logic", () => {
           depth: 0
         });
 
-        const result = await handleOrchestrate(task);
+        const context = createMockJobContext();
+        const result = await handleOrchestrate(task, context);
 
         // Should return plannedTasks for human review
         expect(result.dryRun).to.be.true;
@@ -1424,7 +1434,8 @@ describe("AI Orchestration - Validation Logic", () => {
           depth: 0
         });
 
-        const result = await handleOrchestrate(task);
+        const context = createMockJobContext();
+        const result = await handleOrchestrate(task, context);
 
         // Should default to dryRun=true and return plannedTasks
         expect(result.dryRun).to.be.true;
@@ -1499,7 +1510,8 @@ describe("AI Orchestration - Validation Logic", () => {
           depth: 0
         });
 
-        const result = await handleOrchestrate(task);
+        const context = createMockJobContext();
+        const result = await handleOrchestrate(task, context);
 
         // Should return childTasks for automatic execution
         expect(result.dryRun).to.be.false;
@@ -1565,7 +1577,8 @@ describe("AI Orchestration - Validation Logic", () => {
           depth: 0
         });
 
-        const dryRunResult = await handleOrchestrate(dryRunTask);
+        const context = createMockJobContext();
+        const dryRunResult = await handleOrchestrate(dryRunTask, context);
         expect(dryRunResult.dryRun).to.equal(true);
         expect(dryRunResult.dryRun).to.be.a('boolean');
 
@@ -1581,7 +1594,7 @@ describe("AI Orchestration - Validation Logic", () => {
           depth: 0
         });
 
-        const executeResult = await handleOrchestrate(executeTask);
+        const executeResult = await handleOrchestrate(executeTask, context);
         expect(executeResult.dryRun).to.equal(false);
         expect(executeResult.dryRun).to.be.a('boolean');
       } finally {
@@ -1640,9 +1653,10 @@ describe("AI Orchestration - Validation Logic", () => {
           depth: 0
         });
 
+        const context = createMockJobContext();
         let dryRunError: any;
         try {
-          await handleOrchestrate(dryRunTask);
+          await handleOrchestrate(dryRunTask, context);
         } catch (error) {
           dryRunError = error;
         }
@@ -1665,7 +1679,7 @@ describe("AI Orchestration - Validation Logic", () => {
 
         let executeError: any;
         try {
-          await handleOrchestrate(executeTask);
+          await handleOrchestrate(executeTask, context);
         } catch (error) {
           executeError = error;
         }
@@ -1755,9 +1769,10 @@ describe("AI Orchestration - Validation Logic", () => {
         });
 
         // Attempt to execute - should throw error
+        const context = createMockJobContext();
         let errorThrown = false;
         try {
-          await handleOrchestrate(task);
+          await handleOrchestrate(task, context);
         } catch (error: any) {
           errorThrown = true;
           expect(error.message).to.include("Task limit exceeded");
@@ -1842,7 +1857,8 @@ describe("AI Orchestration - Validation Logic", () => {
         });
 
         // Execute - should succeed
-        const result = await handleOrchestrate(task);
+        const context = createMockJobContext();
+        const result = await handleOrchestrate(task, context);
 
         expect(result).to.exist;
         expect(result.childTasks).to.have.lengthOf(2);
@@ -1899,9 +1915,10 @@ describe("AI Orchestration - Validation Logic", () => {
         });
 
         // Attempt to execute - should throw timeout error
+        const context = createMockJobContext();
         let errorThrown = false;
         try {
-          await handleOrchestrate(task);
+          await handleOrchestrate(task, context);
         } catch (error: any) {
           errorThrown = true;
           expect(error.message).to.include("AI call timeout after 100ms");
@@ -1910,6 +1927,680 @@ describe("AI Orchestration - Validation Logic", () => {
         expect(errorThrown).to.be.true;
       } finally {
         // Restore original method
+        VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
+      }
+    });
+  });
+
+  describe("Handler - Dependency Context Passing", () => {
+    it("should include single dependency task info in AI prompt", async function() {
+      this.timeout(10000);
+
+      const { handleOrchestrate } = await import("../../../lib/job/handlers/ai/orchestrate/handler");
+      const { VertexAI } = await import("@google-cloud/vertexai");
+      const { JobTask } = await import("../../../lib/job/jobTask");
+      const { createMockJobContextWithTasks } = await import("../../helpers/jobContextHelper");
+
+      const originalGetGenerativeModel = VertexAI.prototype.getGenerativeModel;
+
+      try {
+        let capturedPrompt = "";
+
+        // Create a completed dependency task
+        const dependencyTask = new JobTask({
+          id: "dep-task-1",
+          service: "firestore",
+          command: "copy-collection",
+          input: {
+            sourcePath: "firestore/(default)/data/users",
+            destinationPath: "firestore/(default)/data/users_backup"
+          },
+          status: FirebaseTaskStatus.Succeeded,
+          output: {
+            copiedCount: 100,
+            targetPath: "firestore/(default)/data/users_backup"
+          }
+        });
+
+        // Create context with the completed dependency task
+        const context = createMockJobContextWithTasks([dependencyTask]);
+
+        // Mock AI to capture the prompt
+        VertexAI.prototype.getGenerativeModel = function() {
+          return {
+            generateContent: async (request: any) => {
+              capturedPrompt = request.contents[0].parts[0].text;
+
+              return {
+                response: {
+                  candidates: [{
+                    content: {
+                      parts: [{
+                        text: JSON.stringify({
+                          tasks: [{
+                            service: "firestore",
+                            command: "create-document",
+                            input: {
+                              documentPath: "firestore/(default)/data/audit/log1",
+                              documentData: { action: "backup-completed" }
+                            }
+                          }]
+                        })
+                      }]
+                    }
+                  }],
+                  usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50, totalTokenCount: 150 }
+                }
+              };
+            }
+          };
+        } as any;
+
+        // Create orchestrator task that depends on the dependency task
+        const task = new JobTask({
+          id: "test-orchestrator",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Create audit log based on backup results",
+            dryRun: false
+          },
+          dependsOn: ["dep-task-1"],
+          depth: 0
+        });
+
+        await handleOrchestrate(task, context);
+
+        // Verify dependency section is present
+        expect(capturedPrompt).to.include("## Dependency Task Results");
+        expect(capturedPrompt).to.include("The following tasks have completed");
+
+        // Verify task details are included
+        expect(capturedPrompt).to.include("### Task: dep-task-1");
+        expect(capturedPrompt).to.include("**Service**: firestore");
+        expect(capturedPrompt).to.include("**Command**: copy-collection");
+
+        // Verify output is formatted as JSON
+        expect(capturedPrompt).to.include("**Output**:");
+        expect(capturedPrompt).to.include("```json");
+        expect(capturedPrompt).to.include('"copiedCount": 100');
+        expect(capturedPrompt).to.include('"targetPath": "firestore/(default)/data/users_backup"');
+      } finally {
+        VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
+      }
+    });
+
+    it("should include multiple dependency task info in AI prompt", async function() {
+      this.timeout(10000);
+
+      const { handleOrchestrate } = await import("../../../lib/job/handlers/ai/orchestrate/handler");
+      const { VertexAI } = await import("@google-cloud/vertexai");
+      const { JobTask } = await import("../../../lib/job/jobTask");
+      const { createMockJobContextWithTasks } = await import("../../helpers/jobContextHelper");
+
+      const originalGetGenerativeModel = VertexAI.prototype.getGenerativeModel;
+
+      try {
+        let capturedPrompt = "";
+
+        // Create multiple completed dependency tasks
+        const dep1 = new JobTask({
+          id: "backup-task",
+          service: "firestore",
+          command: "copy-collection",
+          input: { sourcePath: "firestore/(default)/data/users", destinationPath: "firestore/(default)/data/users_backup" },
+          status: FirebaseTaskStatus.Succeeded,
+          output: { copiedCount: 100 }
+        });
+
+        const dep2 = new JobTask({
+          id: "export-task",
+          service: "firestore",
+          command: "export-collection-json",
+          input: { collectionPath: "firestore/(default)/data/users", bucketPathPrefix: "gs://bucket/exports" },
+          status: FirebaseTaskStatus.Succeeded,
+          output: { exportedCount: 100, exportPath: "gs://bucket/exports/users.json" }
+        });
+
+        const context = createMockJobContextWithTasks([dep1, dep2]);
+
+        // Mock AI to capture the prompt
+        VertexAI.prototype.getGenerativeModel = function() {
+          return {
+            generateContent: async (request: any) => {
+              capturedPrompt = request.contents[0].parts[0].text;
+
+              return {
+                response: {
+                  candidates: [{
+                    content: {
+                      parts: [{
+                        text: JSON.stringify({
+                          tasks: [{
+                            service: "firestore",
+                            command: "create-document",
+                            input: {
+                              documentPath: "firestore/(default)/data/logs/completion",
+                              documentData: { status: "complete" }
+                            }
+                          }]
+                        })
+                      }]
+                    }
+                  }],
+                  usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50, totalTokenCount: 150 }
+                }
+              };
+            }
+          };
+        } as any;
+
+        // Create orchestrator task that depends on both tasks
+        const task = new JobTask({
+          id: "orchestrator",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Create completion log",
+            dryRun: false
+          },
+          dependsOn: ["backup-task", "export-task"],
+          depth: 0
+        });
+
+        await handleOrchestrate(task, context);
+
+        // Verify dependency section is present
+        expect(capturedPrompt).to.include("## Dependency Task Results");
+
+        // Verify both tasks are included
+        expect(capturedPrompt).to.include("### Task: backup-task");
+        expect(capturedPrompt).to.include("**Service**: firestore");
+        expect(capturedPrompt).to.include("**Command**: copy-collection");
+        expect(capturedPrompt).to.include('"copiedCount": 100');
+
+        expect(capturedPrompt).to.include("### Task: export-task");
+        expect(capturedPrompt).to.include("**Command**: export-collection-json");
+        expect(capturedPrompt).to.include('"exportedCount": 100');
+        expect(capturedPrompt).to.include('"exportPath": "gs://bucket/exports/users.json"');
+      } finally {
+        VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
+      }
+    });
+
+    it("should include dependency output in prompt when available", async function() {
+      this.timeout(10000);
+
+      const { handleOrchestrate } = await import("../../../lib/job/handlers/ai/orchestrate/handler");
+      const { VertexAI } = await import("@google-cloud/vertexai");
+      const { JobTask } = await import("../../../lib/job/jobTask");
+      const { createMockJobContextWithTasks } = await import("../../helpers/jobContextHelper");
+
+      const originalGetGenerativeModel = VertexAI.prototype.getGenerativeModel;
+
+      try {
+        let capturedPrompt = "";
+
+        // Create dependency task with complex output
+        const depTask = new JobTask({
+          id: "data-task",
+          service: "authentication",
+          command: "create-user",
+          input: { userRecord: { email: "test@example.com" } },
+          status: FirebaseTaskStatus.Succeeded,
+          output: {
+            uid: "user-123",
+            email: "test@example.com",
+            createdAt: "2025-01-17T10:00:00Z",
+            customClaims: { role: "admin", department: "engineering" }
+          }
+        });
+
+        const context = createMockJobContextWithTasks([depTask]);
+
+        VertexAI.prototype.getGenerativeModel = function() {
+          return {
+            generateContent: async (request: any) => {
+              capturedPrompt = request.contents[0].parts[0].text;
+
+              return {
+                response: {
+                  candidates: [{
+                    content: {
+                      parts: [{
+                        text: JSON.stringify({
+                          tasks: [{
+                            service: "firestore",
+                            command: "create-document",
+                            input: { documentPath: "firestore/(default)/data/users/user-123", documentData: {} }
+                          }]
+                        })
+                      }]
+                    }
+                  }],
+                  usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50, totalTokenCount: 150 }
+                }
+              };
+            }
+          };
+        } as any;
+
+        const task = new JobTask({
+          id: "orchestrator",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Create user profile",
+            dryRun: false
+          },
+          dependsOn: ["data-task"],
+          depth: 0
+        });
+
+        await handleOrchestrate(task, context);
+
+        // Verify output structure and content
+        expect(capturedPrompt).to.include("**Output**:");
+        expect(capturedPrompt).to.include("```json");
+        expect(capturedPrompt).to.include('"uid": "user-123"');
+        expect(capturedPrompt).to.include('"email": "test@example.com"');
+        expect(capturedPrompt).to.include('"createdAt": "2025-01-17T10:00:00Z"');
+        expect(capturedPrompt).to.include('"customClaims"');
+        expect(capturedPrompt).to.include('"role": "admin"');
+        expect(capturedPrompt).to.include('"department": "engineering"');
+      } finally {
+        VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
+      }
+    });
+
+    it("should handle dependency task without output", async function() {
+      this.timeout(10000);
+
+      const { handleOrchestrate } = await import("../../../lib/job/handlers/ai/orchestrate/handler");
+      const { VertexAI } = await import("@google-cloud/vertexai");
+      const { JobTask } = await import("../../../lib/job/jobTask");
+      const { createMockJobContextWithTasks } = await import("../../helpers/jobContextHelper");
+
+      const originalGetGenerativeModel = VertexAI.prototype.getGenerativeModel;
+
+      try {
+        let capturedPrompt = "";
+
+        // Create dependency task with no output
+        const depTask = new JobTask({
+          id: "cleanup-task",
+          service: "storage",
+          command: "delete-path",
+          input: { path: "gs://bucket/temp/" },
+          status: FirebaseTaskStatus.Succeeded
+          // No output field
+        });
+
+        const context = createMockJobContextWithTasks([depTask]);
+
+        VertexAI.prototype.getGenerativeModel = function() {
+          return {
+            generateContent: async (request: any) => {
+              capturedPrompt = request.contents[0].parts[0].text;
+
+              return {
+                response: {
+                  candidates: [{
+                    content: {
+                      parts: [{
+                        text: JSON.stringify({
+                          tasks: [{
+                            service: "firestore",
+                            command: "create-document",
+                            input: { documentPath: "firestore/(default)/data/logs/cleanup", documentData: {} }
+                          }]
+                        })
+                      }]
+                    }
+                  }],
+                  usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50, totalTokenCount: 150 }
+                }
+              };
+            }
+          };
+        } as any;
+
+        const task = new JobTask({
+          id: "orchestrator",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Log cleanup completion",
+            dryRun: false
+          },
+          dependsOn: ["cleanup-task"],
+          depth: 0
+        });
+
+        await handleOrchestrate(task, context);
+
+        // Verify task is still included but with no output data note
+        expect(capturedPrompt).to.include("### Task: cleanup-task");
+        expect(capturedPrompt).to.include("**Service**: storage");
+        expect(capturedPrompt).to.include("**Command**: delete-path");
+        expect(capturedPrompt).to.include("**Output**: (no output data)");
+
+        // Should not have JSON block for output
+        const taskSection = capturedPrompt.substring(
+          capturedPrompt.indexOf("### Task: cleanup-task"),
+          capturedPrompt.indexOf("\n\n## ") !== -1 ? capturedPrompt.indexOf("\n\n## ") : capturedPrompt.length
+        );
+        expect(taskSection).to.not.include("```json");
+      } finally {
+        VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
+      }
+    });
+
+    it("should handle dependency task with empty output object", async function() {
+      this.timeout(10000);
+
+      const { handleOrchestrate } = await import("../../../lib/job/handlers/ai/orchestrate/handler");
+      const { VertexAI } = await import("@google-cloud/vertexai");
+      const { JobTask } = await import("../../../lib/job/jobTask");
+      const { createMockJobContextWithTasks } = await import("../../helpers/jobContextHelper");
+
+      const originalGetGenerativeModel = VertexAI.prototype.getGenerativeModel;
+
+      try {
+        let capturedPrompt = "";
+
+        // Create dependency task with empty output object
+        const depTask = new JobTask({
+          id: "empty-output-task",
+          service: "firestore",
+          command: "delete-path",
+          input: { path: "firestore/(default)/data/temp" },
+          status: FirebaseTaskStatus.Succeeded,
+          output: {} // Empty object
+        });
+
+        const context = createMockJobContextWithTasks([depTask]);
+
+        VertexAI.prototype.getGenerativeModel = function() {
+          return {
+            generateContent: async (request: any) => {
+              capturedPrompt = request.contents[0].parts[0].text;
+
+              return {
+                response: {
+                  candidates: [{
+                    content: {
+                      parts: [{
+                        text: JSON.stringify({
+                          tasks: [{
+                            service: "firestore",
+                            command: "create-document",
+                            input: { documentPath: "firestore/(default)/data/logs/delete", documentData: {} }
+                          }]
+                        })
+                      }]
+                    }
+                  }],
+                  usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50, totalTokenCount: 150 }
+                }
+              };
+            }
+          };
+        } as any;
+
+        const task = new JobTask({
+          id: "orchestrator",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Log deletion",
+            dryRun: false
+          },
+          dependsOn: ["empty-output-task"],
+          depth: 0
+        });
+
+        await handleOrchestrate(task, context);
+
+        // Verify empty output is handled correctly
+        expect(capturedPrompt).to.include("### Task: empty-output-task");
+        expect(capturedPrompt).to.include("**Output**: (no output data)");
+      } finally {
+        VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
+      }
+    });
+
+    it("should not include dependency section when no dependencies exist", async function() {
+      this.timeout(10000);
+
+      const { handleOrchestrate } = await import("../../../lib/job/handlers/ai/orchestrate/handler");
+      const { VertexAI } = await import("@google-cloud/vertexai");
+      const { JobTask } = await import("../../../lib/job/jobTask");
+      const { createMockJobContext } = await import("../../helpers/jobContextHelper");
+
+      const originalGetGenerativeModel = VertexAI.prototype.getGenerativeModel;
+
+      try {
+        let capturedPrompt = "";
+
+        const context = createMockJobContext();
+
+        VertexAI.prototype.getGenerativeModel = function() {
+          return {
+            generateContent: async (request: any) => {
+              capturedPrompt = request.contents[0].parts[0].text;
+
+              return {
+                response: {
+                  candidates: [{
+                    content: {
+                      parts: [{
+                        text: JSON.stringify({
+                          tasks: [{
+                            service: "firestore",
+                            command: "create-document",
+                            input: { documentPath: "firestore/(default)/data/test/doc", documentData: {} }
+                          }]
+                        })
+                      }]
+                    }
+                  }],
+                  usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50, totalTokenCount: 150 }
+                }
+              };
+            }
+          };
+        } as any;
+
+        // Task with no dependencies
+        const task = new JobTask({
+          id: "orchestrator",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Create a test document",
+            dryRun: false
+          },
+          depth: 0
+        });
+
+        await handleOrchestrate(task, context);
+
+        // Verify dependency section is NOT present
+        expect(capturedPrompt).to.not.include("## Dependency Task Results");
+        expect(capturedPrompt).to.not.include("The following tasks have completed");
+
+        // But the user request should still be there
+        expect(capturedPrompt).to.include("# User Request");
+        expect(capturedPrompt).to.include("Create a test document");
+      } finally {
+        VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
+      }
+    });
+
+    it("should include dependency info with verbose mode enabled", async function() {
+      this.timeout(10000);
+
+      const { handleOrchestrate } = await import("../../../lib/job/handlers/ai/orchestrate/handler");
+      const { VertexAI } = await import("@google-cloud/vertexai");
+      const { JobTask } = await import("../../../lib/job/jobTask");
+      const { createMockJobContextWithTasks } = await import("../../helpers/jobContextHelper");
+
+      const originalGetGenerativeModel = VertexAI.prototype.getGenerativeModel;
+      const originalLog = console.log;
+      const logs: string[] = [];
+
+      try {
+        let capturedPrompt = "";
+
+        // Capture console logs
+        console.log = (...args: any[]) => {
+          logs.push(args.join(" "));
+        };
+
+        const depTask = new JobTask({
+          id: "verbose-dep",
+          service: "firestore",
+          command: "copy-collection",
+          input: { sourcePath: "firestore/(default)/data/a", destinationPath: "firestore/(default)/data/b" },
+          status: FirebaseTaskStatus.Succeeded,
+          output: { result: "success" }
+        });
+
+        const context = createMockJobContextWithTasks([depTask], { verbose: true });
+
+        VertexAI.prototype.getGenerativeModel = function() {
+          return {
+            generateContent: async (request: any) => {
+              capturedPrompt = request.contents[0].parts[0].text;
+
+              return {
+                response: {
+                  candidates: [{
+                    content: {
+                      parts: [{
+                        text: JSON.stringify({
+                          tasks: [{
+                            service: "firestore",
+                            command: "create-document",
+                            input: { documentPath: "firestore/(default)/data/log/1", documentData: {} }
+                          }]
+                        })
+                      }]
+                    }
+                  }],
+                  usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50, totalTokenCount: 150 }
+                }
+              };
+            }
+          };
+        } as any;
+
+        const task = new JobTask({
+          id: "orchestrator",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Create log",
+            dryRun: false,
+            verbose: true
+          },
+          dependsOn: ["verbose-dep"],
+          depth: 0
+        });
+
+        await handleOrchestrate(task, context);
+
+        // Verify dependency info is in prompt
+        expect(capturedPrompt).to.include("### Task: verbose-dep");
+        expect(capturedPrompt).to.include('"result": "success"');
+
+        // Verify verbose logging happened
+        const relevantLogs = logs.filter(log => log.includes("dependency"));
+        expect(relevantLogs.length).to.be.greaterThan(0);
+
+        const collectedLog = logs.find(log => log.includes("Collected") && log.includes("dependency task"));
+        expect(collectedLog).to.exist;
+        expect(collectedLog).to.include("1 dependency task(s)");
+      } finally {
+        VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
+        console.log = originalLog;
+      }
+    });
+
+    it("should include dependency info without verbose mode", async function() {
+      this.timeout(10000);
+
+      const { handleOrchestrate } = await import("../../../lib/job/handlers/ai/orchestrate/handler");
+      const { VertexAI } = await import("@google-cloud/vertexai");
+      const { JobTask } = await import("../../../lib/job/jobTask");
+      const { createMockJobContextWithTasks } = await import("../../helpers/jobContextHelper");
+
+      const originalGetGenerativeModel = VertexAI.prototype.getGenerativeModel;
+
+      try {
+        let capturedPrompt = "";
+
+        const depTask = new JobTask({
+          id: "silent-dep",
+          service: "storage",
+          command: "delete-path",
+          input: { path: "gs://bucket/old/" },
+          status: FirebaseTaskStatus.Succeeded,
+          output: { deletedFiles: 25 }
+        });
+
+        const context = createMockJobContextWithTasks([depTask], { verbose: false });
+
+        VertexAI.prototype.getGenerativeModel = function() {
+          return {
+            generateContent: async (request: any) => {
+              capturedPrompt = request.contents[0].parts[0].text;
+
+              return {
+                response: {
+                  candidates: [{
+                    content: {
+                      parts: [{
+                        text: JSON.stringify({
+                          tasks: [{
+                            service: "firestore",
+                            command: "create-document",
+                            input: { documentPath: "firestore/(default)/data/log/delete", documentData: {} }
+                          }]
+                        })
+                      }]
+                    }
+                  }],
+                  usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 50, totalTokenCount: 150 }
+                }
+              };
+            }
+          };
+        } as any;
+
+        const task = new JobTask({
+          id: "orchestrator",
+          service: "ai",
+          command: "orchestrate",
+          input: {
+            prompt: "Log deletion",
+            dryRun: false,
+            verbose: false
+          },
+          dependsOn: ["silent-dep"],
+          depth: 0
+        });
+
+        await handleOrchestrate(task, context);
+
+        // Verify dependency info is still included even without verbose mode
+        expect(capturedPrompt).to.include("## Dependency Task Results");
+        expect(capturedPrompt).to.include("### Task: silent-dep");
+        expect(capturedPrompt).to.include("**Service**: storage");
+        expect(capturedPrompt).to.include("**Command**: delete-path");
+        expect(capturedPrompt).to.include('"deletedFiles": 25');
+      } finally {
         VertexAI.prototype.getGenerativeModel = originalGetGenerativeModel;
       }
     });

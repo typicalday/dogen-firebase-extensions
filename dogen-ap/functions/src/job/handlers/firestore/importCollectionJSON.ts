@@ -1,4 +1,5 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import { BatchManager } from "../../../utils/batchManager";
 import * as admin from "firebase-admin";
 import { Timestamp, GeoPoint } from "firebase-admin/firestore";
@@ -19,7 +20,7 @@ interface ImportMetadata {
   includesSubcollections: boolean;
 }
 
-export async function handleImportCollectionJSON(task: JobTask): Promise<Record<string, any>> {
+export async function handleImportCollectionJSON(task: JobTask, context: JobContext): Promise<Record<string, any>> {
   const input = task.input as ImportTaskInput | undefined;
   
   if (!input?.collectionPath || !input?.bucketPath) {

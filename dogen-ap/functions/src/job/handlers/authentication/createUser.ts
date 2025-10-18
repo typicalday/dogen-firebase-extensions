@@ -1,7 +1,8 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import * as admin from "firebase-admin";
 
-export async function handleCreateUser(task: JobTask): Promise<Record<string, any>> {
+export async function handleCreateUser(task: JobTask, context: JobContext): Promise<Record<string, any>> {
   const userRecord = task.input?.userRecord;
   const customClaims = task.input?.customClaims;
   

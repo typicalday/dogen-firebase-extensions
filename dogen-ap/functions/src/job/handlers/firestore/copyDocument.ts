@@ -1,9 +1,11 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import { copyCollection } from "./copyCollection";
 import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 
 export async function handleCopyDocument(
-    task: JobTask
+    task: JobTask,
+    context: JobContext
 ): Promise<Record<string, any>> {
     const sourcePath = task.input?.sourcePath;
     const destinationPath = task.input?.destinationPath;

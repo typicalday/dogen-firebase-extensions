@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleCreateDocument } from "../../../src/job/handlers/firestore/createDocument";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Firestore Create Document Test", function() {
   this.timeout(10000);
@@ -48,7 +49,8 @@ describe("Firebase Admin Firestore Create Document Test", function() {
     });
     
     // Execute the handler
-    const result = await handleCreateDocument(task);
+    const context = createMockJobContext();
+    const result = await handleCreateDocument(task, context);
     
     // Verify response
     expect(result.created).to.equal(`firestore/(default)/data/${testCollection}/${testDoc}`);
@@ -84,7 +86,8 @@ describe("Firebase Admin Firestore Create Document Test", function() {
     });
     
     // Execute the handler
-    const result = await handleCreateDocument(task);
+    const context = createMockJobContext();
+    const result = await handleCreateDocument(task, context);
     
     // Verify response
     expect(result.created).to.equal(`firestore/(default)/data/${testCollection}/${testDoc}/${nestedCollection}/${nestedDoc}`);
@@ -109,8 +112,10 @@ describe("Firebase Admin Firestore Create Document Test", function() {
       }
     });
     
+    const context = createMockJobContext();
+
     try {
-      await handleCreateDocument(task);
+      await handleCreateDocument(task, context);
       expect.fail("Expected an error for invalid document path");
     } catch (error) {
       expect((error as Error).message).to.include("Invalid documentPath: Document path should have an even number of segments");
@@ -125,9 +130,11 @@ describe("Firebase Admin Firestore Create Document Test", function() {
         documentData: { test: "data" }
       }
     });
-    
+
+    const context = createMockJobContext();
+
     try {
-      await handleCreateDocument(task);
+      await handleCreateDocument(task, context);
       expect.fail("Expected an error for missing document path");
     } catch (error) {
       expect((error as Error).message).to.include("Invalid documentPath");
@@ -142,9 +149,11 @@ describe("Firebase Admin Firestore Create Document Test", function() {
         documentPath: `firestore/(default)/data/${testCollection}/missing-data-doc`
       }
     });
-    
+
+    const context = createMockJobContext();
+
     try {
-      await handleCreateDocument(task);
+      await handleCreateDocument(task, context);
       expect.fail("Expected an error for missing document data");
     } catch (error) {
       expect((error as Error).message).to.include("Invalid documentData");

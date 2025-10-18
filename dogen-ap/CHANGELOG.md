@@ -1,5 +1,10 @@
+## Version 4.1.7
+- Add verbose flag to job and ai orchestrate task.
+- Include dependency task results in AI orchestrate prompt.
+
 ## Version 4.1.6
 - Fix import errors.
+
 ## Version 4.1.5
 - Fixed issue with dependencies.
 

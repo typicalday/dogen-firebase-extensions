@@ -1,10 +1,11 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import { getBucketByName, parseStoragePath } from "../../../utils/utils";
 
 const BATCH_SIZE = 100; // Number of files to delete in parallel
 const MAX_FILES = 1; // Safety limit to prevent runaway deletions
 
-export async function handleDeleteStoragePath(task: JobTask): Promise<Record<string, any>> {
+export async function handleDeleteStoragePath(task: JobTask, context: JobContext): Promise<Record<string, any>> {
   const path = task.input?.path;
   const limit = task.input?.limit !== undefined ? parseInt(String(task.input.limit), 10) : MAX_FILES;
   console.log(`Handling delete path: ${path} with limit: ${limit}`);

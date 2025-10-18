@@ -1,4 +1,5 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import * as admin from "firebase-admin";
 import { Timestamp, DocumentReference, GeoPoint } from "firebase-admin/firestore";
 import { VectorValue } from "@google-cloud/firestore";
@@ -35,7 +36,8 @@ const SPECIAL_FIELDS = {
 } as const;
 
 export async function handleExportCollectionCSV(
-  task: JobTask
+  task: JobTask,
+  context: JobContext
 ): Promise<Record<string, any>> {
   const input = task.input as ExportCsvTaskInput | undefined;
 

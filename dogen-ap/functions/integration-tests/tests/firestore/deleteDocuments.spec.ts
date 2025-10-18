@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleDeleteDocuments } from "../../../src/job/handlers/firestore/deleteDocuments";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Firestore Delete Documents Test", function() {
   this.timeout(10000);
@@ -57,7 +58,8 @@ describe("Firebase Admin Firestore Delete Documents Test", function() {
     });
     
     // Execute the handler
-    const result = await handleDeleteDocuments(task);
+    const context = createMockJobContext();
+    const result = await handleDeleteDocuments(task, context);
     
     // Verify response
     expect(result.deleted).to.deep.equal(paths);
@@ -79,7 +81,8 @@ describe("Firebase Admin Firestore Delete Documents Test", function() {
     });
     
     try {
-      await handleDeleteDocuments(task);
+      const context = createMockJobContext();
+    await handleDeleteDocuments(task, context);
       expect.fail("Expected an error for empty paths array");
     } catch (error) {
       expect((error as Error).message).to.include("must be a non-empty array");
@@ -94,7 +97,8 @@ describe("Firebase Admin Firestore Delete Documents Test", function() {
     });
     
     try {
-      await handleDeleteDocuments(task);
+      const context = createMockJobContext();
+    await handleDeleteDocuments(task, context);
       expect.fail("Expected an error for missing paths");
     } catch (error) {
       expect((error as Error).message).to.include("must be a non-empty array");
@@ -122,7 +126,8 @@ describe("Firebase Admin Firestore Delete Documents Test", function() {
     });
     
     // This should not throw an error even though one document doesn't exist
-    await handleDeleteDocuments(task);
+    const context = createMockJobContext();
+    await handleDeleteDocuments(task, context);
     
     // Verify the existing document was deleted
     const doc = await db.collection(testCollection).doc(tempDoc1).get();

@@ -1,7 +1,8 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import * as admin from "firebase-admin";
 
-export async function handleListUsers(task: JobTask): Promise<Record<string, any>> {
+export async function handleListUsers(task: JobTask, context: JobContext): Promise<Record<string, any>> {
   const maxResults = task.input?.maxResults || 1000;
   const pageToken = task.input?.pageToken;
   

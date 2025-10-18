@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleUpdateUser } from "../../../src/job/handlers/authentication/updateUser";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Authentication Update User Test", function() {
   this.timeout(10000);
@@ -44,7 +45,8 @@ describe("Firebase Admin Authentication Update User Test", function() {
       }
     });
     
-    const result = await handleUpdateUser(task);
+    const context = createMockJobContext();
+    const result = await handleUpdateUser(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.email).to.equal("updated-email@example.com");
@@ -65,7 +67,8 @@ describe("Firebase Admin Authentication Update User Test", function() {
       }
     });
     
-    const result = await handleUpdateUser(task);
+    const context = createMockJobContext();
+    const result = await handleUpdateUser(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.displayName).to.equal("Updated Name");
@@ -86,7 +89,8 @@ describe("Firebase Admin Authentication Update User Test", function() {
       }
     });
     
-    const result = await handleUpdateUser(task);
+    const context = createMockJobContext();
+    const result = await handleUpdateUser(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.phoneNumber).to.equal("+1234567892");
@@ -106,7 +110,8 @@ describe("Firebase Admin Authentication Update User Test", function() {
       }
     });
     
-    const result = await handleUpdateUser(task);
+    const context = createMockJobContext();
+    const result = await handleUpdateUser(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.emailVerified).to.equal(true);
@@ -126,7 +131,8 @@ describe("Firebase Admin Authentication Update User Test", function() {
       }
     });
     
-    const result = await handleUpdateUser(task);
+    const context = createMockJobContext();
+    const result = await handleUpdateUser(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.disabled).to.equal(true);
@@ -146,7 +152,8 @@ describe("Firebase Admin Authentication Update User Test", function() {
       }
     });
     
-    const result = await handleUpdateUser(task);
+    const context = createMockJobContext();
+    const result = await handleUpdateUser(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     // Password is not returned in the result, so we just verify the update succeeded
@@ -173,7 +180,8 @@ describe("Firebase Admin Authentication Update User Test", function() {
       }
     });
     
-    const result = await handleUpdateUser(task);
+    const context = createMockJobContext();
+    const result = await handleUpdateUser(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.displayName).to.equal("User with Claims");
@@ -200,7 +208,8 @@ describe("Firebase Admin Authentication Update User Test", function() {
       }
     });
     
-    const result = await handleUpdateUser(task);
+    const context = createMockJobContext();
+    const result = await handleUpdateUser(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.customClaims).to.deep.equal(customClaims);
@@ -225,7 +234,8 @@ describe("Firebase Admin Authentication Update User Test", function() {
       }
     });
     
-    const result = await handleUpdateUser(task);
+    const context = createMockJobContext();
+    const result = await handleUpdateUser(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.displayName).to.equal("User with Cleared Claims");
@@ -247,9 +257,10 @@ describe("Firebase Admin Authentication Update User Test", function() {
         updateRequest: { displayName: "Test" }
       }
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleUpdateUser(task);
+      await handleUpdateUser(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.equal("Invalid input: uid is required");
@@ -264,9 +275,10 @@ describe("Firebase Admin Authentication Update User Test", function() {
         uid: testUserUid
       }
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleUpdateUser(task);
+      await handleUpdateUser(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.equal("Invalid input: updateRequest is required");
@@ -282,9 +294,10 @@ describe("Firebase Admin Authentication Update User Test", function() {
         updateRequest: { displayName: "Test" }
       }
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleUpdateUser(task);
+      await handleUpdateUser(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.include("no user record");

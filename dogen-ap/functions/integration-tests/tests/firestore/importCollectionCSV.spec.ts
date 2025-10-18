@@ -4,6 +4,7 @@ import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleImportCollectionCSV } from "../../../src/job/handlers/firestore/importCollectionCSV";
 import { handleExportCollectionCSV } from "../../../src/job/handlers/firestore/exportCollectionCSV";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Firestore Import Collection CSV Test", function() {
   this.timeout(15000);
@@ -54,7 +55,8 @@ describe("Firebase Admin Firestore Import Collection CSV Test", function() {
     });
     
     try {
-      const exportResult = await handleExportCollectionCSV(exportTask);
+      const context = createMockJobContext();
+      const exportResult = await handleExportCollectionCSV(exportTask, context);
       exportedCsvPath = exportResult.exportedTo;
       console.log(`Exported CSV to: ${exportedCsvPath}`);
     } catch (error) {
@@ -90,7 +92,8 @@ describe("Firebase Admin Firestore Import Collection CSV Test", function() {
     });
     
     // Execute the handler
-    const result = await handleImportCollectionCSV(task);
+    const context = createMockJobContext();
+    const result = await handleImportCollectionCSV(task, context);
     
     // Verify response basics
     expect(result.bucketPath).to.equal(exportedCsvPath);
@@ -123,7 +126,8 @@ describe("Firebase Admin Firestore Import Collection CSV Test", function() {
     });
     
     // Execute the handler
-    const result = await handleImportCollectionCSV(task);
+    const context = createMockJobContext();
+    const result = await handleImportCollectionCSV(task, context);
     expect(result.documentsProcessed).to.be.greaterThan(0);
     
     // Verify documents were imported with custom mapping
@@ -145,7 +149,8 @@ describe("Firebase Admin Firestore Import Collection CSV Test", function() {
     });
     
     try {
-      await handleImportCollectionCSV(task1);
+      const context = createMockJobContext();
+      await handleImportCollectionCSV(task1, context);
       expect.fail("Expected an error for missing collectionPath");
     } catch (error) {
       expect((error as Error).message).to.include("collectionPath and bucketPath are required");
@@ -161,7 +166,8 @@ describe("Firebase Admin Firestore Import Collection CSV Test", function() {
     });
     
     try {
-      await handleImportCollectionCSV(task2);
+      const context = createMockJobContext();
+      await handleImportCollectionCSV(task2, context);
       expect.fail("Expected an error for missing bucketPath");
     } catch (error) {
       expect((error as Error).message).to.include("collectionPath and bucketPath are required");
@@ -179,7 +185,8 @@ describe("Firebase Admin Firestore Import Collection CSV Test", function() {
     });
     
     try {
-      await handleImportCollectionCSV(task);
+      const context = createMockJobContext();
+      await handleImportCollectionCSV(task, context);
       expect.fail("Expected an error for non-existent file");
     } catch (error) {
       expect((error as Error).message).to.include("not found in Firebase Storage bucket");

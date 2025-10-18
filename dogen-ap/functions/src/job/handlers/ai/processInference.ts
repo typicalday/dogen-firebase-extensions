@@ -1,4 +1,5 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import { parseStoragePath, getBucketByName } from "../../../utils/utils";
 import { VertexAI, Part, Content } from "@google-cloud/vertexai";
 import config from "../../../config";
@@ -33,7 +34,7 @@ interface InferenceTaskOutput {
   processedAt: string;
 }
 
-export async function handleProcessInference(task: JobTask): Promise<InferenceTaskOutput> {
+export async function handleProcessInference(task: JobTask, context: JobContext): Promise<InferenceTaskOutput> {
   const input = task.input as InferenceTaskInput | undefined;
   
   if (!input?.model || !input?.prompt) {

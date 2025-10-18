@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleCopyCollection } from "../../../src/job/handlers/firestore/copyCollection";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Firestore Copy Collection Test", function() {
   this.timeout(10000);
@@ -56,7 +57,8 @@ describe("Firebase Admin Firestore Copy Collection Test", function() {
     });
     
     // Execute the handler
-    const result = await handleCopyCollection(task);
+    const context = createMockJobContext();
+    const result = await handleCopyCollection(task, context);
     
     // Verify response
     expect(result.copied).to.equal(`firestore/(default)/data/${sourceCollection}`);
@@ -97,7 +99,8 @@ describe("Firebase Admin Firestore Copy Collection Test", function() {
     });
     
     // Should not throw, just copy nothing
-    const result = await handleCopyCollection(task);
+    const context = createMockJobContext();
+    const result = await handleCopyCollection(task, context);
     expect(result.copied).to.equal(`firestore/(default)/data/non-existent-collection`);
     expect(result.to).to.equal(`firestore/(default)/data/new-collection`);
     
@@ -107,6 +110,8 @@ describe("Firebase Admin Firestore Copy Collection Test", function() {
   });
   
   it("should throw error when missing required parameters", async function() {
+    const context = createMockJobContext();
+
     // Missing destinationPath
     const task1 = new JobTask({
       service: "firestore",
@@ -115,14 +120,14 @@ describe("Firebase Admin Firestore Copy Collection Test", function() {
         sourcePath: `firestore/(default)/data/${sourceCollection}`
       }
     });
-    
+
     try {
-      await handleCopyCollection(task1);
+      await handleCopyCollection(task1, context);
       expect.fail("Expected an error for missing destinationPath");
     } catch (error) {
       expect((error as Error).message).to.include("sourcePath and destinationPath are required");
     }
-    
+
     // Missing sourcePath
     const task2 = new JobTask({
       service: "firestore",
@@ -131,9 +136,9 @@ describe("Firebase Admin Firestore Copy Collection Test", function() {
         destinationPath: `firestore/(default)/data/new-collection`
       }
     });
-    
+
     try {
-      await handleCopyCollection(task2);
+      await handleCopyCollection(task2, context);
       expect.fail("Expected an error for missing sourcePath");
     } catch (error) {
       expect((error as Error).message).to.include("sourcePath and destinationPath are required");

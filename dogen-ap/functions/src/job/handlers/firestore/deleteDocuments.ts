@@ -1,9 +1,10 @@
 import { BatchManager } from "../../../utils/batchManager";
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import * as admin from "firebase-admin";
 import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 
-export async function handleDeleteDocuments(task: JobTask) : Promise<Record<string, any>> {
+export async function handleDeleteDocuments(task: JobTask, context: JobContext) : Promise<Record<string, any>> {
   const documentPaths: string[] = task.input?.paths;
 
   if (!Array.isArray(documentPaths) || documentPaths.length === 0) {

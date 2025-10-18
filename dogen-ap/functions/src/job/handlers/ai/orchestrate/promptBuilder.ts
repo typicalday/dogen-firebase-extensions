@@ -8,7 +8,7 @@
  * - Include retry feedback for validation failures
  */
 
-import { TaskCapability, RetryContext } from './types';
+import { TaskCapability, RetryContext, DependencyTaskInfo } from './types';
 import { getTaskCatalog } from './catalog';
 
 /**
@@ -172,13 +172,35 @@ You must respond with a JSON object containing:
  * @param userPrompt - Natural language request from user
  * @param context - Additional context (optional)
  * @param retryContext - Retry information if this is a retry attempt (optional)
+ * @param dependencyTasks - Information about completed dependency tasks (optional)
  */
 export function buildUserPrompt(
   userPrompt: string,
   context?: Record<string, any>,
-  retryContext?: RetryContext
+  retryContext?: RetryContext,
+  dependencyTasks?: DependencyTaskInfo[]
 ): string {
   let prompt = `# User Request\n\n${userPrompt}\n`;
+
+  // Add dependency task results if available
+  if (dependencyTasks && dependencyTasks.length > 0) {
+    prompt += `\n## Dependency Task Results\n\n`;
+    prompt += `The following tasks have completed and their results are available for your use:\n\n`;
+
+    for (const dep of dependencyTasks) {
+      prompt += `### Task: ${dep.id}\n`;
+      prompt += `- **Service**: ${dep.service}\n`;
+      prompt += `- **Command**: ${dep.command}\n`;
+
+      if (dep.output && Object.keys(dep.output).length > 0) {
+        prompt += `- **Output**:\n`;
+        prompt += `  \`\`\`json\n  ${JSON.stringify(dep.output, null, 2)}\n  \`\`\`\n`;
+      } else {
+        prompt += `- **Output**: (no output data)\n`;
+      }
+      prompt += `\n`;
+    }
+  }
 
   // Add context if provided
   if (context && Object.keys(context).length > 0) {
@@ -223,10 +245,11 @@ export function buildUserPrompt(
 export function buildCompletePrompt(
   userPrompt: string,
   context?: Record<string, any>,
-  retryContext?: RetryContext
+  retryContext?: RetryContext,
+  dependencyTasks?: DependencyTaskInfo[]
 ): { system: string; user: string } {
   return {
     system: buildSystemPrompt(),
-    user: buildUserPrompt(userPrompt, context, retryContext)
+    user: buildUserPrompt(userPrompt, context, retryContext, dependencyTasks)
   };
 }

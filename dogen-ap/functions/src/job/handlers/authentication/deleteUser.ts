@@ -1,7 +1,8 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import * as admin from "firebase-admin";
 
-export async function handleDeleteUser(task: JobTask): Promise<Record<string, any>> {
+export async function handleDeleteUser(task: JobTask, context: JobContext): Promise<Record<string, any>> {
   const uid = task.input?.uid;
   
   if (!uid) {

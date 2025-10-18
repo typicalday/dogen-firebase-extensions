@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleGetUserClaims } from "../../../src/job/handlers/authentication/getUserClaims";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Authentication Get User Claims Test", function() {
   this.timeout(10000);
@@ -57,7 +58,8 @@ describe("Firebase Admin Authentication Get User Claims Test", function() {
       }
     });
     
-    const result = await handleGetUserClaims(task);
+    const context = createMockJobContext();
+    const result = await handleGetUserClaims(task, context);
     
     expect(result.uid).to.equal(testUserUid);
     expect(result.email).to.equal("test-claims-get@example.com");
@@ -82,7 +84,8 @@ describe("Firebase Admin Authentication Get User Claims Test", function() {
       }
     });
     
-    const result = await handleGetUserClaims(task);
+    const context = createMockJobContext();
+    const result = await handleGetUserClaims(task, context);
     
     expect(result.uid).to.equal(userWithoutClaims);
     expect(result.email).to.equal("test-no-claims@example.com");
@@ -96,9 +99,10 @@ describe("Firebase Admin Authentication Get User Claims Test", function() {
       command: "get-user-claims",
       input: {}
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleGetUserClaims(task);
+      await handleGetUserClaims(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.equal("Invalid input: uid is required");
@@ -113,9 +117,10 @@ describe("Firebase Admin Authentication Get User Claims Test", function() {
         uid: "non-existent-uid"
       }
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleGetUserClaims(task);
+      await handleGetUserClaims(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.include("no user record");

@@ -4,6 +4,7 @@ import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleExportCollectionJSON } from "../../../src/job/handlers/firestore/exportCollectionJSON";
 import { handleImportCollectionJSON } from "../../../src/job/handlers/firestore/importCollectionJSON";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Firestore Import Collection JSON Test", function() {
   this.timeout(15000);
@@ -56,6 +57,8 @@ describe("Firebase Admin Firestore Import Collection JSON Test", function() {
     }
     
     try {
+      const context = createMockJobContext();
+
       // Export to JSON without subcollections
       const exportTask = new JobTask({
         service: "firestore",
@@ -66,11 +69,11 @@ describe("Firebase Admin Firestore Import Collection JSON Test", function() {
           includeSubcollections: false
         }
       });
-      
-      const exportResult = await handleExportCollectionJSON(exportTask);
+
+      const exportResult = await handleExportCollectionJSON(exportTask, context);
       exportedJsonPath = exportResult.exportedTo;
       console.log(`Exported JSON to: ${exportedJsonPath}`);
-      
+
       // Export with subcollections
       const exportWithSubsTask = new JobTask({
         service: "firestore",
@@ -81,8 +84,8 @@ describe("Firebase Admin Firestore Import Collection JSON Test", function() {
           includeSubcollections: true
         }
       });
-      
-      const exportWithSubsResult = await handleExportCollectionJSON(exportWithSubsTask);
+
+      const exportWithSubsResult = await handleExportCollectionJSON(exportWithSubsTask, context);
       exportedWithSubcollectionsPath = exportWithSubsResult.exportedTo;
       console.log(`Exported JSON with subcollections to: ${exportedWithSubcollectionsPath}`);
     } catch (error) {
@@ -118,7 +121,8 @@ describe("Firebase Admin Firestore Import Collection JSON Test", function() {
     });
     
     // Execute the handler
-    const result = await handleImportCollectionJSON(task);
+    const context = createMockJobContext();
+    const result = await handleImportCollectionJSON(task, context);
     
     // Verify response basics
     expect(result.bucketPath).to.equal(exportedJsonPath);
@@ -167,7 +171,8 @@ describe("Firebase Admin Firestore Import Collection JSON Test", function() {
     
     try {
       // Execute the handler
-      const result = await handleImportCollectionJSON(task);
+      const context = createMockJobContext();
+    const result = await handleImportCollectionJSON(task, context);
       
       // Verify response
       expect(result.bucketPath).to.equal(exportedWithSubcollectionsPath);
@@ -206,7 +211,8 @@ describe("Firebase Admin Firestore Import Collection JSON Test", function() {
     });
     
     try {
-      await handleImportCollectionJSON(task1);
+      const context = createMockJobContext();
+      await handleImportCollectionJSON(task1, context);
       expect.fail("Expected an error for missing collectionPath");
     } catch (error) {
       expect((error as Error).message).to.include("collectionPath and bucketPath are required");
@@ -222,7 +228,8 @@ describe("Firebase Admin Firestore Import Collection JSON Test", function() {
     });
     
     try {
-      await handleImportCollectionJSON(task2);
+      const context = createMockJobContext();
+      await handleImportCollectionJSON(task2, context);
       expect.fail("Expected an error for missing bucketPath");
     } catch (error) {
       expect((error as Error).message).to.include("collectionPath and bucketPath are required");
@@ -240,7 +247,8 @@ describe("Firebase Admin Firestore Import Collection JSON Test", function() {
     });
     
     try {
-      await handleImportCollectionJSON(task);
+      const context = createMockJobContext();
+      await handleImportCollectionJSON(task, context);
       expect.fail("Expected an error for non-existent file");
     } catch (error) {
       // Error will be from file.download

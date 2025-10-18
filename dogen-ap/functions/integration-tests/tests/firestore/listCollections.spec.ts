@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleListCollections } from "../../../src/job/handlers/firestore/listCollections";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Firestore List Collections Test", function() {
   this.timeout(10000);
@@ -56,7 +57,8 @@ describe("Firebase Admin Firestore List Collections Test", function() {
     });
     
     // Execute the handler
-    const result = await handleListCollections(task);
+    const context = createMockJobContext();
+    const result = await handleListCollections(task, context);
     
     // Verify collections are returned
     expect(result.collections).to.be.an("array");
@@ -74,7 +76,8 @@ describe("Firebase Admin Firestore List Collections Test", function() {
     });
     
     // Execute the handler
-    const result = await handleListCollections(task);
+    const context = createMockJobContext();
+    const result = await handleListCollections(task, context);
     
     // Verify subcollections are returned
     expect(result.collections).to.be.an("array");
@@ -93,7 +96,8 @@ describe("Firebase Admin Firestore List Collections Test", function() {
     });
     
     // Execute the handler
-    const result = await handleListCollections(task);
+    const context = createMockJobContext();
+    const result = await handleListCollections(task, context);
     
     // Verify empty array is returned
     expect(result.collections).to.be.an("array");
@@ -110,7 +114,8 @@ describe("Firebase Admin Firestore List Collections Test", function() {
     });
     
     // Execute the handler
-    const result = await handleListCollections(task);
+    const context = createMockJobContext();
+    const result = await handleListCollections(task, context);
     
     // Verify empty array is returned
     expect(result.collections).to.be.an("array");

@@ -1,4 +1,5 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import { BatchManager } from "../../../utils/batchManager";
 import { Timestamp, DocumentReference } from "firebase-admin/firestore";
 import * as admin from "firebase-admin";
@@ -37,7 +38,8 @@ interface SpecialFields {
 }
 
 export async function handleImportCollectionCSV(
-  task: JobTask
+  task: JobTask,
+  context: JobContext
 ): Promise<Record<string, any>> {
   const input = task.input as ImportCsvTaskInput | undefined;
 

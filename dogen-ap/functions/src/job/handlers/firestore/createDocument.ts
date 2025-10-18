@@ -1,8 +1,10 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 
 export async function handleCreateDocument(
-    task: JobTask
+    task: JobTask,
+    context: JobContext
 ): Promise<Record<string, any>> {
     const documentPath = task.input?.documentPath;
     const documentData = task.input?.documentData;

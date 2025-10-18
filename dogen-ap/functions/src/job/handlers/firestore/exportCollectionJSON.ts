@@ -1,4 +1,5 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import { DocumentReference, GeoPoint, Timestamp } from "firebase-admin/firestore";
 import { VectorValue } from "@google-cloud/firestore";
 import * as admin from "firebase-admin";
@@ -82,7 +83,7 @@ function transformData(obj: any, seen = new WeakSet()): any {
 }
 
 
-export async function handleExportCollectionJSON(task: JobTask): Promise<Record<string, any>> {
+export async function handleExportCollectionJSON(task: JobTask, context: JobContext): Promise<Record<string, any>> {
   const input = task.input as ExportTaskInput | undefined;
   
   if (!input?.collectionPath || !input?.bucketPathPrefix) {

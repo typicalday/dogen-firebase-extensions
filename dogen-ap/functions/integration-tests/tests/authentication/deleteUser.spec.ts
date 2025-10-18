@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleDeleteUser } from "../../../src/job/handlers/authentication/deleteUser";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Authentication Delete User Test", function() {
   this.timeout(10000);
@@ -23,7 +24,8 @@ describe("Firebase Admin Authentication Delete User Test", function() {
       }
     });
     
-    const result = await handleDeleteUser(task);
+    const context = createMockJobContext();
+    const result = await handleDeleteUser(task, context);
     
     expect(result.deletedUid).to.equal(userRecord.uid);
     expect(result.deletedEmail).to.equal("test-delete@example.com");
@@ -54,7 +56,8 @@ describe("Firebase Admin Authentication Delete User Test", function() {
       }
     });
     
-    const result = await handleDeleteUser(task);
+    const context = createMockJobContext();
+    const result = await handleDeleteUser(task, context);
     
     expect(result.deletedUid).to.equal(userRecord.uid);
     expect(result.deletedEmail).to.be.undefined;
@@ -67,9 +70,10 @@ describe("Firebase Admin Authentication Delete User Test", function() {
       command: "delete-user",
       input: {}
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleDeleteUser(task);
+      await handleDeleteUser(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.equal("Invalid input: uid is required");
@@ -84,9 +88,10 @@ describe("Firebase Admin Authentication Delete User Test", function() {
         uid: "non-existent-uid"
       }
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleDeleteUser(task);
+      await handleDeleteUser(task, context);
       throw new Error("Should have thrown an error");
     } catch (error: any) {
       expect(error.message).to.include("no user record");

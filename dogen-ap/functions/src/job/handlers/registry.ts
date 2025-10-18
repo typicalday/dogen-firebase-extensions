@@ -17,6 +17,7 @@
  */
 
 import { JobTask } from "../jobTask";
+import { JobContext } from "../jobContext";
 
 // Import all Firestore handlers
 import { handleCopyCollection } from "./firestore/copyCollection";
@@ -48,8 +49,9 @@ import { handleSetUserClaims } from "./authentication/setUserClaims";
 
 /**
  * Type definition for a handler function
+ * All handlers receive the task and job context for inter-task communication
  */
-export type HandlerFunction = (task: JobTask) => Promise<Record<string, any>>;
+export type HandlerFunction = (task: JobTask, context: JobContext) => Promise<Record<string, any>>;
 
 /**
  * JSON Schema property definition

@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleCopyDocument } from "../../../src/job/handlers/firestore/copyDocument";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Firestore Copy Document Test", function() {
   this.timeout(10000);
@@ -53,7 +54,8 @@ describe("Firebase Admin Firestore Copy Document Test", function() {
     });
     
     // Execute the handler
-    const result = await handleCopyDocument(task);
+    const context = createMockJobContext();
+    const result = await handleCopyDocument(task, context);
     
     // Verify response
     expect(result.copied).to.equal(`firestore/(default)/data/${testCollection}/${sourceDoc}`);
@@ -88,9 +90,10 @@ describe("Firebase Admin Firestore Copy Document Test", function() {
         destinationPath: `firestore/(default)/data/${testCollection}/new-doc`
       }
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleCopyDocument(task);
+      await handleCopyDocument(task, context);
       expect.fail("Expected an error for non-existent source document");
     } catch (error) {
       expect((error as Error).message).to.include("Source document does not exist");
@@ -102,7 +105,7 @@ describe("Firebase Admin Firestore Copy Document Test", function() {
     await db.collection(testCollection).doc("existing-dest").set({
       name: "Existing Destination"
     });
-    
+
     const task = new JobTask({
       service: "firestore",
       command: "copy-document",
@@ -111,9 +114,10 @@ describe("Firebase Admin Firestore Copy Document Test", function() {
         destinationPath: `firestore/(default)/data/${testCollection}/existing-dest`
       }
     });
-    
+
+    const context = createMockJobContext();
     try {
-      await handleCopyDocument(task);
+      await handleCopyDocument(task, context);
       expect.fail("Expected an error for existing destination document");
     } catch (error) {
       expect((error as Error).message).to.include("Destination document already exists");
@@ -121,6 +125,8 @@ describe("Firebase Admin Firestore Copy Document Test", function() {
   });
   
   it("should throw error when missing required parameters", async function() {
+    const context = createMockJobContext();
+
     // Missing destinationPath
     const task1 = new JobTask({
       service: "firestore",
@@ -129,14 +135,14 @@ describe("Firebase Admin Firestore Copy Document Test", function() {
         sourcePath: `firestore/(default)/data/${testCollection}/${sourceDoc}`
       }
     });
-    
+
     try {
-      await handleCopyDocument(task1);
+      await handleCopyDocument(task1, context);
       expect.fail("Expected an error for missing destinationPath");
     } catch (error) {
       expect((error as Error).message).to.include("sourcePath and destinationPath are required");
     }
-    
+
     // Missing sourcePath
     const task2 = new JobTask({
       service: "firestore",
@@ -145,9 +151,9 @@ describe("Firebase Admin Firestore Copy Document Test", function() {
         destinationPath: `firestore/(default)/data/${testCollection}/new-doc`
       }
     });
-    
+
     try {
-      await handleCopyDocument(task2);
+      await handleCopyDocument(task2, context);
       expect.fail("Expected an error for missing sourcePath");
     } catch (error) {
       expect((error as Error).message).to.include("sourcePath and destinationPath are required");

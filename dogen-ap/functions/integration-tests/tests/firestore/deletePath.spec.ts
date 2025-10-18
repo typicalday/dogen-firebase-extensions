@@ -3,6 +3,7 @@ import { expect } from "chai";
 import { admin } from "../../setup";
 import { JobTask } from "../../../src/job/jobTask";
 import { handleDeletePath } from "../../../src/job/handlers/firestore/deletePath";
+import { createMockJobContext } from "../../helpers/jobContextHelper";
 
 describe("Firebase Admin Firestore Delete Path Test", function() {
   this.timeout(10000);
@@ -70,7 +71,8 @@ describe("Firebase Admin Firestore Delete Path Test", function() {
     });
     
     // Execute the delete handler
-    const result = await handleDeletePath(task);
+    const context = createMockJobContext();
+    const result = await handleDeletePath(task, context);
     
     // Verify response
     expect(result.deleted).to.equal(`firestore/(default)/data/${testCollection}/${testDoc1}`);
@@ -100,7 +102,8 @@ describe("Firebase Admin Firestore Delete Path Test", function() {
     });
     
     // Execute the delete handler
-    const result = await handleDeletePath(task);
+    const context = createMockJobContext();
+    const result = await handleDeletePath(task, context);
     
     // Verify response
     expect(result.deleted).to.equal(`firestore/(default)/data/${testCollection}`);
@@ -121,7 +124,8 @@ describe("Firebase Admin Firestore Delete Path Test", function() {
     });
     
     // Execute the handler (should not throw)
-    const result = await handleDeletePath(task);
+    const context = createMockJobContext();
+    const result = await handleDeletePath(task, context);
     
     // Verify response
     expect(result.deleted).to.equal("firestore/(default)/data/non-existent-collection/non-existent-doc");
@@ -137,7 +141,8 @@ describe("Firebase Admin Firestore Delete Path Test", function() {
     
     try {
       // Execute the handler and expect it to throw
-      await handleDeletePath(task);
+      const context = createMockJobContext();
+      await handleDeletePath(task, context);
       // If we get here, the test should fail
       expect.fail("Expected an error for missing path");
     } catch (error) {

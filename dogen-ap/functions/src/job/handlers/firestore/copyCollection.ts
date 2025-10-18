@@ -1,9 +1,11 @@
 import { BatchManager } from "../../../utils/batchManager";
 import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 
 export async function handleCopyCollection(
-  task: JobTask
+  task: JobTask,
+  context: JobContext
 ): Promise<Record<string, any>> {
   const sourcePath = task.input?.sourcePath;
   const destinationPath = task.input?.destinationPath;

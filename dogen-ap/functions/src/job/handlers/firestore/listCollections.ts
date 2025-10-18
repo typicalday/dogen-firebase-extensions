@@ -1,9 +1,11 @@
 import { JobTask } from "../../jobTask";
+import { JobContext } from "../../jobContext";
 import * as admin from "firebase-admin";
 import { getDatabaseByName, parseDatabasePath } from "../../../utils/utils";
 
 export async function handleListCollections(
-  task: JobTask
+  task: JobTask,
+  context: JobContext
 ): Promise<Record<string, any>> {
   const documentPath = task.input?.documentPath;
   

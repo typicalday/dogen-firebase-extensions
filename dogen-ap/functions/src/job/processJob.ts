@@ -4,6 +4,7 @@ import { Mutex } from "async-mutex";
 import { FirebaseTaskStatus, JobTask } from "./jobTask";
 import { Job, JobStatus } from "./job";
 import { TaskGraph } from "./taskGraph";
+import { createJobContext } from "./jobContext";
 import { getHandler, getUnsupportedTaskError } from "./handlers/registry";
 import { validateTaskInput } from "./handlers/ai/orchestrate/validator";
 
@@ -25,6 +26,7 @@ export const processJob = functions.https.onCall(async (data, context) => {
 
   const persistMode = data.persist ?? false;
   const abortOnFailure = data.abortOnFailure ?? true;
+  const verbose = data.verbose ?? false;
   const tasksData = data.tasks;
   const maxTasks = data.maxTasks;
   const maxDepth = data.maxDepth;
@@ -52,6 +54,7 @@ export const processJob = functions.https.onCall(async (data, context) => {
     maxTasks: maxTasks,
     maxDepth: maxDepth,
     timeout: timeout,
+    verbose: verbose,
     tasks: tasksData.map((taskData: any) => {
       const { service, command, input } = taskData;
       return new JobTask({ service, command, input, depth: 0 });
@@ -59,7 +62,9 @@ export const processJob = functions.https.onCall(async (data, context) => {
   });
 
   const persistJobState = async () => {
-    console.log("Persisting job progress to database...");
+    if (verbose) {
+      console.log("Persisting job progress to database...");
+    }
     await job.persist();
   };
 
@@ -142,8 +147,12 @@ export const processJob = functions.https.onCall(async (data, context) => {
               startedAt: new Date(),
             });
 
+            if (verbose) {
+              console.log(`Executing task ${task.id}: ${task.service}/${task.command}`);
+            }
+
             // Execute task and get output
-            const output = await processTask(task);
+            const output = await processTask(task, taskRegistry, job);
 
             // Check for child tasks to spawn
             if (output.childTasks && Array.isArray(output.childTasks)) {
@@ -226,7 +235,9 @@ export const processJob = functions.https.onCall(async (data, context) => {
                   }
                 });
 
-                console.log(`Task ${task.id} spawned child task ${childId}`);
+                if (verbose) {
+                  console.log(`Task ${task.id} spawned child task ${childId} (${childSpec.service}/${childSpec.command})`);
+                }
               }
             }
 
@@ -310,7 +321,11 @@ const verifyAdmin = async (authToken: DecodedIdToken) => {
   }
 };
 
-async function processTask(task: JobTask): Promise<Record<string, any>> {
+async function processTask(
+  task: JobTask,
+  taskRegistry: Map<string, JobTask>,
+  job: Job
+): Promise<Record<string, any>> {
   // Look up handler in centralized registry
   const handler = getHandler(task.service, task.command);
 
@@ -333,6 +348,9 @@ async function processTask(task: JobTask): Promise<Record<string, any>> {
     );
   }
 
-  // Execute the handler
-  return await handler(task);
+  // Create job context for this task execution
+  const context = createJobContext(taskRegistry, job);
+
+  // Execute the handler with task and context
+  return await handler(task, context);
 }

@@ -33,6 +33,12 @@ export interface OrchestrateInput {
 
   /** Maximum depth limit for task hierarchy (default: 10) */
   maxDepth?: number;
+
+  /** Log AI responses to console for debugging (default: false) */
+  logAiResponses?: boolean;
+
+  /** Verbose mode - enables detailed logging throughout orchestration (default: false) */
+  verbose?: boolean;
 }
 
 /**
@@ -186,4 +192,21 @@ export interface RetryContext {
 
   /** Previous AI response that failed validation */
   previousResponse?: AITaskPlan;
+}
+
+/**
+ * Information about a dependency task to include in AI prompt
+ */
+export interface DependencyTaskInfo {
+  /** Task ID */
+  id: string;
+
+  /** Service name (e.g., "firestore", "storage") */
+  service: string;
+
+  /** Command name (e.g., "copy-collection") */
+  command: string;
+
+  /** Task output/result */
+  output?: Record<string, any>;
 }

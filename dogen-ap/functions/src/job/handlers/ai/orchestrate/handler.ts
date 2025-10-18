@@ -10,6 +10,7 @@
  */
 
 import { JobTask } from '../../../jobTask';
+import { JobContext } from '../../../jobContext';
 import { VertexAI } from "@google-cloud/vertexai";
 import * as admin from "firebase-admin";
 import config from "../../../../config";
@@ -17,7 +18,8 @@ import {
   OrchestrateInput,
   OrchestrateOutput,
   AITaskPlan,
-  RetryContext
+  RetryContext,
+  DependencyTaskInfo
 } from './types';
 import { AI_RESPONSE_SCHEMA, isAITaskPlan } from './schema';
 import { validateTaskPlan, planToChildTasks } from './validator';
@@ -68,7 +70,7 @@ async function callAIWithTimeout(
  * @param task - The orchestration task containing user prompt and parameters
  * @returns Orchestration output with validated child tasks
  */
-export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutput> {
+export async function handleOrchestrate(task: JobTask, context: JobContext): Promise<OrchestrateOutput> {
   const input = task.input as OrchestrateInput | undefined;
 
   // Validate input
@@ -82,6 +84,22 @@ export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutpu
   const maxChildTasks = input.maxChildTasks ?? DEFAULT_MAX_CHILD_TASKS;
   const timeout = input.timeout ?? AI_CALL_TIMEOUT;
   const maxDepth = input.maxDepth ?? DEFAULT_MAX_DEPTH;
+  const logAiResponses = input.logAiResponses ?? false;
+  const verbose = input.verbose ?? context.verbose;  // Use context.verbose if not explicitly set
+
+  if (verbose) {
+    console.log(`[Orchestrate] Starting orchestration for task ${task.id}`);
+    console.log(`[Orchestrate] Configuration:`, {
+      dryRun,
+      maxRetries,
+      temperature,
+      maxChildTasks,
+      timeout,
+      maxDepth,
+      logAiResponses,
+      verbose
+    });
+  }
 
   // CRITICAL: Validate depth BEFORE expensive AI operations
   // If this task is already at or beyond maxDepth, spawning children will fail immediately
@@ -118,6 +136,10 @@ export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutpu
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     retriesUsed = attempt;
 
+    if (verbose) {
+      console.log(`[Orchestrate] Attempt ${attempt}/${maxRetries}`);
+    }
+
     try {
       // Build user prompt with retry context
       const retryContext: RetryContext | undefined = attempt > 1 ? {
@@ -126,11 +148,51 @@ export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutpu
         previousResponse: lastResponse
       } : undefined;
 
+      if (verbose && retryContext) {
+        console.log(`[Orchestrate] Retrying with previous errors:`, lastErrors);
+      }
+
+      // Collect dependency task information if this task has dependencies
+      let dependencyTasks: DependencyTaskInfo[] | undefined;
+      if (task.dependsOn && task.dependsOn.length > 0) {
+        dependencyTasks = [];
+
+        for (const depId of task.dependsOn) {
+          const depTask = context.getTask(depId);
+
+          if (depTask) {
+            const depOutput = context.getTaskOutput(depId);
+
+            dependencyTasks.push({
+              id: depId,
+              service: depTask.service,
+              command: depTask.command,
+              output: depOutput
+            });
+
+            if (verbose) {
+              console.log(`[Orchestrate] Including dependency task: ${depId} (${depTask.service}/${depTask.command})`);
+            }
+          } else if (verbose) {
+            console.log(`[Orchestrate] Warning: Dependency task ${depId} not found in context`);
+          }
+        }
+
+        if (verbose) {
+          console.log(`[Orchestrate] Collected ${dependencyTasks.length} dependency task(s) for AI context`);
+        }
+      }
+
       const userPrompt = buildUserPrompt(
         input.prompt,
         input.context,
-        retryContext
+        retryContext,
+        dependencyTasks
       );
+
+      if (verbose) {
+        console.log(`[Orchestrate] User prompt length: ${userPrompt.length} characters`);
+      }
 
       // Call Gemini with structured output
       const model = vertexAI.getGenerativeModel({
@@ -142,6 +204,10 @@ export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutpu
           responseSchema: AI_RESPONSE_SCHEMA as any,
         }
       });
+
+      if (verbose) {
+        console.log(`[Orchestrate] Calling AI model with ${timeout}ms timeout...`);
+      }
 
       // Call AI with timeout protection to prevent hung requests
       const result = await callAIWithTimeout(
@@ -168,6 +234,21 @@ export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutpu
         .map((part: any) => part.text)
         .join('');
 
+      // Log AI response if requested
+      if (logAiResponses || verbose) {
+        console.log(`[Orchestrate] AI Response (attempt ${attempt}):`);
+        console.log('---BEGIN AI RESPONSE---');
+        console.log(responseText);
+        console.log('---END AI RESPONSE---');
+        if (response.usageMetadata) {
+          console.log(`[Orchestrate] Token usage:`, {
+            promptTokens: response.usageMetadata.promptTokenCount,
+            responseTokens: response.usageMetadata.candidatesTokenCount,
+            totalTokens: response.usageMetadata.totalTokenCount
+          });
+        }
+      }
+
       let aiPlan: AITaskPlan;
       try {
         aiPlan = JSON.parse(responseText);
@@ -178,6 +259,10 @@ export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutpu
       // Validate structure with type guard
       if (!isAITaskPlan(aiPlan)) {
         throw new Error("AI response does not match expected schema structure");
+      }
+
+      if (verbose) {
+        console.log(`[Orchestrate] Validating task plan with ${aiPlan.tasks.length} tasks...`);
       }
 
       // Validate task plan using graph validation
@@ -194,6 +279,10 @@ export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutpu
           errorSummary
         );
 
+        if (verbose) {
+          console.log(`[Orchestrate] Validation errors:`, validationReport.errors);
+        }
+
         if (attempt < maxRetries) {
           // Will retry with error feedback
           continue;
@@ -204,6 +293,10 @@ export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutpu
             `Last validation errors: ${errorSummary}`
           );
         }
+      }
+
+      if (verbose) {
+        console.log(`[Orchestrate] Validation successful!`);
       }
 
       // Check maxChildTasks limit
@@ -218,6 +311,11 @@ export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutpu
 
       // Validation successful - convert to child tasks
       const childTasks = planToChildTasks(aiPlan, task.id);
+
+      if (verbose) {
+        console.log(`[Orchestrate] Converted to ${childTasks.length} child task(s)`);
+        console.log(`[Orchestrate] Mode: ${dryRun ? 'Dry Run (plannedTasks)' : 'Execute (childTasks)'}`);
+      }
 
       // Return successful orchestration output
       // If dryRun: true (default), return plannedTasks for review without executing
@@ -243,6 +341,10 @@ export async function handleOrchestrate(task: JobTask): Promise<OrchestrateOutpu
       } else {
         // Execute: return child tasks for automatic execution by job system
         output.childTasks = childTasks;
+      }
+
+      if (verbose) {
+        console.log(`[Orchestrate] Orchestration completed successfully after ${retriesUsed} attempt(s)`);
       }
 
       return output;
