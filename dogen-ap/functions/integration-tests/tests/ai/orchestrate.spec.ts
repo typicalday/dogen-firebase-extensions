@@ -8,10 +8,12 @@
 import { expect } from "chai";
 import {
   validateTaskPlan,
-  planToChildTasks,
+  planToChildTasks
+} from "../../../lib/job/handlers/ai/orchestrate";
+import {
   isValidServiceCommand,
   findTaskCapability
-} from "../../../lib/job/handlers/ai/orchestrate";
+} from "../../../lib/job/handlers/ai/orchestrate/catalog";
 import { AITaskPlan } from "../../../lib/job/handlers/ai/orchestrate/types";
 
 describe("AI Orchestration - Validation Logic", () => {
