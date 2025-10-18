@@ -1,3 +1,5 @@
+## Version 4.1.6
+- Fix import errors.
 ## Version 4.1.5
 - Fixed issue with dependencies.
 
