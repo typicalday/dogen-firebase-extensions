@@ -6,7 +6,8 @@
 
 export { handleOrchestrate } from './handler';
 export * from './types';
-export * from './catalog';
+// NOTE: catalog is NOT exported here to avoid circular dependency with registry.ts
+// Import catalog directly from './catalog' if needed
 export * from './validator';
 export * from './promptBuilder';
 export * from './schema';

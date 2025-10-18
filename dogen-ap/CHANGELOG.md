@@ -1,3 +1,6 @@
+## Version 4.1.5
+- Fixed issue with dependencies.
+
 ## Version 4.1.4
 - Added support for AI orchestration.
 

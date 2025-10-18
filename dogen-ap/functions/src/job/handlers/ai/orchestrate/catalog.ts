@@ -9,10 +9,15 @@ import { TaskCapability } from './types';
 import { HANDLER_REGISTRY } from '../../registry';
 
 /**
- * Complete registry of all task capabilities in the system.
- * This is automatically generated from the centralized handler registry.
+ * Cached task catalog to avoid regenerating on every call
  */
-const TASK_CATALOG: TaskCapability[] = (() => {
+let TASK_CATALOG_CACHE: TaskCapability[] | null = null;
+
+/**
+ * Builds the task catalog from the handler registry.
+ * This is lazy-loaded to avoid circular dependency issues during module initialization.
+ */
+function buildTaskCatalog(): TaskCapability[] {
   const catalog: TaskCapability[] = [];
 
   // Generate catalog from handler registry
@@ -30,13 +35,17 @@ const TASK_CATALOG: TaskCapability[] = (() => {
   }
 
   return catalog;
-})();
+}
 
 /**
  * Returns the complete task catalog (auto-generated from registry)
+ * Uses lazy loading to avoid circular dependency issues during module initialization.
  */
 export function getTaskCatalog(): TaskCapability[] {
-  return TASK_CATALOG;
+  if (!TASK_CATALOG_CACHE) {
+    TASK_CATALOG_CACHE = buildTaskCatalog();
+  }
+  return TASK_CATALOG_CACHE;
 }
 
 /**
