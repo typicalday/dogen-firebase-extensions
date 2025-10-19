@@ -207,6 +207,13 @@ export async function handleOrchestrate(task: JobTask, context: JobContext): Pro
 
       if (verbose) {
         console.log(`[Orchestrate] Calling AI model with ${timeout}ms timeout...`);
+        console.log('---BEGIN AI REQUEST---');
+        console.log(`Model: ${DEFAULT_MODEL}`);
+        console.log(`Temperature: ${temperature}`);
+        console.log('System Instruction:', systemInstruction);
+        console.log('User Prompt:', userPrompt);
+        console.log('Response Schema:', JSON.stringify(AI_RESPONSE_SCHEMA, null, 2));
+        console.log('---END AI REQUEST---');
       }
 
       // Call AI with timeout protection to prevent hung requests
