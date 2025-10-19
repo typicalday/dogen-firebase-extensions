@@ -3,7 +3,6 @@ import { JobContext } from "../../jobContext";
 import { parseStoragePath, getBucketByName } from "../../../utils/utils";
 import { VertexAI, Part, Content } from "@google-cloud/vertexai";
 import config from "../../../config";
-import * as admin from "firebase-admin";
 import * as path from 'path';
 
 interface InferenceTaskInput {
@@ -41,8 +40,9 @@ export async function handleProcessInference(task: JobTask, context: JobContext)
     throw new Error("Invalid input: model and prompt are required");
   }
 
-  // Get project ID from Firebase Admin
-  const projectId = admin.instanceId().app.options.projectId;
+  // Get project ID - use localProjectIdOverride if set (for local testing), otherwise use Firebase project
+  const projectId = config.localProjectIdOverride ?? config.firebaseProjectId;
+
   if (!projectId) {
     throw new Error("Project ID not found");
   }

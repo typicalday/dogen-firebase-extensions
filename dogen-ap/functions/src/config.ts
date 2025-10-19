@@ -8,6 +8,7 @@ interface IConfig {
   firebaseProjectId: string;
   firestoreDatabaseId: string;
   enableDogenSecurityRules: boolean;
+  localProjectIdOverride?: string;
 }
 
 const config: IConfig = {
@@ -20,6 +21,7 @@ const config: IConfig = {
   firebaseProjectId: process.env.GCLOUD_PROJECT!,
   firestoreDatabaseId: process.env.FIRESTORE_DATABASE_ID!,
   enableDogenSecurityRules: process.env.ENABLE_DOGEN_SECURITY_RULES === 'true',
+  localProjectIdOverride: process.env.LOCAL_PROJECT_ID_OVERRIDE,
 };
 
 export {IConfig};

@@ -12,7 +12,6 @@
 import { JobTask } from '../../../jobTask';
 import { JobContext } from '../../../jobContext';
 import { VertexAI } from "@google-cloud/vertexai";
-import * as admin from "firebase-admin";
 import config from "../../../../config";
 import {
   OrchestrateInput,
@@ -113,8 +112,9 @@ export async function handleOrchestrate(task: JobTask, context: JobContext): Pro
     );
   }
 
-  // Get project ID from Firebase Admin
-  const projectId = admin.instanceId().app.options.projectId;
+  // Get project ID - use localProjectIdOverride if set (for local testing), otherwise use Firebase project
+  const projectId = config.localProjectIdOverride ?? config.firebaseProjectId;
+
   if (!projectId) {
     throw new Error("Project ID not found");
   }
