@@ -36,7 +36,9 @@ import { handleDeleteStoragePath } from "./storage/deletePath";
 
 // Import all AI handlers
 import { handleProcessInference } from "./ai/processInference";
-import { handleOrchestrate } from "./ai/orchestrate";
+import { handleOrchestratorAgent } from "./ai/orchestrator-agent";
+import { handleServiceAgent } from "./ai/service-agent/handler";
+import { handleCommandAgent } from "./ai/command-agent/handler";
 
 // Import all Authentication handlers
 import { handleCreateUser } from "./authentication/createUser";
@@ -66,6 +68,7 @@ export interface SchemaProperty {
   properties?: Record<string, SchemaProperty>;
   items?: SchemaProperty;
   required?: string[];
+  additionalProperties?: boolean;
 }
 
 /**
@@ -131,7 +134,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
     "copy-collection": {
       handler: handleCopyCollection,
       description:
-        "Copies an entire Firestore collection including all documents and subcollections from source to destination",
+        "Copy entire Firestore collection with all documents and subcollections",
       requiredParams: ["sourcePath", "destinationPath"],
       optionalParams: [],
       inputSchema: {
@@ -157,15 +160,14 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
             sourcePath: "firestore/default/data/users",
             destinationPath: "firestore/default/data/users_backup",
           },
-          description:
-            "Copy entire users collection to users_backup in the default database",
+          description: "Backup users collection",
         },
         {
           input: {
             sourcePath: "firestore/custom-db/data/products",
             destinationPath: "firestore/default/data/products_archive",
           },
-          description: "Copy products from custom database to default database",
+          description: "Cross-database collection copy",
         },
       ],
     },
@@ -173,7 +175,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
     "copy-document": {
       handler: handleCopyDocument,
       description:
-        "Copies a single Firestore document including all its subcollections from source path to destination path. Source document must exist and destination document must not exist.",
+        "Copy single Firestore document with all subcollections to new location",
       requiredParams: ["sourcePath", "destinationPath"],
       optionalParams: [],
       inputSchema: {
@@ -199,14 +201,14 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
             sourcePath: "firestore/default/data/users/user123",
             destinationPath: "firestore/default/data/users_archive/user123",
           },
-          description: "Copy specific user document to archive collection",
+          description: "Archive user document",
         },
         {
           input: {
             sourcePath: "firestore/(default)/data/products/prod456",
             destinationPath: "firestore/default/data/products_backup/prod456",
           },
-          description: "Copy product document with all subcollections to backup",
+          description: "Backup product with subcollections",
         },
       ],
     },
@@ -214,7 +216,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
     "create-document": {
       handler: handleCreateDocument,
       description:
-        "Creates a new document in Firestore or overwrites an existing one with the provided data",
+        "Create or overwrite Firestore document with provided data",
       requiredParams: ["documentPath", "documentData"],
       optionalParams: [],
       inputSchema: {
@@ -227,7 +229,8 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
           },
           documentData: {
             type: 'object',
-            description: 'Document data to create or update. Can include nested objects and arrays.'
+            description: 'Document fields, properties, and data to store. Supports nested objects and arrays. Examples: {name: "John", email: "test@example.com", status: "active"}. Can be empty {}.',
+            additionalProperties: true,
           }
         },
         required: ['documentPath', 'documentData'],
@@ -243,7 +246,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
               createdAt: "2025-01-17T00:00:00Z",
             },
           },
-          description: "Create a new user document with specified data",
+          description: "New user with profile data",
         },
         {
           input: {
@@ -254,7 +257,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
               verified: true,
             },
           },
-          description: "Create a nested document in a subcollection",
+          description: "Nested document in subcollection",
         },
       ],
     },
@@ -262,7 +265,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
     "delete-path": {
       handler: handleDeletePath,
       description:
-        "Recursively deletes all documents and subcollections at the specified Firestore path",
+        "Recursively delete all documents and subcollections at Firestore path",
       requiredParams: ["path"],
       optionalParams: [],
       inputSchema: {
@@ -703,9 +706,10 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
     "process-inference": {
       handler: handleProcessInference,
       description:
-        "Performs AI inference using Vertex AI Gemini models. Supports multimodal inputs (text, images, audio, video, documents). Can process up to 3000 images, 10 videos, 1 audio file, or 3000 documents per request.",
-      requiredParams: ["model", "prompt"],
+        "AI inference with Vertex AI Gemini models. Supports multimodal inputs: text, images, audio, video, documents",
+      requiredParams: ["prompt"],
       optionalParams: [
+        "model",
         "files",
         "systemInstruction",
         "temperature",
@@ -723,7 +727,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
           model: {
             type: 'string',
             pattern: '^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$',
-            description: 'Vertex AI model identifier to use for inference. Common models include: gemini-2.5-pro (best quality), gemini-2.5-flash (fast), gemini-2.0-flash (stable), gemini-2.0-flash-lite (cost-efficient). Also supports Anthropic Claude, Mistral, and other Model Garden models. See full list: https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/available-models. The Vertex AI SDK will validate the model name and return an error if invalid.'
+            description: 'Vertex AI model identifier to use for inference. Common models include: gemini-2.5-pro (best quality, default), gemini-2.5-flash (fast). Also supports Anthropic Claude, Mistral, and other Model Garden models. See full list: https://cloud.google.com/vertex-ai/generative-ai/docs/model-garden/available-models. The Vertex AI SDK will validate the model name and return an error if invalid. Defaults to gemini-2.5-pro if not specified.'
           },
           prompt: {
             type: 'string',
@@ -773,7 +777,8 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
           },
           responseSchema: {
             type: 'object',
-            description: 'JSON Schema defining the structure of the expected JSON response. Required when responseMimeType is "application/json". Should be a valid JSON Schema object with type, properties, etc.'
+            description: 'JSON Schema defining the structure of the expected JSON response. Required when responseMimeType is "application/json". Should be a valid JSON Schema object with type, properties, etc.',
+            additionalProperties: true
           },
           candidateCount: {
             type: 'number',
@@ -790,10 +795,19 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
             description: 'Optional array of strings that will stop generation when encountered. Maximum of 5 stop sequences. Use to control where the model stops generating.'
           }
         },
-        required: ['model', 'prompt'],
+        required: ['prompt'],
         additionalProperties: false
       },
       examples: [
+        {
+          input: {
+            prompt: "Analyze this data and provide insights",
+            systemInstruction: "You are a data analysis expert",
+            temperature: 0.7,
+            maxOutputTokens: 1000,
+          },
+          description: "Run AI analysis using default model (gemini-2.5-pro)",
+        },
         {
           input: {
             model: "gemini-2.5-pro",
@@ -802,7 +816,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
             temperature: 0.7,
             maxOutputTokens: 1000,
           },
-          description: "Run AI analysis with Gemini 2.5 Pro for best quality and reasoning",
+          description: "Run AI analysis with explicitly specified Gemini 2.5 Pro for best quality and reasoning",
         },
         {
           input: {
@@ -833,21 +847,20 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
       ],
     },
 
-    orchestrate: {
-      handler: handleOrchestrate,
+    "orchestrator-agent": {
+      handler: handleOrchestratorAgent,
       description:
-        "AI-powered task orchestration that analyzes a natural language prompt and generates a validated plan of child tasks. By default (dryRun: true), returns the plan for human review without executing tasks. Set dryRun: false to execute tasks automatically. Supports complex multi-step workflows with dependencies and AI decision-making. Limited to maxChildTasks (default: 100) to prevent resource exhaustion. AI calls have timeout protection (default: 60 seconds) to prevent hung requests. Depth validation ensures tasks don't exceed maxDepth limit (default: 10) before expensive AI operations.",
+        "Phase 1 of 3-phase AI orchestration. Analyzes natural language request, decomposes into service-level sub-tasks, returns ai:service-agent tasks. Handles multi-step workflows with dependency resolution",
       requiredParams: ["prompt"],
       optionalParams: [
-        "dryRun",
-        "maxRetries",
         "temperature",
         "context",
         "maxChildTasks",
         "timeout",
         "maxDepth",
-        "logAiResponses",
         "verbose",
+        "maxRetries",
+        "model",
       ],
       inputSchema: {
         type: 'object',
@@ -856,51 +869,48 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
             type: 'string',
             description: 'Natural language description of tasks to orchestrate'
           },
-          dryRun: {
-            type: 'boolean',
-            description: 'When true (default), returns planned tasks for review without executing them (human-in-the-loop). When false, executes the generated tasks automatically. Use dryRun mode to preview AI-generated plans before execution.'
-          },
-          maxRetries: {
-            type: 'number',
-            minimum: 0,
-            maximum: 10,
-            description: 'Maximum number of retry attempts for AI validation failures'
-          },
           temperature: {
             type: 'number',
             minimum: 0.0,
             maximum: 1.0,
-            description: 'AI temperature for response generation (0.0-1.0)'
+            description: 'AI temperature for response generation (0.0-1.0). Default: 0.2'
           },
           context: {
             type: 'object',
-            description: 'Additional context information for the AI'
+            description: 'Additional context information for the AI',
+            additionalProperties: true
           },
           maxChildTasks: {
             type: 'number',
             minimum: 1,
             maximum: 1000,
-            description: 'Maximum number of child tasks that can be spawned'
+            description: 'Maximum number of child tasks that can be spawned. Default: 100'
           },
           timeout: {
             type: 'number',
             minimum: 1000,
             maximum: 300000,
-            description: 'Timeout in milliseconds for AI call (1s-5min)'
+            description: 'Timeout in milliseconds for AI call (1s-5min). Default: 60000'
           },
           maxDepth: {
             type: 'number',
             minimum: 0,
             maximum: 100,
-            description: 'Maximum task depth allowed for child tasks'
-          },
-          logAiResponses: {
-            type: 'boolean',
-            description: 'Log AI responses to console for debugging. When true, outputs the full AI response including token usage. Defaults to false.'
+            description: 'Maximum task depth allowed for child tasks. Default: 10'
           },
           verbose: {
             type: 'boolean',
-            description: 'Enable verbose logging throughout orchestration. When true, outputs detailed logging at each step including dependency collection, AI calls, validation, and task creation. Defaults to context.verbose if not specified.'
+            description: 'Enable verbose logging throughout orchestration. When true, outputs detailed logging at each step. Defaults to context.verbose if not specified.'
+          },
+          maxRetries: {
+            type: 'number',
+            minimum: 1,
+            maximum: 10,
+            description: 'Maximum number of retry attempts if validation fails. Default: 3'
+          },
+          model: {
+            type: 'string',
+            description: 'Vertex AI model to use for orchestration. Default: "gemini-2.5-pro"'
           }
         },
         required: ['prompt'],
@@ -909,37 +919,120 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
       examples: [
         {
           input: {
-            prompt:
-              "Copy the users collection to users_backup and create an audit log entry",
-            dryRun: true,
+            prompt: "Create an admin user with email admin@company.com and store their profile in Firestore",
           },
-          description: "Preview backup operation plan for human review (default behavior)",
+          description: "Simple orchestration - AI determines services needed (authentication, firestore), spawns service agents, which spawn command agents. Job-level aiPlanning controls execution.",
         },
         {
           input: {
-            prompt:
-              "Export all product data to JSON, then create a backup copy in Firestore",
+            prompt: "Export all product data to JSON, then create a backup copy in Firestore",
             context: {
               reason: "monthly backup",
               requestedBy: "admin",
             },
-            dryRun: false,
             maxChildTasks: 10,
           },
-          description:
-            "Execute multi-step data export and backup automatically (dryRun: false)",
+          description: "Multi-step workflow with context and task limit. The 3-phase system handles task decomposition, service selection, command selection, and parameter construction automatically.",
         },
         {
           input: {
-            prompt: "Analyze and process large dataset with AI",
+            prompt: "Analyze user behavior data and generate insights",
             timeout: 120000,
-            maxRetries: 3,
             temperature: 0.2,
+            verbose: true,
           },
-          description:
-            "Preview complex AI operation with extended timeout and custom parameters",
+          description: "Complex orchestration with extended timeout and detailed logging. Orchestrator spawns ai:service-agent tasks, which spawn ai:command-agent tasks, which spawn actual commands.",
         },
       ],
+    },
+
+    "service-agent": {
+      handler: handleServiceAgent,
+      description:
+        "Phase 2 of 3-phase orchestration. Receives service and prompt, selects appropriate command, returns ai:command-agent task. Narrows focus from service to command level",
+      requiredParams: ["id", "service", "prompt", "dependsOn"],
+      optionalParams: ["maxRetries", "model"],
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            description: 'Task ID assigned by orchestrator (e.g., "task-0", "create-admin")'
+          },
+          service: {
+            type: 'string',
+            enum: ['ai', 'authentication', 'firestore', 'storage'],
+            description: 'Service name to select command from'
+          },
+          prompt: {
+            type: 'string',
+            description: 'Refined prompt from orchestrator describing what needs to be done'
+          },
+          dependsOn: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Task IDs this task depends on. Empty array if no dependencies.'
+          },
+          maxRetries: {
+            type: 'number',
+            minimum: 1,
+            maximum: 10,
+            description: 'Maximum number of retry attempts if validation fails. Default: 3'
+          },
+          model: {
+            type: 'string',
+            description: 'Vertex AI model to use for command selection. Default: "gemini-2.5-pro"'
+          }
+        },
+        required: ['id', 'service', 'prompt', 'dependsOn'],
+        additionalProperties: false
+      },
+    },
+
+    "command-agent": {
+      handler: handleCommandAgent,
+      description:
+        "Phase 3 of 3-phase orchestration. Receives command and prompt, constructs schema-valid parameters, returns executable command task. Final refinement from command to parameters",
+      requiredParams: ["id", "service", "command", "prompt", "dependsOn"],
+      optionalParams: ["maxRetries", "model"],
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'string',
+            description: 'Task ID assigned by orchestrator (passthrough from service agent)'
+          },
+          service: {
+            type: 'string',
+            description: 'Service name (passthrough from service agent)'
+          },
+          command: {
+            type: 'string',
+            description: 'Command name within the service (selected by service agent)'
+          },
+          prompt: {
+            type: 'string',
+            description: 'Refined prompt from service agent describing parameter requirements'
+          },
+          dependsOn: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Task IDs this task depends on. Empty array if no dependencies.'
+          },
+          maxRetries: {
+            type: 'number',
+            minimum: 1,
+            maximum: 10,
+            description: 'Maximum number of retry attempts if validation fails. Default: 3'
+          },
+          model: {
+            type: 'string',
+            description: 'Vertex AI model to use for parameter construction. Default: "gemini-2.5-pro"'
+          }
+        },
+        required: ['id', 'service', 'command', 'prompt', 'dependsOn'],
+        additionalProperties: false
+      },
     },
   },
 
@@ -948,7 +1041,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
     "create-user": {
       handler: handleCreateUser,
       description:
-        "Creates a new Firebase Authentication user with email/password or other providers. Supports all Firebase Auth user creation properties including custom claims for roles and permissions. The handler creates the user first, then sets custom claims separately if provided.",
+        "Create Firebase Auth user with email/password and optional custom claims for roles/permissions",
       requiredParams: ["userRecord"],
       optionalParams: ["customClaims"],
       inputSchema: {
@@ -992,7 +1085,8 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
           },
           customClaims: {
             type: 'object',
-            description: 'Optional custom claims object for setting user roles, permissions, or other metadata. These claims will be available in the user ID token.'
+            description: 'Optional custom claims object for setting user roles, permissions, or other metadata. These claims will be available in the user ID token.',
+            additionalProperties: true
           }
         },
         required: ['userRecord'],
@@ -1009,7 +1103,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
               disabled: false,
             }
           },
-          description: "Create a new user account with email, password, and display name",
+          description: "Basic user with email and password",
         },
         {
           input: {
@@ -1142,7 +1236,8 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
           },
           customClaims: {
             type: 'object',
-            description: 'Optional custom claims object for updating user roles, permissions, or other metadata. These claims will be available in the user ID token. Pass null to remove all custom claims.'
+            description: 'Optional custom claims object for updating user roles, permissions, or other metadata. These claims will be available in the user ID token. Pass null to remove all custom claims.',
+            additionalProperties: true
           }
         },
         required: ['uid', 'updateRequest'],
@@ -1308,7 +1403,8 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
           },
           customClaims: {
             type: 'object',
-            description: 'Custom claims object for setting user roles, permissions, or other metadata. These claims will be available in the user ID token. Pass null to clear all existing custom claims. Note: This parameter is required but can be null.'
+            description: 'Custom claims object for setting user roles, permissions, or other metadata. These claims will be available in the user ID token. Pass null to clear all existing custom claims. Note: This parameter is required but can be null.',
+            additionalProperties: true
           }
         },
         required: ['uid', 'customClaims'],

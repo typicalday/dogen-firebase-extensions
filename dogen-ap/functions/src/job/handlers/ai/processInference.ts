@@ -6,7 +6,7 @@ import config from "../../../config";
 import * as path from 'path';
 
 interface InferenceTaskInput {
-  model: string;
+  model?: string;
   prompt: string;
   files?: string[];
   systemInstruction?: string;
@@ -21,23 +21,48 @@ interface InferenceTaskInput {
 }
 
 interface InferenceTaskOutput {
-  model: string;
-  prompt: string;
-  response: string;
-  filesProcessed?: string[];
-  usage?: {
-    promptTokenCount?: number;
-    candidatesTokenCount?: number;
-    totalTokenCount?: number;
+  /** Actionable result for downstream tasks - contains only the AI response */
+  result: {
+    response: string;
   };
-  processedAt: string;
+  /** AI audit trail: Full request/response details (only populated when context.aiAuditing is true) */
+  audit?: {
+    model: string;
+    prompt: string;
+    filesProcessed?: string[];
+    usage?: {
+      promptTokenCount?: number;
+      candidatesTokenCount?: number;
+      totalTokenCount?: number;
+    };
+    systemInstruction?: string;
+    userPrompt: string;
+    generationConfig: any;
+  };
 }
 
 export async function handleProcessInference(task: JobTask, context: JobContext): Promise<InferenceTaskOutput> {
   const input = task.input as InferenceTaskInput | undefined;
-  
-  if (!input?.model || !input?.prompt) {
-    throw new Error("Invalid input: model and prompt are required");
+
+  if (!input?.prompt) {
+    throw new Error("Invalid input: prompt is required");
+  }
+
+  // Default to gemini-2.5-pro if no model is provided
+  const model = input.model || "gemini-2.5-pro";
+
+  const verbose = context.verbose;
+
+  if (verbose) {
+    console.log(`[ProcessInference] Processing inference request`);
+    console.log(`[ProcessInference] Model: ${model}`);
+    console.log(`[ProcessInference] Prompt length: ${input.prompt.length} characters`);
+    if (input.files && input.files.length > 0) {
+      console.log(`[ProcessInference] Files (${input.files.length}):`, input.files);
+    }
+    if (input.systemInstruction) {
+      console.log(`[ProcessInference] System instruction provided: ${input.systemInstruction.length} characters`);
+    }
   }
 
   // Get project ID - use localProjectIdOverride if set (for local testing), otherwise use Firebase project
@@ -100,8 +125,8 @@ export async function handleProcessInference(task: JobTask, context: JobContext)
   }
 
   // Get the model
-  const model = vertexAI.getGenerativeModel({
-    model: input.model,
+  const generativeModel = vertexAI.getGenerativeModel({
+    model: model,
     systemInstruction: input.systemInstruction,
     generationConfig,
   });
@@ -116,7 +141,7 @@ export async function handleProcessInference(task: JobTask, context: JobContext)
   }];
 
   try {
-    const result = await model.generateContent({
+    const result = await generativeModel.generateContent({
       contents,
     });
     
@@ -132,19 +157,31 @@ export async function handleProcessInference(task: JobTask, context: JobContext)
       .filter(part => part.text)
       .map(part => part.text)
       .join('');
-    
-    return {
-      model: input.model,
-      prompt: input.prompt,
-      response: responseText,
-      filesProcessed: filesProcessed.length > 0 ? filesProcessed : undefined,
-      usage: response.usageMetadata ? {
-        promptTokenCount: response.usageMetadata.promptTokenCount,
-        candidatesTokenCount: response.usageMetadata.candidatesTokenCount,
-        totalTokenCount: response.usageMetadata.totalTokenCount,
-      } : undefined,
-      processedAt: new Date().toISOString(),
+
+    const output: InferenceTaskOutput = {
+      result: {
+        response: responseText
+      }
     };
+
+    // Add audit trail when aiAuditing is enabled
+    if (context.aiAuditing) {
+      output.audit = {
+        model: model,
+        prompt: input.prompt,
+        filesProcessed: filesProcessed.length > 0 ? filesProcessed : undefined,
+        usage: response.usageMetadata ? {
+          promptTokenCount: response.usageMetadata.promptTokenCount,
+          candidatesTokenCount: response.usageMetadata.candidatesTokenCount,
+          totalTokenCount: response.usageMetadata.totalTokenCount,
+        } : undefined,
+        systemInstruction: input.systemInstruction,
+        userPrompt: input.prompt,
+        generationConfig
+      };
+    }
+
+    return output;
   } catch (error: any) {
     console.error('Error processing inference request:', error);
     throw new Error(`Inference processing failed: ${error.message}`);

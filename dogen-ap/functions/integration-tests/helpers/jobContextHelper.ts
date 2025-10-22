@@ -17,6 +17,8 @@ export function createMockJobContext(options?: Partial<JobContext>): JobContext 
     maxTasks: 1000,
     maxDepth: 10,
     timeout: undefined,
+    aiPlanning: false,
+    aiAuditing: false,
 
     getTask: () => undefined,
     getTaskOutput: () => undefined,
@@ -59,6 +61,8 @@ export function createMockJobContextWithTasks(
     maxTasks: options?.maxTasks ?? 1000,
     maxDepth: options?.maxDepth ?? 10,
     timeout: options?.timeout,
+    aiPlanning: options?.aiPlanning ?? false,
+    aiAuditing: options?.aiAuditing ?? false,
 
     getTask: (taskId: string) => taskMap.get(taskId),
     getTaskOutput: (taskId: string) => taskMap.get(taskId)?.output,

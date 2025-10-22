@@ -25,6 +25,12 @@ export interface JobContext {
   /** Optional execution timeout in milliseconds */
   readonly timeout?: number;
 
+  /** Plan mode flag - when true, AI tasks can spawn children but final commands are marked as "planned" and don't execute */
+  readonly aiPlanning: boolean;
+
+  /** AI auditing flag - when true, AI tasks include full request/response details in their output for debugging and transparency */
+  readonly aiAuditing: boolean;
+
   /**
    * Get a task by ID
    * @param taskId - The task ID to retrieve
@@ -77,6 +83,8 @@ export function createJobContext(
     maxTasks: job.maxTasks,
     maxDepth: job.maxDepth,
     timeout: job.timeout,
+    aiPlanning: job.aiPlanning,
+    aiAuditing: job.aiAuditing ?? false,
 
     // Task access methods
     getTask(taskId: string): Readonly<JobTask> | undefined {

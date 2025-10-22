@@ -3,21 +3,78 @@
  */
 
 /**
- * Input specification for orchestrate task handler
+ * Phase 1: Orchestrator Types
+ *
+ * The orchestrator is responsible for:
+ * - Intent analysis
+ * - Task decomposition
+ * - Service selection
+ * - Dependency planning
+ * - ID assignment
+ * - Workflow strategy determination
  */
-export interface OrchestrateInput {
-  /** Natural language prompt describing what needs to be done */
+
+/**
+ * Input to Phase 1: Orchestrator
+ */
+export interface OrchestratorInput {
+  /** User's natural language request */
   prompt: string;
 
-  /**
-   * Dry run mode for human-in-the-loop workflows (default: true)
-   * - true: Returns planned tasks for review without executing them
-   * - false: Executes the generated tasks automatically
-   */
-  dryRun?: boolean;
+  /** Optional additional context */
+  context?: Record<string, any>;
 
-  /** Maximum number of retry attempts on validation failure (default: 3) */
-  maxRetries?: number;
+  /** Maximum number of sub-tasks allowed */
+  maxTasks?: number;
+}
+
+/**
+ * Single sub-task output from orchestrator
+ */
+export interface OrchestratorSubtask {
+  /** Unique identifier assigned by orchestrator (e.g., "task-0", "create-admin") */
+  id: string;
+
+  /** Service name (one of: ai, authentication, firestore, storage) */
+  service: string;
+
+  /** Refined prompt for service agent */
+  prompt: string;
+
+  /** Array of task IDs this task depends on */
+  dependsOn: string[];
+}
+
+/**
+ * Output from Phase 1: Orchestrator
+ * This is what the AI returns and what gets passed to Phase 2
+ */
+export interface OrchestratorOutput {
+  /** Array of service-level sub-tasks */
+  subtasks: OrchestratorSubtask[];
+
+  /** Optional explanation of the orchestration plan */
+  reasoning?: string;
+}
+
+/**
+ * Validation result for orchestrator output
+ */
+export interface OrchestratorValidationResult {
+  isValid: boolean;
+  errors: string[];
+}
+
+/**
+ * Handler Types
+ */
+
+/**
+ * Input specification for orchestrator-agent task handler
+ */
+export interface OrchestratorAgentInput {
+  /** Natural language prompt describing what needs to be done */
+  prompt: string;
 
   /** AI temperature for creativity control (default: 0.2, range: 0.0-1.0) */
   temperature?: number;
@@ -34,40 +91,41 @@ export interface OrchestrateInput {
   /** Maximum depth limit for task hierarchy (default: 10) */
   maxDepth?: number;
 
-  /** Log AI responses to console for debugging (default: false) */
-  logAiResponses?: boolean;
-
   /** Verbose mode - enables detailed logging throughout orchestration (default: false) */
   verbose?: boolean;
+
+  /** Maximum number of retry attempts if validation fails (default: 3) */
+  maxRetries?: number;
+
+  /** Vertex AI model to use (default: "gemini-2.5-pro") */
+  model?: string;
 }
 
 /**
- * Output from orchestrate task handler
+ * Actionable result from orchestrator-agent (for downstream task consumption)
+ * Orchestrator is a task-spawning agent, so it has no actionable data to pass.
+ * The result is the spawning of child tasks, not data for other tasks to consume.
  */
-export interface OrchestrateOutput {
+export type OrchestratorAgentResult = Record<string, never>; // Empty object {}
+
+/**
+ * Output from orchestrator-agent task handler
+ */
+export interface OrchestratorAgentOutput {
+  /** Actionable result for downstream tasks - contains only essential data */
+  result: OrchestratorAgentResult;
+
   /** Original user prompt */
   prompt: string;
-
-  /** AI-generated task plan */
-  plan: AITaskPlan;
 
   /** AI's reasoning for the plan (if provided) */
   reasoning?: string;
 
-  /** Whether this was a dry run (human-in-the-loop mode) */
-  dryRun: boolean;
-
   /**
-   * Child tasks to be spawned and executed automatically
-   * Only present when dryRun: false
+   * IDs of child tasks that were spawned
+   * The full task specifications are in the task registry, this just tracks which tasks were created
    */
-  childTasks?: ChildTaskSpec[];
-
-  /**
-   * Planned tasks returned for human review
-   * Only present when dryRun: true
-   */
-  plannedTasks?: ChildTaskSpec[];
+  childTaskIds?: string[];
 
   /** Number of retry attempts used */
   retriesUsed: number;
@@ -80,6 +138,14 @@ export interface OrchestrateOutput {
     promptTokenCount?: number;
     candidatesTokenCount?: number;
     totalTokenCount?: number;
+  };
+
+  /** AI audit trail: Full request/response details (only populated when context.aiAuditing is true) */
+  audit?: {
+    input: OrchestratorAgentInput;
+    systemInstruction: string;
+    userPrompt: string;
+    aiResponse: string;
   };
 }
 

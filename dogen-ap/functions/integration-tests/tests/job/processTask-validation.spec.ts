@@ -7,7 +7,7 @@
 
 import { describe, it } from "mocha";
 import { expect } from "chai";
-import { validateTaskInput } from "../../../src/job/handlers/ai/orchestrate/validator";
+import { validateTaskInput } from "../../../src/job/validator";
 
 describe("processTask Input Validation (via validateTaskInput)", () => {
   describe("Schema Validation - Invalid Input Format", () => {
@@ -59,7 +59,7 @@ describe("processTask Input Validation (via validateTaskInput)", () => {
     it("should reject task with out-of-range temperature", () => {
       const errors = validateTaskInput(
         "ai",
-        "orchestrate",
+        "orchestrator-agent",
         {
           prompt: "Test prompt",
           temperature: 2.5, // Should be 0.0-1.0
@@ -135,10 +135,10 @@ describe("processTask Input Validation (via validateTaskInput)", () => {
       expect(errors.join(" ")).to.include("destinationPath");
     });
 
-    it("should reject task with missing prompt for orchestrate", () => {
+    it("should reject task with missing prompt for orchestrator-agent", () => {
       const errors = validateTaskInput(
         "ai",
-        "orchestrate",
+        "orchestrator-agent",
         {
           // Missing prompt
           temperature: 0.5,
@@ -229,7 +229,7 @@ describe("processTask Input Validation (via validateTaskInput)", () => {
     it("should accept task with optional parameters", () => {
       const errors = validateTaskInput(
         "ai",
-        "orchestrate",
+        "orchestrator-agent",
         {
           prompt: "Test prompt",
           temperature: 0.7,
@@ -298,7 +298,7 @@ describe("processTask Input Validation (via validateTaskInput)", () => {
     it("should validate number minimum constraint", () => {
       const errors = validateTaskInput(
         "ai",
-        "orchestrate",
+        "orchestrator-agent",
         {
           prompt: "Test",
           maxRetries: -1, // Should be >= 0
@@ -313,7 +313,7 @@ describe("processTask Input Validation (via validateTaskInput)", () => {
     it("should validate number maximum constraint", () => {
       const errors = validateTaskInput(
         "ai",
-        "orchestrate",
+        "orchestrator-agent",
         {
           prompt: "Test",
           timeout: 500000, // Should be <= 300000
@@ -449,9 +449,9 @@ describe("processTask Input Validation (via validateTaskInput)", () => {
       })).to.not.be.empty;
     });
 
-    it("should validate ai/orchestrate schema", () => {
+    it("should validate ai/orchestrator-agent schema", () => {
       // Valid input with all optional params
-      expect(validateTaskInput("ai", "orchestrate", {
+      expect(validateTaskInput("ai", "orchestrator-agent", {
         prompt: "Test",
         maxRetries: 3,
         temperature: 0.5,
@@ -461,7 +461,7 @@ describe("processTask Input Validation (via validateTaskInput)", () => {
       })).to.be.empty;
 
       // Invalid - out of range
-      expect(validateTaskInput("ai", "orchestrate", {
+      expect(validateTaskInput("ai", "orchestrator-agent", {
         prompt: "Test",
         temperature: 2.0, // > 1.0
       })).to.not.be.empty;

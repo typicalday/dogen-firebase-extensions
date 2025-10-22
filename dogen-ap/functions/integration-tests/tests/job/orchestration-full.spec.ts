@@ -177,6 +177,39 @@ describe("Full Job Orchestration Integration", function () {
                     }
                   }
                 }
+
+                // DEPENDENCY PROPAGATION: If task spawned children and other tasks depend on task,
+                // then those tasks should also depend on all of task's children
+                const spawnedChildIds: string[] = [];
+                for (let i = 0; i < output.childTasks.length; i++) {
+                  spawnedChildIds.push(`${task.id}-${i}`);
+                }
+
+                if (spawnedChildIds.length > 0) {
+                  // Find all tasks that depend on the spawning task
+                  const dependentTasks = Array.from(taskRegistry.values()).filter(t =>
+                    t.dependsOn?.includes(task.id)
+                  );
+
+                  for (const dependentTask of dependentTasks) {
+                    // Add all spawned child IDs to the dependent task's dependsOn array
+                    const updatedDependsOn = [
+                      ...(dependentTask.dependsOn || []),
+                      ...spawnedChildIds
+                    ];
+
+                    // Update the task's dependencies directly (update() method doesn't support dependsOn)
+                    dependentTask.dependsOn = updatedDependsOn;
+
+                    // Add edges in the graph for each new dependency
+                    for (const childId of spawnedChildIds) {
+                      graph.addEdge(childId, dependentTask.id);
+                    }
+                  }
+
+                  // Validate no cycles were created by dependency propagation
+                  graph.validateNoCycles();
+                }
               }
 
               task.update({
@@ -898,6 +931,263 @@ describe("Full Job Orchestration Integration", function () {
       expect(item01?.status).to.equal(FirebaseTaskStatus.Succeeded);
       expect(item10?.status).to.equal(FirebaseTaskStatus.Succeeded);
       expect(item11?.status).to.equal(FirebaseTaskStatus.Succeeded);
+    });
+  });
+
+  // ============================================================================
+  // DEPENDENCY PROPAGATION TESTS
+  // ============================================================================
+
+  describe("Dependency Propagation", function () {
+    it("should propagate child dependencies to dependent tasks", async function () {
+      /**
+       * Structure:
+       *   Task 0: spawns [0-0, 0-1, 0-2]
+       *   Task 1: depends on [0]
+       *
+       * Expected: After 0 spawns, Task 1 should depend on [0, 0-0, 0-1, 0-2]
+       */
+
+      const handlers = new Map();
+
+      handlers.set("test:spawn-three", async () => ({
+        childTasks: [
+          { service: "test", command: "child" },
+          { service: "test", command: "child" },
+          { service: "test", command: "child" },
+        ],
+      }));
+
+      handlers.set("test:child", async () => ({ completed: true }));
+      handlers.set("test:dependent", async () => ({ completed: true }));
+
+      const tasks = [
+        new JobTask({ id: "0", service: "test", command: "spawn-three" }),
+        new JobTask({ id: "1", service: "test", command: "dependent", dependsOn: ["0"] }),
+      ];
+
+      const result = await executeJobSimulation(tasks, handlers);
+
+      expect(result.status).to.equal("succeeded");
+      expect(result.tasks).to.have.lengthOf(5); // 0, 0-0, 0-1, 0-2, 1
+
+      // Verify Task 1 has propagated dependencies
+      const task1 = result.tasks.find((t) => t.id === "1");
+      expect(task1?.dependsOn).to.include.members(["0", "0-0", "0-1", "0-2"]);
+
+      // Verify all tasks completed
+      expect(result.tasks.every((t) => t.status === FirebaseTaskStatus.Succeeded)).to.be.true;
+    });
+
+    it("should propagate grandchildren transitively", async function () {
+      /**
+       * Structure:
+       *   Task 0: spawns [0-0, 0-1]
+       *   Task 0-0: spawns [0-0-0, 0-0-1]
+       *   Task 1: depends on [0]
+       *
+       * Expected propagation (wave-by-wave):
+       *   Wave 1: Task 1 gets [0-0, 0-1]
+       *   Wave 2: Task 1 gets [0-0-0, 0-0-1]
+       *   Final: [0, 0-0, 0-1, 0-0-0, 0-0-1]
+       */
+
+      const handlers = new Map();
+
+      handlers.set("test:spawn-recursive", async (task: JobTask) => {
+        const depth = task.id.split("-").length;
+
+        if (depth === 1) {
+          // Root: spawn 2 children
+          return {
+            childTasks: [
+              { service: "test", command: "spawn-recursive" },
+              { service: "test", command: "noop" },
+            ],
+          };
+        } else if (depth === 2) {
+          // Child: spawn 2 grandchildren
+          return {
+            childTasks: [
+              { service: "test", command: "noop" },
+              { service: "test", command: "noop" },
+            ],
+          };
+        }
+
+        return {};
+      });
+
+      handlers.set("test:noop", async () => ({ completed: true }));
+      handlers.set("test:dependent", async () => ({ completed: true }));
+
+      const tasks = [
+        new JobTask({ id: "0", service: "test", command: "spawn-recursive" }),
+        new JobTask({ id: "1", service: "test", command: "dependent", dependsOn: ["0"] }),
+      ];
+
+      const result = await executeJobSimulation(tasks, handlers);
+
+      expect(result.status).to.equal("succeeded");
+      expect(result.tasks).to.have.lengthOf(6); // 0, 0-0, 0-1, 0-0-0, 0-0-1, 1
+
+      // Verify Task 1 has all transitive dependencies
+      const task1 = result.tasks.find((t) => t.id === "1");
+      expect(task1?.dependsOn).to.include.members(["0", "0-0", "0-1", "0-0-0", "0-0-1"]);
+    });
+
+    it("should propagate to multiple dependent tasks", async function () {
+      /**
+       * Structure:
+       *   Task 0: spawns [0-0, 0-1]
+       *   Task 1: depends on [0]
+       *   Task 2: depends on [0]
+       *
+       * Expected: Both Task 1 and Task 2 get [0-0, 0-1] as dependencies
+       */
+
+      const handlers = new Map();
+
+      handlers.set("test:spawn-two", async () => ({
+        childTasks: [
+          { service: "test", command: "child" },
+          { service: "test", command: "child" },
+        ],
+      }));
+
+      handlers.set("test:child", async () => ({ completed: true }));
+      handlers.set("test:dependent", async () => ({ completed: true }));
+
+      const tasks = [
+        new JobTask({ id: "0", service: "test", command: "spawn-two" }),
+        new JobTask({ id: "1", service: "test", command: "dependent", dependsOn: ["0"] }),
+        new JobTask({ id: "2", service: "test", command: "dependent", dependsOn: ["0"] }),
+      ];
+
+      const result = await executeJobSimulation(tasks, handlers);
+
+      expect(result.status).to.equal("succeeded");
+      expect(result.tasks).to.have.lengthOf(5); // 0, 0-0, 0-1, 1, 2
+
+      // Verify both dependent tasks received propagated dependencies
+      const task1 = result.tasks.find((t) => t.id === "1");
+      const task2 = result.tasks.find((t) => t.id === "2");
+
+      expect(task1?.dependsOn).to.include.members(["0", "0-0", "0-1"]);
+      expect(task2?.dependsOn).to.include.members(["0", "0-0", "0-1"]);
+    });
+
+    it("should handle complex dependency chain with propagation", async function () {
+      /**
+       * Structure:
+       *   Task A: spawns [A-0, A-1]
+       *   Task A-0: spawns [A-0-0, A-0-1]
+       *   Task B: depends on [A]
+       *   Task C: depends on [B]
+       *
+       * Expected:
+       *   Task B: depends on [A, A-0, A-1, A-0-0, A-0-1]
+       *   Task C: depends on [B] (only)
+       */
+
+      const handlers = new Map();
+
+      handlers.set("test:spawn-branch", async (task: JobTask) => {
+        if (task.id === "A") {
+          return {
+            childTasks: [
+              { service: "test", command: "spawn-branch" },
+              { service: "test", command: "noop" },
+            ],
+          };
+        } else if (task.id === "A-0") {
+          return {
+            childTasks: [
+              { service: "test", command: "noop" },
+              { service: "test", command: "noop" },
+            ],
+          };
+        }
+
+        return {};
+      });
+
+      handlers.set("test:noop", async () => ({ completed: true }));
+      handlers.set("test:task-b", async () => ({ completed: true }));
+      handlers.set("test:task-c", async () => ({ completed: true }));
+
+      const tasks = [
+        new JobTask({ id: "A", service: "test", command: "spawn-branch" }),
+        new JobTask({ id: "B", service: "test", command: "task-b", dependsOn: ["A"] }),
+        new JobTask({ id: "C", service: "test", command: "task-c", dependsOn: ["B"] }),
+      ];
+
+      const result = await executeJobSimulation(tasks, handlers);
+
+      expect(result.status).to.equal("succeeded");
+
+      // Verify Task B has all descendants of A
+      const taskB = result.tasks.find((t) => t.id === "B");
+      expect(taskB?.dependsOn).to.include.members(["A", "A-0", "A-1", "A-0-0", "A-0-1"]);
+
+      // Verify Task C only depends on B (not A's children)
+      const taskC = result.tasks.find((t) => t.id === "C");
+      expect(taskC?.dependsOn).to.deep.equal(["B"]);
+    });
+
+    it("should not execute dependent task until all spawned descendants complete", async function () {
+      /**
+       * This test verifies the execution order: dependent task should wait
+       * for ALL spawned descendants to complete, not just the parent
+       */
+
+      const executionOrder: string[] = [];
+
+      const handlers = new Map();
+
+      handlers.set("test:spawn-two", async (task: JobTask) => {
+        executionOrder.push(task.id);
+        return {
+          childTasks: [
+            { service: "test", command: "child" },
+            { service: "test", command: "child" },
+          ],
+        };
+      });
+
+      handlers.set("test:child", async (task: JobTask) => {
+        executionOrder.push(task.id);
+        return { completed: true };
+      });
+
+      handlers.set("test:dependent", async (task: JobTask) => {
+        executionOrder.push(task.id);
+        return { completed: true };
+      });
+
+      const tasks = [
+        new JobTask({ id: "0", service: "test", command: "spawn-two" }),
+        new JobTask({ id: "1", service: "test", command: "dependent", dependsOn: ["0"] }),
+      ];
+
+      const result = await executeJobSimulation(tasks, handlers);
+
+      expect(result.status).to.equal("succeeded");
+
+      // Verify execution order: parent → children → dependent
+      const idx0 = executionOrder.indexOf("0");
+      const idx00 = executionOrder.indexOf("0-0");
+      const idx01 = executionOrder.indexOf("0-1");
+      const idx1 = executionOrder.indexOf("1");
+
+      expect(idx0).to.be.greaterThanOrEqual(0);
+      expect(idx00).to.be.greaterThan(idx0);
+      expect(idx01).to.be.greaterThan(idx0);
+      expect(idx1).to.be.greaterThan(idx00);
+      expect(idx1).to.be.greaterThan(idx01);
+
+      // Task 1 must execute AFTER both children
+      expect(executionOrder[idx1]).to.equal("1");
     });
   });
 });

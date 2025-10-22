@@ -6,7 +6,7 @@ import { Job, JobStatus } from "./job";
 import { TaskGraph } from "./taskGraph";
 import { createJobContext } from "./jobContext";
 import { getHandler, getUnsupportedTaskError } from "./handlers/registry";
-import { validateTaskInput } from "./handlers/ai/orchestrate/validator";
+import { validateChildTasks, validateTaskInput } from "./validator";
 
 const persistIntervalDuration = 10000;
 
@@ -27,6 +27,8 @@ export const processJob = functions.https.onCall(async (data, context) => {
   const persistMode = data.persist ?? false;
   const abortOnFailure = data.abortOnFailure ?? true;
   const verbose = data.verbose ?? false;
+  const aiPlanning = data.aiPlanning ?? true; // Default to true for safety (human-in-the-loop)
+  const aiAuditing = data.aiAuditing ?? false; // Default to false for performance
   const tasksData = data.tasks;
   const maxTasks = data.maxTasks;
   const maxDepth = data.maxDepth;
@@ -48,6 +50,38 @@ export const processJob = functions.https.onCall(async (data, context) => {
     );
   }
 
+  // Validate initial tasks before creating job
+  const initialTaskErrors: string[] = [];
+  for (let i = 0; i < tasksData.length; i++) {
+    const taskData = tasksData[i];
+    const { service, command, input } = taskData;
+
+    // Validate task structure
+    if (!service || typeof service !== 'string') {
+      initialTaskErrors.push(`Task ${i}: Missing or invalid 'service' field`);
+      continue;
+    }
+
+    if (!command || typeof command !== 'string') {
+      initialTaskErrors.push(`Task ${i}: Missing or invalid 'command' field`);
+      continue;
+    }
+
+    // Validate input against handler definition
+    const validationErrors = validateTaskInput(service, command, input || {});
+    if (validationErrors.length > 0) {
+      initialTaskErrors.push(`Task ${i} (${service}/${command}): ${validationErrors.join(', ')}`);
+    }
+  }
+
+  // Throw error if validation failed
+  if (initialTaskErrors.length > 0) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      `Task validation failed:\n${initialTaskErrors.join('\n')}`
+    );
+  }
+
   let job = new Job({
     name: jobName,
     abortOnFailure: abortOnFailure,
@@ -55,6 +89,8 @@ export const processJob = functions.https.onCall(async (data, context) => {
     maxDepth: maxDepth,
     timeout: timeout,
     verbose: verbose,
+    aiPlanning: aiPlanning,
+    aiAuditing: aiAuditing,
     tasks: tasksData.map((taskData: any) => {
       const { service, command, input } = taskData;
       return new JobTask({ service, command, input, depth: 0 });
@@ -156,17 +192,78 @@ export const processJob = functions.https.onCall(async (data, context) => {
 
             // Check for child tasks to spawn
             if (output.childTasks && Array.isArray(output.childTasks)) {
-              // FIRST PASS: Collect all child IDs that will be created
-              // This allows us to validate dependencies against planned siblings
-              const plannedChildIds = new Set<string>();
-              for (let i = 0; i < output.childTasks.length; i++) {
-                plannedChildIds.add(`${task.id}-${i}`);
+              // VALIDATION: Validate all child tasks before spawning
+              const validationReport = validateChildTasks(output.childTasks, task.id);
+
+              if (!validationReport.isValid) {
+                throw new Error(
+                  `Child task validation failed for parent ${task.id}:\n` +
+                  validationReport.errors.join('\n')
+                );
               }
 
-              // SECOND PASS: Create children with enhanced validation
+              // Log warnings if any
+              if (verbose && validationReport.warnings.length > 0) {
+                console.log(`Child task validation warnings for ${task.id}:`);
+                validationReport.warnings.forEach(warning => console.log(`  - ${warning}`));
+              }
+
+              // FIRST PASS: Collect all child IDs and validate no collisions
+              // IDs are already scoped by handlers using scopeChildTasks helper
+              const plannedChildIds = new Set<string>();
+              const duplicateIds = new Set<string>();
+
               for (let i = 0; i < output.childTasks.length; i++) {
                 const childSpec = output.childTasks[i];
-                const childId = `${task.id}-${i}`;
+                // Handlers have already applied scoping, so use ID as-is
+                const childId = childSpec.id ?? `${task.id}-${i}`; // Fallback for legacy handlers
+
+                // Check for duplicate IDs within this batch
+                if (plannedChildIds.has(childId)) {
+                  duplicateIds.add(childId);
+                }
+
+                // Check if task already exists in graph from previous operations
+                if (taskRegistry.has(childId) || graph.hasNode(childId)) {
+                  duplicateIds.add(childId);
+                }
+
+                plannedChildIds.add(childId);
+              }
+
+              // Fail fast if duplicate IDs detected
+              if (duplicateIds.size > 0) {
+                // Provide detailed error about where duplicates come from
+                const duplicateDetails = Array.from(duplicateIds).map(dupId => {
+                  const inBatch = Array.from(plannedChildIds).filter(id => id === dupId).length > 1;
+                  const inGraph = taskRegistry.has(dupId) || graph.hasNode(dupId);
+
+                  if (inBatch && inGraph) {
+                    return `${dupId} (duplicate in batch AND already in graph)`;
+                  } else if (inBatch) {
+                    return `${dupId} (duplicate in current batch)`;
+                  } else if (inGraph) {
+                    return `${dupId} (already exists in graph)`;
+                  }
+                  return dupId;
+                });
+
+                throw new Error(
+                  `Duplicate child task IDs detected: ${duplicateDetails.join(', ')}. ` +
+                  `Parent task: ${task.id}. ` +
+                  `Each child task must have a unique ID.`
+                );
+              }
+
+              // Track all spawned child IDs for dependency propagation
+              const spawnedChildIds: string[] = [];
+
+              // SECOND PASS: Create children with enhanced validation
+              // IDs and dependencies are already scoped by handlers
+              for (let i = 0; i < output.childTasks.length; i++) {
+                const childSpec = output.childTasks[i];
+                // Handlers have already applied scoping, so use ID as-is
+                const childId = childSpec.id ?? `${task.id}-${i}`; // Fallback for legacy handlers
 
                 // SAFETY CHECK 1: Total task limit
                 if (taskRegistry.size >= job.maxTasks) {
@@ -187,10 +284,8 @@ export const processJob = functions.https.onCall(async (data, context) => {
                   );
                 }
 
-                // SAFETY CHECK 3: Enhanced dependency validation
-                // Dependencies can be:
-                // 1. Existing tasks (already in registry/graph), OR
-                // 2. Sibling tasks (being created in this spawn operation)
+                // SAFETY CHECK 3: Dependency validation
+                // Dependencies are already resolved by handlers using scopeChildTasks
                 if (childSpec.dependsOn) {
                   for (const depId of childSpec.dependsOn) {
                     const isExisting = taskRegistry.has(depId) || graph.hasNode(depId);
@@ -207,6 +302,7 @@ export const processJob = functions.https.onCall(async (data, context) => {
                 }
 
                 // Create child task with explicit depth
+                // Input already has resolved dependencies from handlers
                 const childTask = new JobTask({
                   id: childId,
                   service: childSpec.service,
@@ -235,14 +331,57 @@ export const processJob = functions.https.onCall(async (data, context) => {
                   }
                 });
 
+                spawnedChildIds.push(childId);
+
                 if (verbose) {
                   console.log(`Task ${task.id} spawned child task ${childId} (${childSpec.service}/${childSpec.command})`);
                 }
               }
+
+              // DEPENDENCY PROPAGATION: If task A spawned children and task B depends on A,
+              // then B should also depend on all of A's children
+              if (spawnedChildIds.length > 0) {
+                await graphMutex.runExclusive(async () => {
+                  // Find all tasks that depend on the parent task
+                  const dependentTasks = Array.from(taskRegistry.values()).filter(t =>
+                    t.dependsOn?.includes(task.id)
+                  );
+
+                  for (const dependentTask of dependentTasks) {
+                    // Add all spawned child IDs to the dependent task's dependsOn array
+                    const updatedDependsOn = [
+                      ...(dependentTask.dependsOn || []),
+                      ...spawnedChildIds
+                    ];
+
+                    // Update the task's dependencies directly (update() method doesn't support dependsOn)
+                    dependentTask.dependsOn = updatedDependsOn;
+
+                    // Add edges in the graph for each new dependency
+                    for (const childId of spawnedChildIds) {
+                      graph.addEdge(childId, dependentTask.id);
+                    }
+
+                    if (verbose) {
+                      console.log(
+                        `Task ${dependentTask.id} now depends on spawned children: ${spawnedChildIds.join(', ')} ` +
+                        `(because it depends on parent ${task.id})`
+                      );
+                    }
+                  }
+
+                  // Validate no cycles were created by dependency propagation
+                  graph.validateNoCycles();
+                });
+              }
             }
 
+            // If output has a nested 'output' property (from agent handlers that return {output, childTasks}),
+            // unwrap it to avoid storing the childTasks array in task.output
+            const taskOutput = (output as any).output !== undefined ? (output as any).output : output;
+
             task.update({
-              output,
+              output: taskOutput,
               completedAt: new Date(),
             });
 
@@ -272,16 +411,25 @@ export const processJob = functions.https.onCall(async (data, context) => {
       id: persistMode ? job.ref.id : null,
       name: job.name,
       status: job.status,
-      tasks: Array.from(taskRegistry.values()).map((task) => ({
-        id: task.id,
-        service: task.service,
-        command: task.command,
-        status: task.status,
-        output: task.output,
-        startedAt: task.startedAt,
-        completedAt: task.completedAt,
-        dependsOn: task.dependsOn,
-      })),
+      tasks: Array.from(taskRegistry.values())
+        .sort((a, b) => {
+          // Sort by startedAt time (earliest first)
+          // Handle cases where startedAt might be undefined
+          if (!a.startedAt && !b.startedAt) return 0;
+          if (!a.startedAt) return 1;
+          if (!b.startedAt) return -1;
+          return a.startedAt.getTime() - b.startedAt.getTime();
+        })
+        .map((task) => ({
+          id: task.id,
+          service: task.service,
+          command: task.command,
+          status: task.status,
+          output: task.output,
+          startedAt: task.startedAt,
+          completedAt: task.completedAt,
+          dependsOn: task.dependsOn,
+        })),
       createdAt: job.createdAt,
       updatedAt: job.updatedAt,
     };
@@ -334,19 +482,11 @@ async function processTask(
     throw new Error(getUnsupportedTaskError(task.service, task.command));
   }
 
-  // Validate task input before execution
-  const validationErrors = validateTaskInput(
-    task.service,
-    task.command,
-    task.input || {}
-  );
-
-  if (validationErrors.length > 0) {
-    throw new Error(
-      `Task validation failed for ${task.service}/${task.command}:\n` +
-      validationErrors.map(e => `  - ${e}`).join('\n')
-    );
-  }
+  // NOTE: Task input validation happens at entry points:
+  // 1. Initial tasks: validated at job submission (lines 53-83)
+  // 2. Child tasks: validated when spawned (lines 163-177)
+  // 3. AI-generated tasks: validated at orchestrator/service/command agent level
+  // By this point, the task has already been validated, so we can safely execute.
 
   // Create job context for this task execution
   const context = createJobContext(taskRegistry, job);
