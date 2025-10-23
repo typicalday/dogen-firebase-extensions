@@ -40,7 +40,7 @@ const DEFAULT_TIMEOUT = 60000;
  * @param context - Job context
  * @returns Service agent output with selected command and refined prompt for command agent
  */
-export async function handleServiceAgent(task: JobTask, context: JobContext): Promise<{ output: ServiceAgentOutput; childTasks: any[] }> {
+export async function handleServiceAgent(task: JobTask, context: JobContext): Promise<{ output: ServiceAgentOutput; audit?: any; childTasks: any[] }> {
   const input = task.input as ServiceAgentInput;
 
   // Validate input
@@ -271,32 +271,25 @@ export async function handleServiceAgent(task: JobTask, context: JobContext): Pr
       }
 
       // Construct the service agent output
-      const serviceAgentOutput: ServiceAgentOutput = {
-        result: {}, // Service-agent spawns tasks, no actionable data to pass downstream
-      };
+      // Service-agent is a task-spawning agent with no actionable output
+      // Metadata is stored in audit field only when aiAuditing is enabled
+      const serviceAgentOutput: ServiceAgentOutput = {};
 
-      // Add audit trail (including selected command and refined prompt) only when aiAuditing is enabled
-      if (context.aiAuditing) {
-        serviceAgentOutput.audit = {
-          input,
-          selectedCommand: aiResponse.command,
-          refinedPrompt: aiResponse.prompt,
-          systemInstruction,
-          userPrompt,
-          aiResponse: responseText,
-          // Include retry history if there were any retries
-          ...(retryHistory.length > 0 && {
-            retryHistory,
-            retriesUsed: attempt
-          })
-        };
-      }
-
-      // Store just the child task ID in output (full specs are in task registry)
-      serviceAgentOutput.childTaskIds = [childTask.id];
+      const auditData = context.aiAuditing ? {
+        input,
+        selectedCommand: aiResponse.command,
+        refinedPrompt: aiResponse.prompt,
+        childTaskIds: [childTask.id], // Store just the child task ID, full specs are in task registry
+        systemInstruction,
+        userPrompt,
+        aiResponse: responseText,
+        // Include retry count if there were any retries
+        ...(attempt > 1 && { retriesUsed: attempt })
+      } : undefined;
 
       return {
         output: serviceAgentOutput,
+        audit: auditData,
         childTasks: [childTask]
       };
 

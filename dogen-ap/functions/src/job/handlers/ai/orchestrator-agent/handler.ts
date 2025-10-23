@@ -39,7 +39,7 @@ const AI_CALL_TIMEOUT = 60000;
  * @param task - The orchestration task containing user prompt and parameters
  * @returns Orchestration output with validated child tasks
  */
-export async function handleOrchestratorAgent(task: JobTask, context: JobContext): Promise<{ output: OrchestratorAgentOutput; childTasks: any[] }> {
+export async function handleOrchestratorAgent(task: JobTask, context: JobContext): Promise<{ output: OrchestratorAgentOutput; audit?: any; childTasks: any[] }> {
   const input = task.input as OrchestratorAgentInput | undefined;
 
   // Validate input
@@ -179,23 +179,22 @@ export async function handleOrchestratorAgent(task: JobTask, context: JobContext
       timestamp: new Date().toISOString()
     };
 
-    // Return orchestration output with serviceAgent childTasks
-    const output: OrchestratorAgentOutput = {
-      result: {}, // Orchestrator spawns tasks, no actionable data to pass downstream
+    // Return orchestration result
+    // Orchestrator is a task-spawning agent with no actionable output
+    // Metadata is stored in audit field only when aiAuditing is enabled
+    const output: OrchestratorAgentOutput = {};
+
+    const auditData = context.aiAuditing ? {
+      input,
       prompt: input.prompt,
       reasoning: phase1Output.reasoning,
+      childTaskIds: childTasks.map(ct => ct.id!), // Store just the IDs, full specs are in task registry
       retriesUsed,
       validationReport,
-      childTaskIds: childTasks.map(ct => ct.id!), // Store just the IDs, full specs are in task registry
-      ...(context.aiAuditing && {
-        audit: {
-          input,
-          systemInstruction: audit?.systemInstruction || '',
-          userPrompt: audit?.userPrompt || '',
-          aiResponse: audit?.aiResponse || ''
-        }
-      })
-    };
+      systemInstruction: audit?.systemInstruction || '',
+      userPrompt: audit?.userPrompt || '',
+      aiResponse: audit?.aiResponse || ''
+    } : undefined;
 
     if (verbose) {
       console.log(`[OrchestratorAgent] Phase 1 orchestration completed successfully`);
@@ -203,6 +202,7 @@ export async function handleOrchestratorAgent(task: JobTask, context: JobContext
 
     return {
       output,
+      audit: auditData,
       childTasks // Return childTasks separately for job system to spawn
     };
 

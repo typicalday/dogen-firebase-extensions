@@ -102,51 +102,12 @@ export interface OrchestratorAgentInput {
 }
 
 /**
- * Actionable result from orchestrator-agent (for downstream task consumption)
- * Orchestrator is a task-spawning agent, so it has no actionable data to pass.
- * The result is the spawning of child tasks, not data for other tasks to consume.
- */
-export type OrchestratorAgentResult = Record<string, never>; // Empty object {}
-
-/**
  * Output from orchestrator-agent task handler
+ * Orchestrator is a task-spawning agent that has no actionable output.
+ * The output object is empty - audit metadata is returned separately at handler level.
  */
 export interface OrchestratorAgentOutput {
-  /** Actionable result for downstream tasks - contains only essential data */
-  result: OrchestratorAgentResult;
-
-  /** Original user prompt */
-  prompt: string;
-
-  /** AI's reasoning for the plan (if provided) */
-  reasoning?: string;
-
-  /**
-   * IDs of child tasks that were spawned
-   * The full task specifications are in the task registry, this just tracks which tasks were created
-   */
-  childTaskIds?: string[];
-
-  /** Number of retry attempts used */
-  retriesUsed: number;
-
-  /** Validation report with details */
-  validationReport: ValidationReport;
-
-  /** Token usage statistics */
-  usage?: {
-    promptTokenCount?: number;
-    candidatesTokenCount?: number;
-    totalTokenCount?: number;
-  };
-
-  /** AI audit trail: Full request/response details (only populated when context.aiAuditing is true) */
-  audit?: {
-    input: OrchestratorAgentInput;
-    systemInstruction: string;
-    userPrompt: string;
-    aiResponse: string;
-  };
+  // Empty - orchestrator has no actionable output
 }
 
 /**

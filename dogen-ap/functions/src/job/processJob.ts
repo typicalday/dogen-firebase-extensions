@@ -187,13 +187,16 @@ export const processJob = functions.https.onCall(async (data, context) => {
               console.log(`Executing task ${task.id}: ${task.service}/${task.command}`);
             }
 
-            // Execute task and get output
-            const output = await processTask(task, taskRegistry, job);
+            // Execute task and get handler result
+            const handlerResult = await processTask(task, taskRegistry, job);
+
+            // Extract childTasks from handler return value (if present)
+            const childTasksToSpawn = (handlerResult as any).childTasks;
 
             // Check for child tasks to spawn
-            if (output.childTasks && Array.isArray(output.childTasks)) {
+            if (childTasksToSpawn && Array.isArray(childTasksToSpawn)) {
               // VALIDATION: Validate all child tasks before spawning
-              const validationReport = validateChildTasks(output.childTasks, task.id);
+              const validationReport = validateChildTasks(childTasksToSpawn, task.id);
 
               if (!validationReport.isValid) {
                 throw new Error(
@@ -213,8 +216,8 @@ export const processJob = functions.https.onCall(async (data, context) => {
               const plannedChildIds = new Set<string>();
               const duplicateIds = new Set<string>();
 
-              for (let i = 0; i < output.childTasks.length; i++) {
-                const childSpec = output.childTasks[i];
+              for (let i = 0; i < childTasksToSpawn.length; i++) {
+                const childSpec = childTasksToSpawn[i];
                 // Handlers have already applied scoping, so use ID as-is
                 const childId = childSpec.id ?? `${task.id}-${i}`; // Fallback for legacy handlers
 
@@ -260,8 +263,8 @@ export const processJob = functions.https.onCall(async (data, context) => {
 
               // SECOND PASS: Create children with enhanced validation
               // IDs and dependencies are already scoped by handlers
-              for (let i = 0; i < output.childTasks.length; i++) {
-                const childSpec = output.childTasks[i];
+              for (let i = 0; i < childTasksToSpawn.length; i++) {
+                const childSpec = childTasksToSpawn[i];
                 // Handlers have already applied scoping, so use ID as-is
                 const childId = childSpec.id ?? `${task.id}-${i}`; // Fallback for legacy handlers
 
@@ -376,12 +379,20 @@ export const processJob = functions.https.onCall(async (data, context) => {
               }
             }
 
-            // If output has a nested 'output' property (from agent handlers that return {output, childTasks}),
+            // If handlerResult has a nested 'output' property (from agent handlers that return {output, childTasks, audit}),
             // unwrap it to avoid storing the childTasks array in task.output
-            const taskOutput = (output as any).output !== undefined ? (output as any).output : output;
+            const taskOutput = (handlerResult as any).output !== undefined ? (handlerResult as any).output : handlerResult;
+
+            // Extract audit from handler return value if present (separate from output)
+            const taskAudit = (handlerResult as any).audit;
+
+            // Store childTasks on the task for record-keeping (extracted from handler return value)
+            const taskChildTasks = childTasksToSpawn;
 
             task.update({
               output: taskOutput,
+              audit: taskAudit,
+              childTasks: taskChildTasks,
               completedAt: new Date(),
             });
 

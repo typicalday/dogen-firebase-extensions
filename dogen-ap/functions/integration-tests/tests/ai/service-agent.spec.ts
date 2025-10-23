@@ -69,7 +69,7 @@ describe("Service Agent (Phase 2) - Command Selection & Prompt Refinement", () =
         depth: 0
       });
 
-      const context = createMockJobContext();
+      const context = createMockJobContext({ aiAuditing: true });
       const result = await handleServiceAgent(task, context);
 
       expect(result).to.exist;
@@ -84,9 +84,10 @@ describe("Service Agent (Phase 2) - Command Selection & Prompt Refinement", () =
       expect(result.childTasks[0].input.service).to.equal("firestore");
       expect(result.childTasks[0].id).to.equal("task-0-command");
 
-      // Check output structure
-      expect(result.output.result).to.deep.equal({});
-      expect(result.output.childTaskIds).to.deep.equal(["task-0-command"]);
+      // Check output structure - service-agent has no actionable output, only audit (when aiAuditing is enabled)
+      expect(result.output).to.exist;
+      expect(result.audit).to.exist;
+      expect(result.audit!.childTaskIds).to.deep.equal(["task-0-command"]);
     });
 
     it("should select appropriate authentication command", async function() {
@@ -968,13 +969,13 @@ describe("Service Agent (Phase 2) - Command Selection & Prompt Refinement", () =
         depth: 0
       });
 
-      const context = createMockJobContext();
+      const context = createMockJobContext({ aiAuditing: true });
       const result = await handleServiceAgent(task, context);
 
-      // Check output structure
+      // Check output structure - service-agent has no actionable output, only audit (when aiAuditing is enabled)
       expect(result.output).to.exist;
-      expect(result.output.result).to.deep.equal({});  // Empty object for service-agent
-      expect(result.output.childTaskIds).to.deep.equal(["task-0-command"]);
+      expect(result.audit).to.exist;
+      expect(result.audit!.childTaskIds).to.deep.equal(["task-0-command"]);
     });
 
     it("should include audit information when aiAuditing is enabled", async function() {
@@ -1023,13 +1024,13 @@ describe("Service Agent (Phase 2) - Command Selection & Prompt Refinement", () =
       const context = createMockJobContext({ aiAuditing: true });
       const result = await handleServiceAgent(task, context);
 
-      expect(result.output.audit).to.exist;
-      expect(result.output.audit?.input).to.exist;
-      expect(result.output.audit?.selectedCommand).to.equal("create-document");
-      expect(result.output.audit?.refinedPrompt).to.be.a("string");
-      expect(result.output.audit?.systemInstruction).to.be.a("string");
-      expect(result.output.audit?.userPrompt).to.be.a("string");
-      expect(result.output.audit?.aiResponse).to.be.a("string");
+      expect(result.audit).to.exist;
+      expect(result.audit?.input).to.exist;
+      expect(result.audit?.selectedCommand).to.equal("create-document");
+      expect(result.audit?.refinedPrompt).to.be.a("string");
+      expect(result.audit?.systemInstruction).to.be.a("string");
+      expect(result.audit?.userPrompt).to.be.a("string");
+      expect(result.audit?.aiResponse).to.be.a("string");
     });
   });
 

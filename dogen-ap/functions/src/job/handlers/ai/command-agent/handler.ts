@@ -18,8 +18,9 @@
  * 4. Returns: Actual command childTask (firestore:createDocument, etc.)
  *
  * Plan Mode Behavior:
- * - In aiPlanning: Command is added to graph but marked as "planned" and doesn't execute
- * - Job execution system checks context.aiPlanning and skips execution of resource-modifying commands
+ * - AI commands (ai:*) are spawned even in plan mode (needed for AI inference and planning)
+ * - Non-AI commands are NOT spawned in plan mode (parameters validated but tasks not created)
+ * - This allows AI orchestration to continue planning without executing resource-modifying operations
  */
 
 import { JobTask } from '../../../jobTask';
@@ -49,7 +50,7 @@ const ajv = new Ajv({ allErrors: true, verbose: true });
  * @param context - Job context
  * @returns Command agent output with constructed parameters
  */
-export async function handleCommandAgent(task: JobTask, context: JobContext): Promise<{ output: CommandAgentOutput; childTasks?: any[] }> {
+export async function handleCommandAgent(task: JobTask, context: JobContext): Promise<{ output: CommandAgentOutput; audit?: any; childTasks?: any[] }> {
   const input = task.input as CommandAgentInput;
 
   // Validate input
@@ -236,21 +237,29 @@ export async function handleCommandAgent(task: JobTask, context: JobContext): Pr
         }
       }
 
-      // Construct the command agent output
-      const commandAgentOutput: CommandAgentOutput = {
-        result: {}, // Command-agent spawns tasks, no actionable data to pass downstream
-      };
-
       // Success!
       if (verbose) {
         console.log(`[CommandAgent] Successfully constructed parameters for ${input.service}/${input.command} on attempt ${attempt}`);
       }
 
-      // Add audit trail (including constructed parameters) only when aiAuditing is enabled
-      if (context.aiAuditing) {
-        commandAgentOutput.audit = {
+      // In aiPlanning mode:
+      // - AI commands (ai:*) should still be spawned (plan mode only blocks resource-modifying commands)
+      // - Non-AI commands should not be spawned (just validate parameters and return audit)
+      if (context.aiPlanning && input.service !== "ai") {
+        if (verbose) {
+          console.log(`[CommandAgent] Plan mode: Not spawning non-AI command ${input.service}/${input.command}`);
+          console.log(`[CommandAgent] Command would be executed with parameters:`, JSON.stringify(aiParameters, null, 2));
+        }
+
+        // Construct command agent output
+        // Command-agent is a task-spawning agent with no actionable output
+        // Metadata is stored in audit field only when aiAuditing is enabled
+        const commandAgentOutput: CommandAgentOutput = {};
+
+        const auditData = context.aiAuditing ? {
           input,
           constructedParameters: aiParameters,
+          childTaskIds: [], // No non-AI tasks spawned in plan mode
           systemInstruction,
           userPrompt,
           aiResponse: responseText,
@@ -259,23 +268,12 @@ export async function handleCommandAgent(task: JobTask, context: JobContext): Pr
             retryHistory,
             retriesUsed: attempt
           })
-        };
-      }
-
-      // In aiPlanning: Don't spawn actual command, just return output
-      // In execution mode: Spawn the actual command
-      if (context.aiPlanning) {
-        if (verbose) {
-          console.log(`[CommandAgent] Plan mode: Not spawning actual command ${input.service}/${input.command}`);
-          console.log(`[CommandAgent] Command would be executed with parameters:`, JSON.stringify(aiParameters, null, 2));
-        }
-
-        // Store empty childTaskIds in plan mode (no tasks spawned)
-        commandAgentOutput.childTaskIds = [];
+        } : undefined;
 
         return {
           output: commandAgentOutput,
-          childTasks: []  // Don't spawn children in plan mode
+          audit: auditData,
+          childTasks: []  // Don't spawn non-AI commands in plan mode
         };
       }
 
@@ -303,11 +301,28 @@ export async function handleCommandAgent(task: JobTask, context: JobContext): Pr
         console.log(`[CommandAgent] Spawning ${input.service}:${input.command} childTask with ID: ${childTask.id}`);
       }
 
-      // Store just the child task ID in output (full specs are in task registry)
-      commandAgentOutput.childTaskIds = [childTask.id];
+      // Construct command agent output
+      // Command-agent is a task-spawning agent with no actionable output
+      // Metadata is stored in audit field only when aiAuditing is enabled
+      const commandAgentOutput: CommandAgentOutput = {};
+
+      const auditData = context.aiAuditing ? {
+        input,
+        constructedParameters: aiParameters,
+        childTaskIds: [childTask.id], // Store just the child task ID, full specs are in task registry
+        systemInstruction,
+        userPrompt,
+        aiResponse: responseText,
+        // Include retry history if there were any retries
+        ...(retryHistory.length > 0 && {
+          retryHistory,
+          retriesUsed: attempt
+        })
+      } : undefined;
 
       return {
         output: commandAgentOutput,
+        audit: auditData,
         childTasks: [childTask]
       };
 

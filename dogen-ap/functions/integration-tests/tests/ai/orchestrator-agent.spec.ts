@@ -939,11 +939,12 @@ describe("Orchestrator Agent (Phase 1) - Service Selection & Task Decomposition"
         depth: 0
       });
 
-      const context = createMockJobContext();
+      const context = createMockJobContext({ aiAuditing: true });
       const result = await handleOrchestratorAgent(task, context);
 
       expect(result).to.exist;
-      expect(result.output.retriesUsed).to.equal(2);
+      expect(result.audit).to.exist;
+      expect(result.audit!.retriesUsed).to.equal(2);
       expect(result.childTasks[0].input?.service).to.equal("firestore");
     });
   });
@@ -1059,21 +1060,21 @@ describe("Orchestrator Agent (Phase 1) - Service Selection & Task Decomposition"
         depth: 0
       });
 
-      const context = createMockJobContext();
+      const context = createMockJobContext({ aiAuditing: true });
       const result = await handleOrchestratorAgent(task, context);
 
-      // Check output structure
+      // Check output structure - orchestrator has no actionable output, only audit (when aiAuditing is enabled)
       expect(result.output).to.exist;
-      expect(result.output.result).to.deep.equal({});  // Empty object for orchestrator
-      expect(result.output.prompt).to.equal("Test output structure");
-      expect(result.output.reasoning).to.equal("Test reasoning");
-      expect(result.output.retriesUsed).to.be.a("number");
-      expect(result.output.validationReport).to.exist;
-      expect(result.output.validationReport.isValid).to.be.true;
-      expect(result.output.validationReport.errors).to.be.an("array");
-      expect(result.output.validationReport.warnings).to.be.an("array");
-      expect(result.output.validationReport.tasksValidated).to.equal(1);
-      expect(result.output.childTaskIds).to.deep.equal(["orchestrator-0-task-0-service"]);
+      expect(result.audit).to.exist;
+      expect(result.audit!.prompt).to.equal("Test output structure");
+      expect(result.audit!.reasoning).to.equal("Test reasoning");
+      expect(result.audit!.retriesUsed).to.be.a("number");
+      expect(result.audit!.validationReport).to.exist;
+      expect(result.audit!.validationReport.isValid).to.be.true;
+      expect(result.audit!.validationReport.errors).to.be.an("array");
+      expect(result.audit!.validationReport.warnings).to.be.an("array");
+      expect(result.audit!.validationReport.tasksValidated).to.equal(1);
+      expect(result.audit!.childTaskIds).to.deep.equal(["orchestrator-0-task-0-service"]);
     });
 
     it("should include audit information when aiAuditing is enabled", async function() {
@@ -1120,11 +1121,11 @@ describe("Orchestrator Agent (Phase 1) - Service Selection & Task Decomposition"
       const context = createMockJobContext({ aiAuditing: true });
       const result = await handleOrchestratorAgent(task, context);
 
-      expect(result.output.audit).to.exist;
-      expect(result.output.audit?.input).to.exist;
-      expect(result.output.audit?.systemInstruction).to.be.a("string");
-      expect(result.output.audit?.userPrompt).to.be.a("string");
-      expect(result.output.audit?.aiResponse).to.be.a("string");
+      expect(result.audit).to.exist;
+      expect(result.audit?.input).to.exist;
+      expect(result.audit?.systemInstruction).to.be.a("string");
+      expect(result.audit?.userPrompt).to.be.a("string");
+      expect(result.audit?.aiResponse).to.be.a("string");
     });
   });
 

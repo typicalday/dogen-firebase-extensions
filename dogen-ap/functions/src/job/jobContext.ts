@@ -46,6 +46,13 @@ export interface JobContext {
   getTaskOutput(taskId: string): Readonly<Record<string, any>> | undefined;
 
   /**
+   * Get the audit metadata of a task
+   * @param taskId - The task ID whose audit to retrieve
+   * @returns The task audit if found, undefined otherwise
+   */
+  getTaskAudit(taskId: string): Readonly<Record<string, any>> | undefined;
+
+  /**
    * Get all tasks in the job
    * @returns Array of all tasks (read-only)
    */
@@ -94,6 +101,11 @@ export function createJobContext(
     getTaskOutput(taskId: string): Readonly<Record<string, any>> | undefined {
       const task = taskRegistry.get(taskId);
       return task?.output;
+    },
+
+    getTaskAudit(taskId: string): Readonly<Record<string, any>> | undefined {
+      const task = taskRegistry.get(taskId);
+      return task?.audit;
     },
 
     getAllTasks(): ReadonlyArray<Readonly<JobTask>> {

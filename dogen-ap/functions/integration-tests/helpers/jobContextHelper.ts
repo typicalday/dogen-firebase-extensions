@@ -22,6 +22,7 @@ export function createMockJobContext(options?: Partial<JobContext>): JobContext 
 
     getTask: () => undefined,
     getTaskOutput: () => undefined,
+    getTaskAudit: () => undefined,
     getAllTasks: () => [],
     hasTask: () => false,
     isTaskCompleted: () => false,
@@ -47,7 +48,7 @@ export function createMockJobContext(options?: Partial<JobContext>): JobContext 
  */
 export function createMockJobContextWithTasks(
   tasks: JobTask[],
-  options?: Partial<Omit<JobContext, 'getTask' | 'getTaskOutput' | 'getAllTasks' | 'hasTask' | 'isTaskCompleted'>>
+  options?: Partial<Omit<JobContext, 'getTask' | 'getTaskOutput' | 'getTaskAudit' | 'getAllTasks' | 'hasTask' | 'isTaskCompleted'>>
 ): JobContext {
   const taskMap = new Map<string, JobTask>();
   tasks.forEach(task => {
@@ -66,6 +67,7 @@ export function createMockJobContextWithTasks(
 
     getTask: (taskId: string) => taskMap.get(taskId),
     getTaskOutput: (taskId: string) => taskMap.get(taskId)?.output,
+    getTaskAudit: (taskId: string) => taskMap.get(taskId)?.audit,
     getAllTasks: () => Array.from(taskMap.values()),
     hasTask: (taskId: string) => taskMap.has(taskId),
     isTaskCompleted: (taskId: string) => {

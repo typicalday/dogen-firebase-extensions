@@ -1215,8 +1215,6 @@ describe("Command Agent (Phase 3) - Parameter Construction & Schema Validation",
       const result = await handleCommandAgent(task, context);
 
       expect(result.output).to.exist;
-      expect(result.output.result).to.deep.equal({});
-      expect(result.output.childTaskIds).to.deep.equal([]);
       expect(result.childTasks).to.be.an("array");
       expect(result.childTasks).to.be.empty;
     });
@@ -1270,11 +1268,11 @@ describe("Command Agent (Phase 3) - Parameter Construction & Schema Validation",
 
       // In plan mode, parameters are validated but not spawned as childTasks
       // We can verify they were constructed by checking the audit trail
-      expect(result.output.audit).to.exist;
-      expect(result.output.audit!.constructedParameters).to.exist;
-      expect(result.output.audit!.constructedParameters.documentPath).to.exist;
-      expect(result.output.audit!.constructedParameters.documentData).to.exist;
-      expect(result.output.audit!.constructedParameters.documentData.name).to.equal("User");
+      expect(result.audit).to.exist;
+      expect(result.audit!.constructedParameters).to.exist;
+      expect(result.audit!.constructedParameters.documentPath).to.exist;
+      expect(result.audit!.constructedParameters.documentData).to.exist;
+      expect(result.audit!.constructedParameters.documentData.name).to.equal("User");
       expect(result.childTasks).to.be.empty;
     });
   });
@@ -1328,11 +1326,11 @@ describe("Command Agent (Phase 3) - Parameter Construction & Schema Validation",
       const context = createMockJobContext({ aiAuditing: true });
       const result = await handleCommandAgent(task, context);
 
-      expect(result.output.audit).to.exist;
-      expect(result.output.audit!.constructedParameters).to.exist;
-      expect(result.output.audit!.systemInstruction).to.be.a("string");
-      expect(result.output.audit!.userPrompt).to.be.a("string");
-      expect(result.output.audit!.aiResponse).to.be.a("string");
+      expect(result.audit).to.exist;
+      expect(result.audit!.constructedParameters).to.exist;
+      expect(result.audit!.systemInstruction).to.be.a("string");
+      expect(result.audit!.userPrompt).to.be.a("string");
+      expect(result.audit!.aiResponse).to.be.a("string");
     });
 
     it("should not include audit trail when aiAuditing is disabled", async function() {
@@ -1381,7 +1379,7 @@ describe("Command Agent (Phase 3) - Parameter Construction & Schema Validation",
       const context = createMockJobContext({ aiAuditing: false });
       const result = await handleCommandAgent(task, context);
 
-      expect(result.output.audit).to.be.undefined;
+      expect(result.audit).to.be.undefined;
     });
   });
 });

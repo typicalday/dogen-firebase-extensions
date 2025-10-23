@@ -7,12 +7,25 @@ export enum FirebaseTaskStatus {
   Aborted = "aborted",
 }
 
+/**
+ * Task specification for creating new tasks
+ */
+export interface TaskSpec {
+  id?: string;
+  service: string;
+  command: string;
+  input?: Record<string, any>;
+  dependsOn?: string[];
+}
+
 export class JobTask {
   id: string;
   service: string;
   command: string;
   input?: Record<string, any>;
   output?: Record<string, any>;
+  audit?: Record<string, any>;
+  childTasks?: TaskSpec[];
   status?: FirebaseTaskStatus = FirebaseTaskStatus.Started;
   startedAt?: Date;
   completedAt?: Date;
@@ -25,6 +38,8 @@ export class JobTask {
     command,
     input,
     output,
+    audit,
+    childTasks,
     status,
     startedAt,
     completedAt,
@@ -37,6 +52,8 @@ export class JobTask {
     ref?: DocumentReference;
     input?: Record<string, any>;
     output?: Record<string, any>;
+    audit?: Record<string, any>;
+    childTasks?: TaskSpec[];
     status?: FirebaseTaskStatus;
     startedAt?: Date;
     completedAt?: Date;
@@ -58,6 +75,8 @@ export class JobTask {
     this.command = command;
     this.input = input || {};
     this.output = output || (error ? { error } : {});
+    this.audit = audit;
+    this.childTasks = childTasks;
     this.status = status || (error ? FirebaseTaskStatus.Failed : FirebaseTaskStatus.Started);
     this.startedAt = startedAt;
     this.completedAt = completedAt;
@@ -67,16 +86,22 @@ export class JobTask {
 
   update({
     output,
+    audit,
+    childTasks,
     status,
     startedAt,
     completedAt,
   }: {
     output?: Record<string, any>;
+    audit?: Record<string, any>;
+    childTasks?: TaskSpec[];
     status?: FirebaseTaskStatus;
     startedAt?: Date;
     completedAt?: Date;
   }): JobTask {
     this.output = output || this.output;
+    this.audit = audit || this.audit;
+    this.childTasks = childTasks || this.childTasks;
     this.status = status || this.status;
     this.startedAt = startedAt || this.startedAt;
     this.completedAt = completedAt || this.completedAt;
@@ -91,6 +116,8 @@ export class JobTask {
       command: this.command,
       input: this.input,
       output: this.output,
+      audit: this.audit,
+      childTasks: this.childTasks || [],
       status: this.status,
       startedAt: this.startedAt ? Timestamp.fromDate(this.startedAt) : null,
       completedAt: this.completedAt ? Timestamp.fromDate(this.completedAt) : null,
