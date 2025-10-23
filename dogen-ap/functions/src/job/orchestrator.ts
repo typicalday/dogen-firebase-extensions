@@ -62,6 +62,7 @@ export interface OrchestrationResult {
     service: string;
     command: string;
     status: FirebaseTaskStatus;
+    input?: Record<string, any>;
     output?: Record<string, any>;
     audit?: Record<string, any>;
     startedAt?: Date;
@@ -315,6 +316,17 @@ export async function executeJobOrchestration(
                       const handlerRegistry = require('./handlers/registry');
                       const handlerDefinition = handlerRegistry.getHandlerDefinition(childSpec.service, childSpec.command);
                       allowInPlanMode = handlerDefinition?.allowInPlanMode ?? false;
+                      if (config.verbose) {
+                        console.log(
+                          `[Orchestrator] Child task ${childId} (${childSpec.service}/${childSpec.command}): ` +
+                          `allowInPlanMode=${allowInPlanMode}, will be ${allowInPlanMode ? 'Pending' : 'Planned'}`
+                        );
+                      }
+                    } else if (config.verbose) {
+                      console.log(
+                        `[Orchestrator] WARNING: Handler not found for ${childSpec.service}/${childSpec.command}, ` +
+                        `defaulting to Planned status`
+                      );
                     }
                   }
 
@@ -334,6 +346,13 @@ export async function executeJobOrchestration(
                   depth: depth,
                   status: initialStatus,
                 });
+
+                if (config.verbose) {
+                  console.log(
+                    `[Orchestrator] Created child task ${childId}: ` +
+                    `requested status=${initialStatus}, actual status=${childTask.status}`
+                  );
+                }
 
                 // CRITICAL SECTION: Wrap graph/registry modifications in mutex to prevent
                 // race conditions when multiple parallel tasks spawn children simultaneously
@@ -545,6 +564,7 @@ export async function executeJobOrchestration(
           service: task.service,
           command: task.command,
           status: task.status ?? FirebaseTaskStatus.Pending,
+          input: task.input,
           output: task.output,
           audit: task.audit,
           childTasks: task.childTasks,
@@ -571,6 +591,7 @@ export async function executeJobOrchestration(
           service: task.service,
           command: task.command,
           status: task.status ?? FirebaseTaskStatus.Pending,
+          input: task.input,
           output: task.output,
           audit: task.audit,
           childTasks: task.childTasks,

@@ -1349,7 +1349,8 @@ describe("Job Orchestration & Task Graph System", function () {
     });
 
     it("should include task metadata in results", async function () {
-      const tasks = [createMockTask("0", "mock", "noop")];
+      const inputData = { testKey: "testValue", number: 42 };
+      const tasks = [createMockTask("0", "mock", "noop", inputData)];
 
       const config: OrchestrationConfig = {
         maxTasks: 100,
@@ -1380,6 +1381,10 @@ describe("Job Orchestration & Task Graph System", function () {
       // Verify timestamps are Date objects (or ISO strings in result)
       expect(task0?.startedAt).to.exist;
       expect(task0?.completedAt).to.exist;
+
+      // Verify input field is included in the result
+      expect(task0).to.have.property("input");
+      expect(task0?.input).to.deep.equal(inputData);
     });
 
     it("should serialize to Firestore format correctly", function () {

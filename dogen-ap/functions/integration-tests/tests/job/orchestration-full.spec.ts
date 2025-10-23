@@ -272,7 +272,7 @@ describe("Full Job Orchestration Integration", function () {
         parentInput: task.input?.from,
       }));
 
-      const tasks = [new JobTask({ id: "0", service: "test", command: "parent" })];
+      const tasks = [new JobTask({ id: "0", service: "test", command: "parent", input: { parentData: "test-value" } })];
 
       const result = await executeJobSimulation(tasks, handlers);
 
@@ -284,11 +284,17 @@ describe("Full Job Orchestration Integration", function () {
 
       expect(parent?.status).to.equal(FirebaseTaskStatus.Succeeded);
       expect(parent?.output?.parentOutput).to.equal("parent-data");
+      // Verify parent task has input field
+      expect(parent?.input).to.exist;
+      expect(parent?.input?.parentData).to.equal("test-value");
 
       expect(child).to.exist;
       expect(child?.status).to.equal(FirebaseTaskStatus.Succeeded);
       expect(child?.output?.childOutput).to.equal("child-data");
       expect(child?.output?.parentInput).to.equal("parent");
+      // Verify child task has input field
+      expect(child?.input).to.exist;
+      expect(child?.input?.from).to.equal("parent");
     });
 
     it("should spawn multiple children and execute them in parallel", async function () {
