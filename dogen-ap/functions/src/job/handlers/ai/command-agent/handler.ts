@@ -288,7 +288,6 @@ export async function handleCommandAgent(task: JobTask, context: JobContext): Pr
       const commandAgentOutput: CommandAgentOutput = {};
 
       const auditData = context.aiAuditing ? {
-        input,
         constructedParameters: aiParameters,
         childTaskIds: [childTask.id], // Store just the child task ID, full specs are in task registry
         systemInstruction,

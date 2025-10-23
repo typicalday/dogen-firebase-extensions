@@ -26,16 +26,11 @@ interface InferenceTaskOutput {
 }
 
 interface InferenceTaskAudit {
-  model: string;
-  prompt: string;
-  filesProcessed?: string[];
   usage?: {
     promptTokenCount?: number;
     candidatesTokenCount?: number;
     totalTokenCount?: number;
   };
-  systemInstruction?: string;
-  userPrompt: string;
   generationConfig: any;
 }
 
@@ -78,13 +73,11 @@ export async function handleProcessInference(task: JobTask, context: JobContext)
 
   // Process files if provided
   let fileParts: Part[] = [];
-  let filesProcessed: string[] = [];
   
   if (input.files && input.files.length > 0) {
     // Validate file input constraints
     validateFileInput(input.files);
     fileParts = await processFiles(input.files);
-    filesProcessed = input.files;
   }
 
   // Build generation config - only include parameters that were explicitly provided
@@ -162,16 +155,11 @@ export async function handleProcessInference(task: JobTask, context: JobContext)
 
     // Add audit trail when aiAuditing is enabled
     const audit: InferenceTaskAudit | undefined = context.aiAuditing ? {
-      model: model,
-      prompt: input.prompt,
-      filesProcessed: filesProcessed.length > 0 ? filesProcessed : undefined,
       usage: response.usageMetadata ? {
         promptTokenCount: response.usageMetadata.promptTokenCount,
         candidatesTokenCount: response.usageMetadata.candidatesTokenCount,
         totalTokenCount: response.usageMetadata.totalTokenCount,
       } : undefined,
-      systemInstruction: input.systemInstruction,
-      userPrompt: input.prompt,
       generationConfig
     } : undefined;
 

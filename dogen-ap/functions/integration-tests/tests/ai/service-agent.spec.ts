@@ -1025,7 +1025,6 @@ describe("Service Agent (Phase 2) - Command Selection & Prompt Refinement", () =
       const result = await handleServiceAgent(task, context);
 
       expect(result.audit).to.exist;
-      expect(result.audit?.input).to.exist;
       expect(result.audit?.selectedCommand).to.equal("create-document");
       expect(result.audit?.refinedPrompt).to.be.a("string");
       expect(result.audit?.systemInstruction).to.be.a("string");

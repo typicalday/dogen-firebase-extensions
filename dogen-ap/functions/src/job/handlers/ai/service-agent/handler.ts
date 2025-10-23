@@ -276,7 +276,6 @@ export async function handleServiceAgent(task: JobTask, context: JobContext): Pr
       const serviceAgentOutput: ServiceAgentOutput = {};
 
       const auditData = context.aiAuditing ? {
-        input,
         selectedCommand: aiResponse.command,
         refinedPrompt: aiResponse.prompt,
         childTaskIds: [childTask.id], // Store just the child task ID, full specs are in task registry

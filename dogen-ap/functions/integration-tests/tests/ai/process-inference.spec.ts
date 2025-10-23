@@ -490,7 +490,6 @@ describe("AI Process Inference Handler", () => {
       const result = await handleProcessInference(task, context);
 
       expect(result.audit).to.exist;
-      expect(result.audit!.model).to.equal("gemini-2.5-pro");
       expect(result.output.response).to.equal("Response with default model");
     });
 
@@ -710,10 +709,6 @@ describe("AI Process Inference Handler", () => {
       const result = await handleProcessInference(task, context);
 
       expect(result.audit).to.exist;
-      expect(result.audit!.model).to.equal("gemini-1.5-pro");
-      expect(result.audit!.prompt).to.equal("Test audit prompt");
-      expect(result.audit!.systemInstruction).to.equal("Test system instruction");
-      expect(result.audit!.userPrompt).to.equal("Test audit prompt");
       expect(result.audit!.generationConfig).to.exist;
       expect(result.audit!.generationConfig.temperature).to.equal(0.8);
       // The actual response is in output.response, not duplicated in audit

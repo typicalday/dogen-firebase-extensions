@@ -1066,7 +1066,6 @@ describe("Orchestrator Agent (Phase 1) - Service Selection & Task Decomposition"
       // Check output structure - orchestrator has no actionable output, only audit (when aiAuditing is enabled)
       expect(result.output).to.exist;
       expect(result.audit).to.exist;
-      expect(result.audit!.prompt).to.equal("Test output structure");
       expect(result.audit!.reasoning).to.equal("Test reasoning");
       expect(result.audit!.retriesUsed).to.be.a("number");
       expect(result.audit!.validationReport).to.exist;
@@ -1122,7 +1121,6 @@ describe("Orchestrator Agent (Phase 1) - Service Selection & Task Decomposition"
       const result = await handleOrchestratorAgent(task, context);
 
       expect(result.audit).to.exist;
-      expect(result.audit?.input).to.exist;
       expect(result.audit?.systemInstruction).to.be.a("string");
       expect(result.audit?.userPrompt).to.be.a("string");
       expect(result.audit?.aiResponse).to.be.a("string");

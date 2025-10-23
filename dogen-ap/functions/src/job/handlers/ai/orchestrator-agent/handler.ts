@@ -185,8 +185,6 @@ export async function handleOrchestratorAgent(task: JobTask, context: JobContext
     const output: OrchestratorAgentOutput = {};
 
     const auditData = context.aiAuditing ? {
-      input,
-      prompt: input.prompt,
       reasoning: phase1Output.reasoning,
       childTaskIds: childTasks.map(ct => ct.id!), // Store just the IDs, full specs are in task registry
       retriesUsed,
