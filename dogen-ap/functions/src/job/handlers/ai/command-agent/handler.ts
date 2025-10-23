@@ -18,9 +18,12 @@
  * 4. Returns: Actual command childTask (firestore:createDocument, etc.)
  *
  * Plan Mode Behavior:
- * - AI commands (ai:*) are spawned even in plan mode (needed for AI inference and planning)
- * - Non-AI commands are NOT spawned in plan mode (parameters validated but tasks not created)
- * - This allows AI orchestration to continue planning without executing resource-modifying operations
+ * - ALL commands are spawned as child tasks (parameters are validated and tasks are created)
+ * - Commands with allowInPlanMode=true will execute with status "Pending" (AI agents, read-only operations)
+ * - Commands with allowInPlanMode=false will be created with status "Planned" for user review
+ * - Tasks with status "Planned" will not execute until user approves and re-submits the job
+ * - This allows AI orchestration to plan resource-modifying operations without executing them
+ * - The allowInPlanMode flag is defined in the handler registry for each command
  */
 
 import { JobTask } from '../../../jobTask';
@@ -31,6 +34,7 @@ import Ajv from 'ajv';
 import { CommandAgentInput, CommandAgentOutput } from './types';
 import { buildCommandAgentPrompts } from './prompts';
 import { buildPhase3ResponseSchema } from './schema';
+import { getHandlerDefinition } from '../../registry';
 
 /**
  * Default configuration
@@ -243,38 +247,15 @@ export async function handleCommandAgent(task: JobTask, context: JobContext): Pr
       }
 
       // In aiPlanning mode:
-      // - AI commands (ai:*) should still be spawned (plan mode only blocks resource-modifying commands)
-      // - Non-AI commands should not be spawned (just validate parameters and return audit)
-      if (context.aiPlanning && input.service !== "ai") {
-        if (verbose) {
-          console.log(`[CommandAgent] Plan mode: Not spawning non-AI command ${input.service}/${input.command}`);
-          console.log(`[CommandAgent] Command would be executed with parameters:`, JSON.stringify(aiParameters, null, 2));
-        }
+      // - Commands with allowInPlanMode=true will execute normally (AI agents, read-only operations)
+      // - Commands with allowInPlanMode=false will be spawned with status "Planned" for user review
+      // - All commands are always spawned as child tasks (status determined in processJob.ts)
+      const handlerDefinition = getHandlerDefinition(input.service, input.command);
+      const allowInPlanMode = handlerDefinition?.allowInPlanMode ?? false;
 
-        // Construct command agent output
-        // Command-agent is a task-spawning agent with no actionable output
-        // Metadata is stored in audit field only when aiAuditing is enabled
-        const commandAgentOutput: CommandAgentOutput = {};
-
-        const auditData = context.aiAuditing ? {
-          input,
-          constructedParameters: aiParameters,
-          childTaskIds: [], // No non-AI tasks spawned in plan mode
-          systemInstruction,
-          userPrompt,
-          aiResponse: responseText,
-          // Include retry history if there were any retries
-          ...(retryHistory.length > 0 && {
-            retryHistory,
-            retriesUsed: attempt
-          })
-        } : undefined;
-
-        return {
-          output: commandAgentOutput,
-          audit: auditData,
-          childTasks: []  // Don't spawn non-AI commands in plan mode
-        };
+      if (context.aiPlanning && !allowInPlanMode && verbose) {
+        console.log(`[CommandAgent] Plan mode: Spawning resource-modifying command ${input.service}/${input.command} with status "Planned"`);
+        console.log(`[CommandAgent] Command will be created with parameters:`, JSON.stringify(aiParameters, null, 2));
       }
 
       // Create actual command childTask

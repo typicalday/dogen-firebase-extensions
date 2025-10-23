@@ -1216,7 +1216,10 @@ describe("Command Agent (Phase 3) - Parameter Construction & Schema Validation",
 
       expect(result.output).to.exist;
       expect(result.childTasks).to.be.an("array");
-      expect(result.childTasks).to.be.empty;
+      // In plan mode, child tasks are still spawned (they will be marked as "Planned" status in processJob.ts)
+      expect(result.childTasks).to.have.lengthOf(1);
+      expect(result.childTasks![0].service).to.equal("firestore");
+      expect(result.childTasks![0].command).to.equal("create-document");
     });
 
     it("should still construct and validate parameters in plan mode", async function() {
@@ -1266,14 +1269,17 @@ describe("Command Agent (Phase 3) - Parameter Construction & Schema Validation",
       const context = createMockJobContext({ aiPlanning: true, aiAuditing: true });
       const result = await handleCommandAgent(task, context);
 
-      // In plan mode, parameters are validated but not spawned as childTasks
+      // In plan mode, parameters are validated AND spawned as childTasks (with "Planned" status)
       // We can verify they were constructed by checking the audit trail
       expect(result.audit).to.exist;
       expect(result.audit!.constructedParameters).to.exist;
       expect(result.audit!.constructedParameters.documentPath).to.exist;
       expect(result.audit!.constructedParameters.documentData).to.exist;
       expect(result.audit!.constructedParameters.documentData.name).to.equal("User");
-      expect(result.childTasks).to.be.empty;
+      // Child tasks are spawned (will be marked as "Planned" status in processJob.ts)
+      expect(result.childTasks).to.have.lengthOf(1);
+      expect(result.childTasks![0].service).to.equal("firestore");
+      expect(result.childTasks![0].command).to.equal("create-document");
     });
   });
 

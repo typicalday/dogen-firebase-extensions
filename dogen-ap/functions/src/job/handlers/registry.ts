@@ -105,6 +105,15 @@ export interface HandlerDefinition {
     input: Record<string, any>;
     description: string;
   }>;
+
+  /**
+   * Whether this command is safe to execute in plan mode (aiPlanning: true).
+   * Read-only operations and AI agents should set this to true.
+   * Resource-modifying operations should leave this false (default).
+   * When true, the command will execute even when aiPlanning is enabled.
+   * When false, the command will be blocked in plan mode.
+   */
+  allowInPlanMode?: boolean;
 }
 
 /**
@@ -618,6 +627,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
       description: "Lists Firestore collections. Can list top-level collections in a database or subcollections of a specific document. When no documentPath is provided, lists top-level collections in the default database. When documentPath points to a database (firestore/{database}/data/), lists top-level collections in that database. When documentPath points to a document, lists subcollections under that document.",
       requiredParams: [],
       optionalParams: ["documentPath"],
+      allowInPlanMode: true,
       inputSchema: {
         type: 'object',
         properties: {
@@ -708,6 +718,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
       description:
         "AI inference with Vertex AI Gemini models. Supports multimodal inputs: text, images, audio, video, documents",
       requiredParams: ["prompt"],
+      allowInPlanMode: true,
       optionalParams: [
         "model",
         "files",
@@ -852,6 +863,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
       description:
         "Phase 1 of 3-phase AI orchestration. Analyzes natural language request, decomposes into service-level sub-tasks, returns ai:service-agent tasks. Handles multi-step workflows with dependency resolution",
       requiredParams: ["prompt"],
+      allowInPlanMode: true,
       optionalParams: [
         "temperature",
         "context",
@@ -951,6 +963,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
       description:
         "Phase 2 of 3-phase orchestration. Receives service and prompt, selects appropriate command, returns ai:command-agent task. Narrows focus from service to command level",
       requiredParams: ["id", "service", "prompt", "dependsOn"],
+      allowInPlanMode: true,
       optionalParams: ["maxRetries", "model"],
       inputSchema: {
         type: 'object',
@@ -994,6 +1007,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
       description:
         "Phase 3 of 3-phase orchestration. Receives command and prompt, constructs schema-valid parameters, returns executable command task. Final refinement from command to parameters",
       requiredParams: ["id", "service", "command", "prompt", "dependsOn"],
+      allowInPlanMode: true,
       optionalParams: ["maxRetries", "model"],
       inputSchema: {
         type: 'object',
@@ -1142,6 +1156,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
         "Retrieves Firebase Authentication user information by UID, email, or phone number. At least one identifier must be provided. Returns user profile including uid, email, emailVerified, disabled status, metadata (creation/sign-in times), display name, photo URL, phone number, custom claims, and provider data.",
       requiredParams: [],
       optionalParams: ["uid", "email", "phoneNumber"],
+      allowInPlanMode: true,
       inputSchema: {
         type: 'object',
         properties: {
@@ -1323,6 +1338,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
         "Lists Firebase Authentication users with pagination support. Returns user profiles including uid, email, emailVerified, disabled status, metadata (creation/sign-in/refresh times), display name, photo URL, phone number, custom claims, provider data, and tokens valid after time. Results include pagination support with pageToken for retrieving additional pages.",
       requiredParams: [],
       optionalParams: ["maxResults", "pageToken"],
+      allowInPlanMode: true,
       inputSchema: {
         type: 'object',
         properties: {
@@ -1367,6 +1383,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
         "Retrieves custom claims for a Firebase Authentication user. Returns the user's uid, email, customClaims object (roles, permissions, metadata), and the timestamp when claims were retrieved.",
       requiredParams: ["uid"],
       optionalParams: [],
+      allowInPlanMode: true,
       inputSchema: {
         type: 'object',
         properties: {

@@ -31,6 +31,11 @@ export interface ValidationReport {
 }
 
 /**
+ * Handler lookup function type for validation (enables testing)
+ */
+export type HandlerLookupFn = (service: string, command: string) => any | undefined;
+
+/**
  * Validates a single task's input against its handler definition
  * Returns array of validation error messages (empty if valid)
  *
@@ -40,21 +45,34 @@ export interface ValidationReport {
  * @param service - Service name (e.g., "firestore", "ai")
  * @param command - Command name (e.g., "copy-collection")
  * @param input - Task input object to validate
+ * @param handlerLookup - Optional handler lookup function for testing
  * @returns Array of error messages (empty if valid)
  */
 export function validateTaskInput(
   service: string,
   command: string,
-  input: Record<string, any>
+  input: Record<string, any>,
+  handlerLookup?: HandlerLookupFn
 ): string[] {
   const errors: string[] = [];
 
-  // Check if handler exists
-  if (!hasHandler(service, command)) {
+  // Check if handler exists (use injected lookup for testing, or production registry)
+  const handlerExists = handlerLookup
+    ? handlerLookup(service, command) !== undefined
+    : hasHandler(service, command);
+
+  if (!handlerExists) {
     return [`Unknown service/command: ${service}/${command}`];
   }
 
-  // Get handler definition from registry
+  // Skip schema validation for injected handlers (testing)
+  // Schema validation only applies to production handlers with definitions
+  if (handlerLookup) {
+    // For testing with injected handlers, just verify handler exists
+    return errors;
+  }
+
+  // Get handler definition from registry (production only)
   const definition = getHandlerDefinition(service, command);
 
   if (!definition) {
@@ -130,11 +148,13 @@ export function validateAgainstSchema(
  *
  * @param childTasks - Array of child task specifications to validate
  * @param parentId - ID of the parent task (for context in error messages)
+ * @param handlerLookup - Optional handler lookup function for testing
  * @returns Validation report with errors and warnings
  */
 export function validateChildTasks(
   childTasks: ChildTaskSpec[],
-  parentId: string
+  parentId: string,
+  handlerLookup?: HandlerLookupFn
 ): ValidationReport {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -167,19 +187,24 @@ export function validateChildTasks(
       continue;
     }
 
-    // Check if service/command exists
-    if (!hasHandler(childSpec.service, childSpec.command)) {
+    // Check if service/command exists (use injected lookup for testing, or production registry)
+    const handlerExists = handlerLookup
+      ? handlerLookup(childSpec.service, childSpec.command) !== undefined
+      : hasHandler(childSpec.service, childSpec.command);
+
+    if (!handlerExists) {
       errors.push(
         `${childLabel}: Invalid service/command combination: ${childSpec.service}/${childSpec.command}`
       );
       continue;
     }
 
-    // Validate input parameters
+    // Validate input parameters (pass handler lookup for consistency)
     const inputErrors = validateTaskInput(
       childSpec.service,
       childSpec.command,
-      childSpec.input || {}
+      childSpec.input || {},
+      handlerLookup
     );
 
     if (inputErrors.length > 0) {

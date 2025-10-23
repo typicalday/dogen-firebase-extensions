@@ -1,6 +1,9 @@
 import { Timestamp, DocumentReference } from "firebase-admin/firestore";
 
 export enum FirebaseTaskStatus {
+  Pending = "pending",
+  Planned = "planned",
+  Approved = "approved",
   Started = "started",
   Succeeded = "succeeded",
   Failed = "failed",
@@ -26,7 +29,7 @@ export class JobTask {
   output?: Record<string, any>;
   audit?: Record<string, any>;
   childTasks?: TaskSpec[];
-  status?: FirebaseTaskStatus = FirebaseTaskStatus.Started;
+  status?: FirebaseTaskStatus = FirebaseTaskStatus.Pending;
   startedAt?: Date;
   completedAt?: Date;
   dependsOn?: string[];
@@ -77,7 +80,7 @@ export class JobTask {
     this.output = output || (error ? { error } : {});
     this.audit = audit;
     this.childTasks = childTasks;
-    this.status = status || (error ? FirebaseTaskStatus.Failed : FirebaseTaskStatus.Started);
+    this.status = status || (error ? FirebaseTaskStatus.Failed : FirebaseTaskStatus.Pending);
     this.startedAt = startedAt;
     this.completedAt = completedAt;
     this.dependsOn = dependsOn;

@@ -3,9 +3,11 @@ import { expect } from "chai";
 import { JobTask, FirebaseTaskStatus } from "../../../src/job/jobTask";
 import { Job } from "../../../src/job/job";
 import { TaskGraph } from "../../../src/job/taskGraph";
+import { executeJobOrchestration, OrchestrationConfig } from "../../../src/job/orchestrator";
 import {
   registerMockHandler,
   clearMockHandlers,
+  mockHandlers,
   noopHandler,
   echoHandler,
   errorHandler,
@@ -255,37 +257,83 @@ describe("Job Orchestration & Task Graph System", function () {
   });
 
   // ==========================================================================
-  // 3. CHILD TASK SPAWNING
+  // 3. CHILD TASK SPAWNING (Real Orchestrator)
   // ==========================================================================
 
-  describe("3. Child Task Spawning", function () {
-    it("should spawn a single child task", function () {
+  describe("3. Child Task Spawning (Real Orchestrator)", function () {
+    it("should spawn a single child task", async function () {
       registerMockHandler("mock", "spawn-one", spawnChildrenHandler(1));
 
       const tasks = [createMockTask("0", "mock", "spawn-one")];
-      const graph = new TaskGraph(tasks);
 
-      // Task 0 can execute
-      const executable = graph.getExecutableTasks(new Set());
-      expect(executable).to.deep.equal(["0"]);
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-spawn-one",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
 
-      // After spawning, child 0-0 should be added
-      // (This would be tested in integration with processJob)
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Verify parent task succeeded
+      const task0 = result.tasks.find(t => t.id === "0");
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Succeeded);
+
+      // Verify child 0-0 was spawned and executed
+      const child00 = result.tasks.find(t => t.id === "0-0");
+      expect(child00).to.exist;
+      expect(child00?.status).to.equal(FirebaseTaskStatus.Succeeded);
+
+      // Total: 2 tasks (parent + 1 child)
+      expect(result.tasks).to.have.lengthOf(2);
     });
 
-    it("should spawn multiple child tasks", function () {
+    it("should spawn multiple child tasks", async function () {
       registerMockHandler("mock", "spawn-three", spawnChildrenHandler(3));
 
       const tasks = [createMockTask("0", "mock", "spawn-three")];
-      const graph = new TaskGraph(tasks);
 
-      // Initial task can execute
-      expect(graph.size()).to.equal(1);
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-spawn-three",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
 
-      // After spawning (simulated), there should be 4 tasks total: 0, 0-0, 0-1, 0-2
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Verify parent succeeded
+      const task0 = result.tasks.find(t => t.id === "0");
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Succeeded);
+
+      // Verify all 3 children were spawned
+      const child00 = result.tasks.find(t => t.id === "0-0");
+      const child01 = result.tasks.find(t => t.id === "0-1");
+      const child02 = result.tasks.find(t => t.id === "0-2");
+
+      expect(child00).to.exist;
+      expect(child01).to.exist;
+      expect(child02).to.exist;
+
+      // Total: 4 tasks (parent + 3 children)
+      expect(result.tasks).to.have.lengthOf(4);
     });
 
-    it("should spawn children with dependencies on siblings", function () {
+    it("should spawn children with dependencies on siblings", async function () {
       // Child 0-1 depends on child 0-0
       registerMockHandler(
         "mock",
@@ -297,15 +345,43 @@ describe("Job Orchestration & Task Graph System", function () {
       );
 
       const tasks = [createMockTask("0", "mock", "spawn-with-deps")];
-      const graph = new TaskGraph(tasks);
 
-      expect(graph.size()).to.equal(1);
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-spawn-with-sibling-deps",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
 
-      // After spawning children, 0-1 should depend on 0-0
-      // (Tested in full integration)
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Verify parent succeeded
+      const task0 = result.tasks.find(t => t.id === "0");
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Succeeded);
+
+      // Verify both children exist
+      const child00 = result.tasks.find(t => t.id === "0-0");
+      const child01 = result.tasks.find(t => t.id === "0-1");
+
+      expect(child00).to.exist;
+      expect(child01).to.exist;
+
+      // Verify 0-1 has dependency on 0-0
+      expect(child01?.dependsOn).to.include("0-0");
+
+      // Both children should have succeeded
+      expect(child00?.status).to.equal(FirebaseTaskStatus.Succeeded);
+      expect(child01?.status).to.equal(FirebaseTaskStatus.Succeeded);
     });
 
-    it("should spawn children with dependencies on parent's siblings", function () {
+    it("should spawn children with dependencies on parent's siblings", async function () {
       // Task 0 and 1 are siblings. Task 1 spawns child 1-0 that depends on 0
       registerMockHandler(
         "mock",
@@ -318,37 +394,120 @@ describe("Job Orchestration & Task Graph System", function () {
         createMockTask("1", "mock", "spawn-depends-on-uncle", {}, ["0"]),
       ];
 
-      const graph = new TaskGraph(tasks);
-      expect(graph.size()).to.equal(2);
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-spawn-uncle-deps",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
 
-      // Child 1-0 should be able to depend on task 0 (its "uncle")
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Verify both parent tasks succeeded
+      const task0 = result.tasks.find(t => t.id === "0");
+      const task1 = result.tasks.find(t => t.id === "1");
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Succeeded);
+      expect(task1?.status).to.equal(FirebaseTaskStatus.Succeeded);
+
+      // Verify child 1-0 exists and depends on its "uncle" task 0
+      const child10 = result.tasks.find(t => t.id === "1-0");
+      expect(child10).to.exist;
+      expect(child10?.dependsOn).to.include("0");
+      expect(child10?.status).to.equal(FirebaseTaskStatus.Succeeded);
     });
 
-    it("should handle recursive spawning (child spawns grandchild)", function () {
-      // Each task spawns one child until max depth
-      registerMockHandler("mock", "recursive-spawn", recursiveSpawnHandler(3));
+    it("should handle recursive spawning (child spawns grandchild)", async function () {
+      // Each task spawns one child until ID depth >= 4
+      // recursiveSpawnHandler(4) stops spawning when ID depth >= 4
+      registerMockHandler("mock", "recursive-spawn", recursiveSpawnHandler(4));
 
       const tasks = [createMockTask("0", "mock", "recursive-spawn")];
-      const graph = new TaskGraph(tasks);
 
-      expect(graph.size()).to.equal(1);
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-recursive-spawn",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
 
-      // After execution:
-      // - Task 0 spawns 0-0
-      // - Task 0-0 spawns 0-0-0
-      // - Task 0-0-0 reaches max depth, spawns nothing
-      // Total: 3 tasks (0, 0-0, 0-0-0)
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Verify hierarchical spawning:
+      // - Task 0 (ID depth 1) spawns 0-0
+      // - Task 0-0 (ID depth 2) spawns 0-0-0
+      // - Task 0-0-0 (ID depth 3) spawns 0-0-0-0
+      // - Task 0-0-0-0 (ID depth 4) reaches handler limit, spawns nothing
+
+      const task0 = result.tasks.find(t => t.id === "0");
+      const task00 = result.tasks.find(t => t.id === "0-0");
+      const task000 = result.tasks.find(t => t.id === "0-0-0");
+      const task0000 = result.tasks.find(t => t.id === "0-0-0-0");
+
+      expect(task0).to.exist;
+      expect(task00).to.exist;
+      expect(task000).to.exist;
+      expect(task0000).to.exist;
+
+      // All tasks should succeed
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Succeeded);
+      expect(task00?.status).to.equal(FirebaseTaskStatus.Succeeded);
+      expect(task000?.status).to.equal(FirebaseTaskStatus.Succeeded);
+      expect(task0000?.status).to.equal(FirebaseTaskStatus.Succeeded);
+
+      // Total: 4 tasks
+      expect(result.tasks).to.have.lengthOf(4);
     });
 
-    it("should generate correct hierarchical IDs", function () {
-      const testIds = ["0", "0-0", "0-1", "0-0-0", "0-0-1", "1", "1-0"];
+    it("should generate correct hierarchical IDs", async function () {
+      // This test verifies that hierarchical IDs are correctly generated during orchestration
+      registerMockHandler("mock", "spawn-two", spawnChildrenHandler(2));
+      registerMockHandler("mock", "recursive-spawn", recursiveSpawnHandler(3));
+
+      const tasks = [
+        createMockTask("0", "mock", "spawn-two"),
+        createMockTask("1", "mock", "recursive-spawn"),
+      ];
+
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-hierarchical-ids",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Extract all task IDs
+      const taskIds = result.tasks.map(t => t.id);
 
       // Verify hierarchy is valid
-      expect(verifyHierarchy(testIds)).to.be.true;
+      expect(verifyHierarchy(taskIds)).to.be.true;
 
-      // Verify invalid hierarchy is detected
-      const invalidIds = ["0", "0-0-0"]; // Missing 0-0
-      expect(verifyHierarchy(invalidIds)).to.be.false;
+      // Verify expected IDs exist:
+      // 0, 0-0, 0-1 (from spawn-two)
+      // 1, 1-0, 1-0-0 (from recursive-spawn with limit 3)
+      expect(taskIds).to.include.members(["0", "0-0", "0-1", "1", "1-0", "1-0-0"]);
     });
   });
 
@@ -534,36 +693,10 @@ describe("Job Orchestration & Task Graph System", function () {
   });
 
   // ==========================================================================
-  // 5. SAFETY LIMITS
+  // 5. SAFETY LIMITS (Real Orchestrator)
   // ==========================================================================
 
-  describe("5. Safety Limits", function () {
-    it("should enforce maxTasks limit", function () {
-      const job = new Job({
-        name: "test-max-tasks",
-        abortOnFailure: false,
-        maxTasks: 5,
-        tasks: [createMockTask("0", "mock", "noop")],
-      });
-
-      expect(job.maxTasks).to.equal(5);
-
-      // Attempting to add more than 5 tasks should fail in processJob
-    });
-
-    it("should enforce maxDepth limit", function () {
-      const job = new Job({
-        name: "test-max-depth",
-        abortOnFailure: false,
-        maxDepth: 3,
-        tasks: [createMockTask("0", "mock", "noop")],
-      });
-
-      expect(job.maxDepth).to.equal(3);
-
-      // Attempting to spawn child at depth > 3 should fail in processJob
-    });
-
+  describe("5. Safety Limits (Real Orchestrator)", function () {
     it("should use default safety limits", function () {
       const job = new Job({
         name: "test-defaults",
@@ -575,16 +708,130 @@ describe("Job Orchestration & Task Graph System", function () {
       expect(job.maxDepth).to.equal(10);
     });
 
-    it("should detect task limit exceeded during spawning", function () {
-      // This would be tested in full integration with processJob
-      // The error message should be:
-      // "Task limit exceeded: N tasks maximum. Task X attempted to spawn child Y."
+    it("should enforce maxTasks limit during spawning", async function () {
+      // Spawn 10 children, but limit maxTasks to 5
+      registerMockHandler("mock", "spawn-ten", spawnChildrenHandler(10));
+
+      const tasks = [createMockTask("0", "mock", "spawn-ten")];
+
+      const config: OrchestrationConfig = {
+        maxTasks: 5,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-max-tasks-limit",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      // Orchestrator handles errors gracefully, doesn't throw
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Verify job failed
+      expect(result.status).to.equal("failed");
+
+      // Verify task 0 failed with limit error
+      const task0 = result.tasks.find(t => t.id === "0");
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Failed);
+      expect(task0?.output?.error).to.include("Task limit exceeded");
+      expect(task0?.output?.error).to.include("5 tasks maximum");
     });
 
-    it("should detect depth limit exceeded during spawning", function () {
-      // This would be tested in full integration with processJob
-      // The error message should be:
-      // "Task depth limit exceeded: N levels maximum. Task X attempted to spawn child at depth Y."
+    it("should enforce maxDepth limit during spawning", async function () {
+      // Try to spawn recursively beyond depth limit
+      // recursiveSpawnHandler(100) will keep trying to spawn until orchestrator stops it
+      registerMockHandler("mock", "recursive-spawn", recursiveSpawnHandler(100));
+
+      const tasks = [createMockTask("0", "mock", "recursive-spawn")];
+
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 2, // Limit depth to 2
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-max-depth-limit",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      // Orchestrator handles errors gracefully, doesn't throw
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Verify job failed
+      expect(result.status).to.equal("failed");
+
+      // Verify the task that exceeded depth limit failed
+      // Task 0-0-0 (depth 3) should fail when trying to spawn 0-0-0-0
+      const task000 = result.tasks.find(t => t.id === "0-0-0");
+      expect(task000?.status).to.equal(FirebaseTaskStatus.Failed);
+      expect(task000?.output?.error).to.include("Task depth limit exceeded");
+      expect(task000?.output?.error).to.include("2 levels maximum");
+    });
+
+    it("should allow spawning up to maxTasks limit", async function () {
+      // Spawn exactly 4 children (5 total including parent)
+      registerMockHandler("mock", "spawn-four", spawnChildrenHandler(4));
+
+      const tasks = [createMockTask("0", "mock", "spawn-four")];
+
+      const config: OrchestrationConfig = {
+        maxTasks: 5, // Exactly at limit
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-at-max-tasks",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Should succeed with exactly 5 tasks
+      expect(result.tasks).to.have.lengthOf(5);
+      expect(result.status).to.equal("succeeded");
+    });
+
+    it("should allow spawning up to maxDepth limit", async function () {
+      // Spawn recursively - handler allows up to ID depth 3
+      // This will create: 0 (ID depth 1), 0-0 (ID depth 2), 0-0-0 (ID depth 3)
+      registerMockHandler("mock", "recursive-spawn", recursiveSpawnHandler(3));
+
+      const tasks = [createMockTask("0", "mock", "recursive-spawn")];
+
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 2, // Allow up to explicit depth 2
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-at-max-depth",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Should succeed: 0 (depth 0), 0-0 (depth 1), 0-0-0 (depth 2)
+      expect(result.tasks).to.have.lengthOf(3);
+      expect(result.status).to.equal("succeeded");
+
+      const deepestTask = result.tasks.find(t => t.id === "0-0-0");
+      expect(deepestTask).to.exist;
     });
   });
 
@@ -646,84 +893,214 @@ describe("Job Orchestration & Task Graph System", function () {
   });
 
   // ==========================================================================
-  // 7. ERROR HANDLING
+  // 7. ERROR HANDLING (Real Orchestrator)
   // ==========================================================================
 
-  describe("7. Error Handling", function () {
+  describe("7. Error Handling (Real Orchestrator)", function () {
     it("should capture task errors in output", async function () {
       registerMockHandler("mock", "error", errorHandler("Test error"));
 
       const tasks = [createMockTask("0", "mock", "error")];
-      const graph = new TaskGraph(tasks);
 
-      const executable = graph.getExecutableTasks(new Set());
-      expect(executable).to.deep.equal(["0"]);
-
-      // When task 0 fails, its output should contain error
-    });
-
-    it("should stop dependent tasks when abortOnFailure=true", function () {
-      registerMockHandler("mock", "error", errorHandler("Fail task 0"));
-
-      const job = new Job({
-        name: "test-abort-on-failure",
-        abortOnFailure: true,
-        tasks: [
-          createMockTask("0", "mock", "error"),
-          createMockTask("1", "mock", "noop", {}, ["0"]),
-        ],
-      });
-
-      expect(job.abortOnFailure).to.be.true;
-
-      // Task 1 should be aborted if task 0 fails
-    });
-
-    it("should continue independent tasks when one task fails", function () {
-      registerMockHandler("mock", "error", errorHandler("Fail task 0"));
-
-      const job = new Job({
-        name: "test-continue-independent",
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
         abortOnFailure: false,
-        tasks: [
-          createMockTask("0", "mock", "error"),
-          createMockTask("1", "mock", "noop"), // Independent
-        ],
-      });
+        jobName: "test-error-capture",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
 
-      expect(job.abortOnFailure).to.be.false;
+      const result = await executeJobOrchestration(tasks, config);
 
-      // Task 1 should execute even if task 0 fails
+      // Task should fail
+      const task0 = result.tasks.find(t => t.id === "0");
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Failed);
+
+      // Error should be in output
+      expect(task0?.output?.error).to.include("Test error");
+
+      // Job should be marked as failed
+      expect(result.status).to.equal("failed");
     });
 
-    it("should set task status to Failed on error", function () {
-      const task = createMockTask("0", "mock", "noop");
-      expect(task.status).to.equal(FirebaseTaskStatus.Started);
+    it("should stop dependent tasks when abortOnFailure=true", async function () {
+      registerMockHandler("mock", "error", errorHandler("Fail task 0"));
 
-      // After error, status should be Failed
-      task.update({
-        status: FirebaseTaskStatus.Failed,
-        output: { error: "Test error" },
-      });
+      const tasks = [
+        createMockTask("0", "mock", "error"),
+        createMockTask("1", "mock", "noop", {}, ["0"]),
+      ];
 
-      expect(task.status).to.equal(FirebaseTaskStatus.Failed);
-      expect(task.output?.error).to.equal("Test error");
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-abort-on-failure",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Task 0 should fail
+      const task0 = result.tasks.find(t => t.id === "0");
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Failed);
+
+      // Task 1 should be aborted (not executed)
+      const task1 = result.tasks.find(t => t.id === "1");
+      expect(task1?.status).to.equal(FirebaseTaskStatus.Aborted);
+
+      // Job should fail
+      expect(result.status).to.equal("failed");
     });
 
-    it("should set task status to Aborted when previous task fails", function () {
-      const task = createMockTask("1", "mock", "noop", {}, ["0"]);
+    it("should continue independent tasks when one task fails", async function () {
+      registerMockHandler("mock", "error", errorHandler("Fail task 0"));
 
-      task.update({
-        status: FirebaseTaskStatus.Aborted,
-        output: { error: "Previous task failed and abortOnFailure is true" },
-      });
+      const tasks = [
+        createMockTask("0", "mock", "error"),
+        createMockTask("1", "mock", "noop"), // Independent
+      ];
 
-      expect(task.status).to.equal(FirebaseTaskStatus.Aborted);
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: false,
+        jobName: "test-continue-independent",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Task 0 should fail
+      const task0 = result.tasks.find(t => t.id === "0");
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Failed);
+
+      // Task 1 should succeed (independent of task 0)
+      const task1 = result.tasks.find(t => t.id === "1");
+      expect(task1?.status).to.equal(FirebaseTaskStatus.Succeeded);
+
+      // Job should fail (at least one task failed)
+      expect(result.status).to.equal("failed");
     });
 
-    it("should propagate child task failures to parent", function () {
-      // If a child task fails, the parent's status should reflect this
-      // (Tested in full integration)
+    it("should set task status to Failed on error", async function () {
+      registerMockHandler("mock", "error", errorHandler("Test error"));
+
+      const tasks = [createMockTask("0", "mock", "error")];
+
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: false,
+        jobName: "test-failed-status",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      const task0 = result.tasks.find(t => t.id === "0");
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Failed);
+      expect(task0?.output?.error).to.exist;
+    });
+
+    it("should set task status to Aborted when previous task fails", async function () {
+      registerMockHandler("mock", "error", errorHandler("Previous task failed"));
+
+      const tasks = [
+        createMockTask("0", "mock", "error"),
+        createMockTask("1", "mock", "noop", {}, ["0"]),
+      ];
+
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-aborted-status",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      const task1 = result.tasks.find(t => t.id === "1");
+      expect(task1?.status).to.equal(FirebaseTaskStatus.Aborted);
+    });
+
+    it("should handle child task failures when abortOnFailure=true", async function () {
+      // Parent spawns child that fails
+      registerMockHandler("mock", "spawn-failing", async (task: JobTask) => {
+        return {
+          output: { message: "Spawning child" },
+          childTasks: [{
+            service: "mock",
+            command: "error",
+            input: {},
+          }],
+        };
+      });
+      registerMockHandler("mock", "error", errorHandler("Child failed"));
+
+      const tasks = [
+        createMockTask("0", "mock", "spawn-failing"),
+        createMockTask("1", "mock", "noop", {}, ["0"]),
+      ];
+
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-child-failure",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Parent should succeed (it completed its work)
+      const task0 = result.tasks.find(t => t.id === "0");
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Succeeded);
+
+      // Child should fail
+      const child00 = result.tasks.find(t => t.id === "0-0");
+      expect(child00?.status).to.equal(FirebaseTaskStatus.Failed);
+
+      // Task 1 should be aborted (depends on parent which spawned failing child)
+      const task1 = result.tasks.find(t => t.id === "1");
+      expect(task1?.status).to.equal(FirebaseTaskStatus.Aborted);
     });
 
     it("should handle handler throwing exceptions", async function () {
@@ -735,155 +1112,278 @@ describe("Job Orchestration & Task Graph System", function () {
         }
       );
 
+      const tasks = [createMockTask("0", "mock", "throw")];
+
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: false,
+        jobName: "test-handler-exception",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
       // Exception should be caught and converted to task failure
-      createMockTask("0", "mock", "throw");
+      const task0 = result.tasks.find(t => t.id === "0");
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Failed);
+      expect(task0?.output?.error).to.include("Handler exception");
     });
 
-    it("should detect deadlock when no tasks are executable but tasks remain incomplete", function () {
-      /**
-       * Deadlock detection scenario:
-       *
-       * The deadlock detection at lines 99-107 of processJob.ts is a safety net
-       * that catches situations where:
-       * 1. completed.size < taskRegistry.size (tasks remain incomplete)
-       * 2. getExecutableTasks returns empty (no tasks can execute)
-       *
-       * This can occur when a task has a dependency that will never be satisfied.
-       * For example, if a task is dynamically added to the registry with a
-       * dependency on a non-existent task, it can never execute.
-       */
+    it("should fail job when child validation fails", async function () {
+      // Parent spawns child with invalid service/command
+      registerMockHandler("mock", "spawn-invalid", async () => {
+        return {
+          output: { message: "Spawning invalid child" },
+          childTasks: [{
+            service: "nonexistent",
+            command: "bad-command",
+            input: {},
+          }],
+        };
+      });
 
-      const tasks = [
-        createMockTask("0", "mock", "noop"),
-        createMockTask("1", "mock", "noop", {}, ["0"]),
-      ];
+      const tasks = [createMockTask("0", "mock", "spawn-invalid")];
 
-      const graph = new TaskGraph(tasks);
-      const completed = new Set<string>();
-      const taskRegistry = new Map<string, JobTask>();
-      tasks.forEach((t) => taskRegistry.set(t.id, t));
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-invalid-child",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
 
-      // Execute task 0 and task 1 normally
-      completed.add("0");
-      completed.add("1");
+      // Orchestrator handles errors gracefully, doesn't throw
+      const result = await executeJobOrchestration(tasks, config);
 
-      // Verify both tasks are completed
-      let executable = graph.getExecutableTasks(completed);
-      expect(executable).to.have.lengthOf(0);
+      // Verify job failed
+      expect(result.status).to.equal("failed");
 
-      // Now simulate a scenario where a task with an unsatisfiable dependency
-      // gets added to the registry (this could happen through a bug or edge case)
-      // This task depends on "nonexistent" which will never be in completed
-
-      // Note: We can't add this task to the graph because the constructor
-      // validates dependencies. But in processJob, the taskRegistry could
-      // theoretically have a task that the graph doesn't know about, or
-      // a task could be in a state where it can't execute.
-
-      // Instead, let's simulate the scenario by manually adding a task to
-      // the registry that has a dependency not in the graph
-      const deadlockTask = createMockTask("2", "mock", "noop", {}, ["nonexistent"]);
-      taskRegistry.set("2", deadlockTask);
-
-      // Verify the deadlock condition:
-      // - completed.size < taskRegistry.size (task 2 is not completed)
-      // - getExecutableTasks returns empty (task 2's dependency is not satisfied)
-      const incomplete = Array.from(taskRegistry.keys()).filter(
-        (id) => !completed.has(id)
-      );
-
-      expect(completed.size).to.be.lessThan(taskRegistry.size);
-      expect(executable).to.have.lengthOf(0);
-      expect(incomplete).to.have.lengthOf(1);
-      expect(incomplete).to.include("2");
-
-      // Verify the error message format that processJob would throw
-      const expectedError =
-        `Deadlock detected: ${incomplete.length} tasks cannot execute. ` +
-        `Incomplete tasks: ${incomplete.join(', ')}`;
-
-      expect(expectedError).to.equal(
-        "Deadlock detected: 1 tasks cannot execute. Incomplete tasks: 2"
-      );
+      // Verify task 0 failed with validation error
+      const task0 = result.tasks.find(t => t.id === "0");
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Failed);
+      expect(task0?.output?.error).to.include("Child task validation failed");
+      expect(task0?.output?.error).to.include("Invalid service/command combination");
     });
   });
 
   // ==========================================================================
-  // 8. OUTPUT & RESULTS
+  // 8. OUTPUT & RESULTS (Real Orchestrator)
   // ==========================================================================
 
-  describe("8. Output & Results", function () {
+  describe("8. Output & Results (Real Orchestrator)", function () {
     it("should capture task outputs", async function () {
       const outputData = { message: "Task completed", value: 42 };
       registerMockHandler("mock", "produce", dataProducerHandler(outputData));
 
-      const task = createMockTask("0", "mock", "produce");
-      task.update({
-        output: outputData,
-        status: FirebaseTaskStatus.Succeeded,
-      });
+      const tasks = [createMockTask("0", "mock", "produce")];
 
-      expect(task.output).to.deep.include(outputData);
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-capture-output",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Verify task output contains expected data
+      const task0 = result.tasks.find(t => t.id === "0");
+      expect(task0?.output).to.deep.include(outputData);
+      expect(task0?.status).to.equal(FirebaseTaskStatus.Succeeded);
     });
 
-    it("should make outputs accessible to dependent tasks", function () {
-      // Task 1 should be able to access output from task 0
-      const task0 = createMockTask("0", "mock", "noop");
-      task0.update({
-        output: { data: "from-task-0" },
-        status: FirebaseTaskStatus.Succeeded,
-      });
+    it("should make outputs accessible to dependent tasks in result", async function () {
+      // Task 0 produces output that task 1 could use
+      const outputData = { data: "from-task-0" };
+      registerMockHandler("mock", "produce", dataProducerHandler(outputData));
 
-      // Create dependent task (in real scenario, it would access task0's output)
-      createMockTask("1", "mock", "noop", {}, ["0"]);
+      const tasks = [
+        createMockTask("0", "mock", "produce"),
+        createMockTask("1", "mock", "echo", {}, ["0"]),
+      ];
 
-      // Verify task0's output is accessible
-      expect(task0.output?.data).to.equal("from-task-0");
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-output-access",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Verify task 0's output is in the result
+      const task0 = result.tasks.find(t => t.id === "0");
+      expect(task0?.output?.data).to.equal("from-task-0");
+
+      // Task 1 should succeed (it would access task0's output via context)
+      const task1 = result.tasks.find(t => t.id === "1");
+      expect(task1?.status).to.equal(FirebaseTaskStatus.Succeeded);
     });
 
-    it("should include child tasks in final result", function () {
-      // After spawning children, result.tasks should include all tasks
-      const allIds = ["0", "0-0", "0-1", "0-2"];
-      expect(verifyHierarchy(allIds)).to.be.true;
+    it("should include child tasks in final result", async function () {
+      // Spawn 3 children
+      registerMockHandler("mock", "spawn-three", spawnChildrenHandler(3));
+
+      const tasks = [createMockTask("0", "mock", "spawn-three")];
+
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-include-children",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Verify all tasks are included: 0, 0-0, 0-1, 0-2
+      expect(result.tasks).to.have.lengthOf(4);
+
+      const taskIds = result.tasks.map(t => t.id);
+      expect(taskIds).to.include.members(["0", "0-0", "0-1", "0-2"]);
+
+      // Verify hierarchy is valid
+      expect(verifyHierarchy(taskIds)).to.be.true;
     });
 
-    it("should include all spawned tasks in registry", function () {
-      const taskRegistry = new Map<string, JobTask>();
-      taskRegistry.set("0", createMockTask("0", "mock", "noop"));
-      taskRegistry.set("0-0", createMockTask("0-0", "mock", "noop"));
-      taskRegistry.set("0-1", createMockTask("0-1", "mock", "noop"));
+    it("should include all spawned tasks with correct structure", async function () {
+      // Spawn children at multiple levels
+      registerMockHandler("mock", "spawn-two", spawnChildrenHandler(2));
 
-      expect(taskRegistry.size).to.equal(3);
-      expect(taskRegistry.has("0")).to.be.true;
-      expect(taskRegistry.has("0-0")).to.be.true;
-      expect(taskRegistry.has("0-1")).to.be.true;
+      const tasks = [
+        createMockTask("0", "mock", "spawn-two"),
+        createMockTask("1", "mock", "spawn-two"),
+      ];
+
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-all-spawned",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      // Should have: 0, 0-0, 0-1, 1, 1-0, 1-1
+      expect(result.tasks).to.have.lengthOf(6);
+
+      const taskIds = result.tasks.map(t => t.id);
+      expect(taskIds).to.include.members(["0", "0-0", "0-1", "1", "1-0", "1-1"]);
     });
 
-    it("should maintain hierarchical structure in output", function () {
-      const taskIds = ["0", "1", "0-0", "0-1", "1-0", "0-0-0"];
+    it("should maintain hierarchical structure in output", async function () {
+      // Create hierarchy: 0 → 0-0 → 0-0-0
+      registerMockHandler("mock", "recursive-spawn", recursiveSpawnHandler(3));
 
+      const tasks = [createMockTask("0", "mock", "recursive-spawn")];
+
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-hierarchy",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      const taskIds = result.tasks.map(t => t.id);
+
+      // Verify hierarchical structure is valid
       expect(verifyHierarchy(taskIds)).to.be.true;
 
-      // Verify depth levels
-      expect("0".split("-").length).to.equal(1); // Root
-      expect("0-0".split("-").length).to.equal(2); // Child
-      expect("0-0-0".split("-").length).to.equal(3); // Grandchild
+      // Verify depth levels in IDs
+      const task0 = result.tasks.find(t => t.id === "0");
+      const task00 = result.tasks.find(t => t.id === "0-0");
+      const task000 = result.tasks.find(t => t.id === "0-0-0");
+
+      expect(task0).to.exist;
+      expect(task00).to.exist;
+      expect(task000).to.exist;
     });
 
-    it("should include task metadata in results", function () {
-      const task = createMockTask("0", "mock", "noop");
-      task.update({
-        status: FirebaseTaskStatus.Succeeded,
-        startedAt: new Date("2024-01-01T00:00:00Z"),
-        completedAt: new Date("2024-01-01T00:00:01Z"),
-      });
+    it("should include task metadata in results", async function () {
+      const tasks = [createMockTask("0", "mock", "noop")];
 
-      expect(task.status).to.equal(FirebaseTaskStatus.Succeeded);
-      expect(task.startedAt).to.be.instanceOf(Date);
-      expect(task.completedAt).to.be.instanceOf(Date);
+      const config: OrchestrationConfig = {
+        maxTasks: 100,
+        maxDepth: 10,
+        verbose: false,
+        aiPlanning: false,
+        aiAuditing: false,
+        abortOnFailure: true,
+        jobName: "test-metadata",
+        handlerLookup: (service: string, command: string) => {
+          const key = `${service}:${command}`;
+          return mockHandlers.get(key);
+        },
+      };
+
+      const result = await executeJobOrchestration(tasks, config);
+
+      const task0 = result.tasks.find(t => t.id === "0");
+
+      // Verify metadata is included
+      expect(task0).to.have.property("id", "0");
+      expect(task0).to.have.property("service", "mock");
+      expect(task0).to.have.property("command", "noop");
+      expect(task0).to.have.property("status", FirebaseTaskStatus.Succeeded);
+      expect(task0).to.have.property("startedAt");
+      expect(task0).to.have.property("completedAt");
+
+      // Verify timestamps are Date objects (or ISO strings in result)
+      expect(task0?.startedAt).to.exist;
+      expect(task0?.completedAt).to.exist;
     });
 
     it("should serialize to Firestore format correctly", function () {
+      // This tests JobTask serialization, not orchestrator
       const task = createMockTask("0", "mock", "noop", { key: "value" }, ["1"]);
       task.update({
         status: FirebaseTaskStatus.Succeeded,

@@ -15,6 +15,7 @@ import { ChildTaskSpec } from "../../../src/job/types";
 /**
  * Registry of mock handlers for testing.
  * Maps service:command to handler functions.
+ * Exported for use in test execution simulations.
  */
 export const mockHandlers = new Map<
   string,
@@ -417,4 +418,92 @@ export function verifyHierarchy(taskIds: string[]): boolean {
   }
 
   return true;
+}
+
+// ============================================================================
+// Status Propagation Test Helpers
+// ============================================================================
+
+/**
+ * Handler that spawns a child task that will be marked as Planned in plan mode.
+ * Simulates a resource-modifying command (allowInPlanMode: false).
+ */
+export function spawnPlannedChildHandler() {
+  return async (task: JobTask): Promise<Record<string, any>> => {
+    return {
+      output: {
+        taskId: task.id,
+        message: "Parent task spawning child for plan mode",
+      },
+      childTasks: [
+        {
+          id: `${task.id}-0`,
+          service: "mock",
+          command: "resource-modify", // Command that requires planning
+          input: { action: "modify-resource" },
+        },
+      ],
+    };
+  };
+}
+
+/**
+ * Handler that spawns a child task that will fail.
+ */
+export function spawnFailingChildHandler() {
+  return async (task: JobTask): Promise<Record<string, any>> => {
+    return {
+      output: {
+        taskId: task.id,
+        message: "Parent task spawning child that will fail",
+      },
+      childTasks: [
+        {
+          id: `${task.id}-0`,
+          service: "mock",
+          command: "error", // Command that will fail
+          input: {},
+        },
+      ],
+    };
+  };
+}
+
+/**
+ * Handler that spawns multiple children with different characteristics.
+ */
+export function spawnMixedChildrenHandler() {
+  return async (task: JobTask): Promise<Record<string, any>> => {
+    return {
+      output: {
+        taskId: task.id,
+        message: "Parent task spawning mixed children",
+      },
+      childTasks: [
+        {
+          id: `${task.id}-0`,
+          service: "mock",
+          command: "noop", // Safe command (will execute)
+          input: {},
+        },
+        {
+          id: `${task.id}-1`,
+          service: "mock",
+          command: "error", // Will fail
+          input: {},
+        },
+      ],
+    };
+  };
+}
+
+/**
+ * Resource-modifying handler (blocks in plan mode).
+ */
+export async function resourceModifyHandler(task: JobTask): Promise<Record<string, any>> {
+  return {
+    taskId: task.id,
+    message: "Resource modified",
+    action: task.input?.action || "default-action",
+  };
 }
