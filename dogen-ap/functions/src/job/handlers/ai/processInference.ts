@@ -21,27 +21,25 @@ interface InferenceTaskInput {
 }
 
 interface InferenceTaskOutput {
-  /** Actionable result for downstream tasks - contains only the AI response */
-  result: {
-    response: string;
-  };
-  /** AI audit trail: Full request/response details (only populated when context.aiAuditing is true) */
-  audit?: {
-    model: string;
-    prompt: string;
-    filesProcessed?: string[];
-    usage?: {
-      promptTokenCount?: number;
-      candidatesTokenCount?: number;
-      totalTokenCount?: number;
-    };
-    systemInstruction?: string;
-    userPrompt: string;
-    generationConfig: any;
-  };
+  /** AI response text */
+  response: string;
 }
 
-export async function handleProcessInference(task: JobTask, context: JobContext): Promise<InferenceTaskOutput> {
+interface InferenceTaskAudit {
+  model: string;
+  prompt: string;
+  filesProcessed?: string[];
+  usage?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    totalTokenCount?: number;
+  };
+  systemInstruction?: string;
+  userPrompt: string;
+  generationConfig: any;
+}
+
+export async function handleProcessInference(task: JobTask, context: JobContext): Promise<{ output: InferenceTaskOutput; audit?: InferenceTaskAudit }> {
   const input = task.input as InferenceTaskInput | undefined;
 
   if (!input?.prompt) {
@@ -159,29 +157,25 @@ export async function handleProcessInference(task: JobTask, context: JobContext)
       .join('');
 
     const output: InferenceTaskOutput = {
-      result: {
-        response: responseText
-      }
+      response: responseText
     };
 
     // Add audit trail when aiAuditing is enabled
-    if (context.aiAuditing) {
-      output.audit = {
-        model: model,
-        prompt: input.prompt,
-        filesProcessed: filesProcessed.length > 0 ? filesProcessed : undefined,
-        usage: response.usageMetadata ? {
-          promptTokenCount: response.usageMetadata.promptTokenCount,
-          candidatesTokenCount: response.usageMetadata.candidatesTokenCount,
-          totalTokenCount: response.usageMetadata.totalTokenCount,
-        } : undefined,
-        systemInstruction: input.systemInstruction,
-        userPrompt: input.prompt,
-        generationConfig
-      };
-    }
+    const audit: InferenceTaskAudit | undefined = context.aiAuditing ? {
+      model: model,
+      prompt: input.prompt,
+      filesProcessed: filesProcessed.length > 0 ? filesProcessed : undefined,
+      usage: response.usageMetadata ? {
+        promptTokenCount: response.usageMetadata.promptTokenCount,
+        candidatesTokenCount: response.usageMetadata.candidatesTokenCount,
+        totalTokenCount: response.usageMetadata.totalTokenCount,
+      } : undefined,
+      systemInstruction: input.systemInstruction,
+      userPrompt: input.prompt,
+      generationConfig
+    } : undefined;
 
-    return output;
+    return { output, audit };
   } catch (error: any) {
     console.error('Error processing inference request:', error);
     throw new Error(`Inference processing failed: ${error.message}`);

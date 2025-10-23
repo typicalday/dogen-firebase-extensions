@@ -65,8 +65,8 @@ describe("AI Process Inference Handler", () => {
       const result = await handleProcessInference(task, context);
 
       expect(result).to.exist;
-      expect(result.result).to.exist;
-      expect(result.result.response).to.equal("This is a test response from the AI model.");
+      expect(result.output).to.exist;
+      expect(result.output.response).to.equal("This is a test response from the AI model.");
       // Without aiAuditing, these fields should not be present
       expect(result.audit).to.be.undefined;
     });
@@ -156,7 +156,7 @@ describe("AI Process Inference Handler", () => {
       const context = createMockJobContext();
       const result = await handleProcessInference(task, context);
 
-      expect(result.result.response).to.equal("Part 1: Part 2: Part 3");
+      expect(result.output.response).to.equal("Part 1: Part 2: Part 3");
     });
   });
 
@@ -203,7 +203,7 @@ describe("AI Process Inference Handler", () => {
       const context = createMockJobContext();
       const result = await handleProcessInference(task, context);
 
-      expect(result.result.response).to.exist;
+      expect(result.output.response).to.exist;
       expect(capturedSystemInstruction).to.equal("You are a helpful math tutor. Explain your answers step by step.");
     });
   });
@@ -356,7 +356,7 @@ describe("AI Process Inference Handler", () => {
 
       expect(capturedConfig.responseMimeType).to.equal("application/json");
       expect(capturedConfig.responseSchema).to.exist;
-      expect(result.result.response).to.be.a("string");
+      expect(result.output.response).to.be.a("string");
     });
 
     it("should apply stop sequences", async function() {
@@ -491,7 +491,7 @@ describe("AI Process Inference Handler", () => {
 
       expect(result.audit).to.exist;
       expect(result.audit!.model).to.equal("gemini-2.5-pro");
-      expect(result.result.response).to.equal("Response with default model");
+      expect(result.output.response).to.equal("Response with default model");
     });
 
     it("should require prompt parameter", async function() {
@@ -716,8 +716,8 @@ describe("AI Process Inference Handler", () => {
       expect(result.audit!.userPrompt).to.equal("Test audit prompt");
       expect(result.audit!.generationConfig).to.exist;
       expect(result.audit!.generationConfig.temperature).to.equal(0.8);
-      // The actual response is in result.response, not duplicated in audit
-      expect(result.result.response).to.equal("Audit test response");
+      // The actual response is in output.response, not duplicated in audit
+      expect(result.output.response).to.equal("Audit test response");
     });
 
     it("should not include audit trail when aiAuditing is disabled", async function() {
@@ -804,9 +804,9 @@ describe("AI Process Inference Handler", () => {
       const context = createMockJobContext();
       const result = await handleProcessInference(task, context);
 
-      // Verify result field exists and contains the response (for downstream tasks)
-      expect(result.result).to.exist;
-      expect(result.result.response).to.equal("Test response for result field");
+      // Verify output field exists and contains the response (for downstream tasks)
+      expect(result.output).to.exist;
+      expect(result.output.response).to.equal("Test response for result field");
       // Without aiAuditing, no other fields should be present
       expect(result.audit).to.be.undefined;
     });
@@ -847,8 +847,8 @@ describe("AI Process Inference Handler", () => {
 
       expect(result.audit).to.exist;
       expect(result.audit!.usage).to.be.undefined;
-      // The actual response is in result.response, not duplicated in audit
-      expect(result.result.response).to.equal("Response without usage");
+      // The actual response is in output.response, not duplicated in audit
+      expect(result.output.response).to.equal("Response without usage");
     });
   });
 
@@ -892,7 +892,7 @@ describe("AI Process Inference Handler", () => {
       const context = createMockJobContext({ verbose: true });
       const result = await handleProcessInference(task, context);
 
-      expect(result.result.response).to.equal("Verbose response");
+      expect(result.output.response).to.equal("Verbose response");
       // In verbose mode, logs are printed but we just verify it doesn't error
     });
   });
