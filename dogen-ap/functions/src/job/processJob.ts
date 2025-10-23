@@ -21,6 +21,17 @@ export const processJob = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("permission-denied", "Unauthorized");
   }
 
+  // Audit log: User information and job request
+  const auditLog = {
+    user: {
+      uid: context.auth.uid,
+      email: authToken.email ?? null,
+      displayName: authToken.name ?? null,
+    },
+    request: data,
+  };
+  console.log("Job audit:", JSON.stringify(auditLog));
+
   const persistMode = data.persist ?? false;
   const abortOnFailure = data.abortOnFailure ?? true;
   const verbose = data.verbose ?? false;
