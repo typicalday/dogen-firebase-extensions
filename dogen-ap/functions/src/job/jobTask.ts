@@ -1,4 +1,5 @@
 import { Timestamp, DocumentReference } from "firebase-admin/firestore";
+import { sanitizeForFirestore } from "../utils/sanitizeForFirestore";
 
 export enum FirebaseTaskStatus {
   Pending = "pending",
@@ -113,19 +114,19 @@ export class JobTask {
   }
 
   toFirestore(): Record<string, any> {
-    return {
+    return sanitizeForFirestore({
       id: this.id,
       service: this.service,
       command: this.command,
       input: this.input,
       output: this.output,
       audit: this.audit,
-      childTasks: this.childTasks || [],
+      childTasks: this.childTasks,
       status: this.status,
       startedAt: this.startedAt ? Timestamp.fromDate(this.startedAt) : null,
       completedAt: this.completedAt ? Timestamp.fromDate(this.completedAt) : null,
-      dependsOn: this.dependsOn || [],
+      dependsOn: this.dependsOn,
       depth: this.depth,
-    };
+    });
   }
 }

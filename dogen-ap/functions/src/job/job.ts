@@ -2,6 +2,7 @@ import * as admin from "firebase-admin";
 import { Timestamp, DocumentReference } from "firebase-admin/firestore";
 import { JobTask } from "./jobTask";
 import * as utils from "../utils/utils";
+import { sanitizeForFirestore } from "../utils/sanitizeForFirestore";
 
 const db = admin.firestore();
 
@@ -102,7 +103,7 @@ export class Job {
   }
 
   toFirestore(): Record<string, any> {
-    return {
+    return sanitizeForFirestore({
       name: this.name,
       abortOnFailure: this.abortOnFailure,
       status: this.status,
@@ -115,6 +116,6 @@ export class Job {
       aiAuditing: this.aiAuditing,
       createdAt: Timestamp.fromDate(this.createdAt),
       updatedAt: Timestamp.fromDate(this.updatedAt),
-    };
+    });
   }
 }
