@@ -67,11 +67,11 @@ describe("AI Process Inference Handler", () => {
       expect(result).to.exist;
       expect(result.output).to.exist;
       expect(result.output.response).to.equal("This is a test response from the AI model.");
-      // Without aiAuditing, these fields should not be present
-      expect(result.audit).to.be.undefined;
+      // Without enableTracing, these fields should not be present
+      expect(result.trace).to.be.undefined;
     });
 
-    it("should include usage metadata when aiAuditing is enabled", async function() {
+    it("should include usage metadata when enableTracing is enabled", async function() {
       this.timeout(10000);
 
       VertexAI.prototype.getGenerativeModel = function() {
@@ -106,14 +106,14 @@ describe("AI Process Inference Handler", () => {
         depth: 0
       });
 
-      const context = createMockJobContext({ aiAuditing: true });
+      const context = createMockJobContext({ enableTracing: true });
       const result = await handleProcessInference(task, context);
 
-      expect(result.audit).to.exist;
-      expect(result.audit!.usage).to.exist;
-      expect(result.audit!.usage!.promptTokenCount).to.equal(50);
-      expect(result.audit!.usage!.candidatesTokenCount).to.equal(100);
-      expect(result.audit!.usage!.totalTokenCount).to.equal(150);
+      expect(result.trace).to.exist;
+      expect(result.trace!.usage).to.exist;
+      expect(result.trace!.usage!.promptTokenCount).to.equal(50);
+      expect(result.trace!.usage!.candidatesTokenCount).to.equal(100);
+      expect(result.trace!.usage!.totalTokenCount).to.equal(150);
     });
 
     it("should handle multi-part text responses", async function() {
@@ -486,10 +486,10 @@ describe("AI Process Inference Handler", () => {
         depth: 0
       });
 
-      const context = createMockJobContext({ aiAuditing: true });
+      const context = createMockJobContext({ enableTracing: true });
       const result = await handleProcessInference(task, context);
 
-      expect(result.audit).to.exist;
+      expect(result.trace).to.exist;
       expect(result.output.response).to.equal("Response with default model");
     });
 
@@ -667,8 +667,8 @@ describe("AI Process Inference Handler", () => {
     });
   });
 
-  describe("AI Auditing", () => {
-    it("should include audit trail when aiAuditing is enabled", async function() {
+  describe("AI Tracing", () => {
+    it("should include trace trail when enableTracing is enabled", async function() {
       this.timeout(10000);
 
       VertexAI.prototype.getGenerativeModel = function() {
@@ -678,7 +678,7 @@ describe("AI Process Inference Handler", () => {
               candidates: [{
                 content: {
                   parts: [{
-                    text: "Audit test response"
+                    text: "Trace test response"
                   }]
                 }
               }],
@@ -698,24 +698,24 @@ describe("AI Process Inference Handler", () => {
         command: "process-inference",
         input: {
           model: "gemini-1.5-pro",
-          prompt: "Test audit prompt",
+          prompt: "Test trace prompt",
           systemInstruction: "Test system instruction",
           temperature: 0.8
         },
         depth: 0
       });
 
-      const context = createMockJobContext({ aiAuditing: true });
+      const context = createMockJobContext({ enableTracing: true });
       const result = await handleProcessInference(task, context);
 
-      expect(result.audit).to.exist;
-      expect(result.audit!.generationConfig).to.exist;
-      expect(result.audit!.generationConfig.temperature).to.equal(0.8);
-      // The actual response is in output.response, not duplicated in audit
-      expect(result.output.response).to.equal("Audit test response");
+      expect(result.trace).to.exist;
+      expect(result.trace!.generationConfig).to.exist;
+      expect(result.trace!.generationConfig.temperature).to.equal(0.8);
+      // The actual response is in output.response, not duplicated in trace
+      expect(result.output.response).to.equal("Trace test response");
     });
 
-    it("should not include audit trail when aiAuditing is disabled", async function() {
+    it("should not include trace trail when enableTracing is disabled", async function() {
       this.timeout(10000);
 
       const { handleProcessInference } = await import("../../../src/job/handlers/ai/processInference");
@@ -727,7 +727,7 @@ describe("AI Process Inference Handler", () => {
               candidates: [{
                 content: {
                   parts: [{
-                    text: "No audit response"
+                    text: "No trace response"
                   }]
                 }
               }],
@@ -753,10 +753,10 @@ describe("AI Process Inference Handler", () => {
         depth: 0
       });
 
-      const context = createMockJobContext({ aiAuditing: false });
+      const context = createMockJobContext({ enableTracing: false });
       const result = await handleProcessInference(task, context);
 
-      expect(result.audit).to.be.undefined;
+      expect(result.trace).to.be.undefined;
     });
   });
 
@@ -802,11 +802,11 @@ describe("AI Process Inference Handler", () => {
       // Verify output field exists and contains the response (for downstream tasks)
       expect(result.output).to.exist;
       expect(result.output.response).to.equal("Test response for result field");
-      // Without aiAuditing, no other fields should be present
-      expect(result.audit).to.be.undefined;
+      // Without enableTracing, no other fields should be present
+      expect(result.trace).to.be.undefined;
     });
 
-    it("should handle response without usage metadata when aiAuditing is enabled", async function() {
+    it("should handle response without usage metadata when enableTracing is enabled", async function() {
       this.timeout(10000);
 
       VertexAI.prototype.getGenerativeModel = function() {
@@ -837,12 +837,12 @@ describe("AI Process Inference Handler", () => {
         depth: 0
       });
 
-      const context = createMockJobContext({ aiAuditing: true });
+      const context = createMockJobContext({ enableTracing: true });
       const result = await handleProcessInference(task, context);
 
-      expect(result.audit).to.exist;
-      expect(result.audit!.usage).to.be.undefined;
-      // The actual response is in output.response, not duplicated in audit
+      expect(result.trace).to.exist;
+      expect(result.trace!.usage).to.be.undefined;
+      // The actual response is in output.response, not duplicated in trace
       expect(result.output.response).to.equal("Response without usage");
     });
   });

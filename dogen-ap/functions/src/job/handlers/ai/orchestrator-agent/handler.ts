@@ -39,7 +39,7 @@ const AI_CALL_TIMEOUT = 60000;
  * @param task - The orchestration task containing user prompt and parameters
  * @returns Orchestration output with validated child tasks
  */
-export async function handleOrchestratorAgent(task: JobTask, context: JobContext): Promise<{ output: OrchestratorAgentOutput; audit?: any; childTasks: any[] }> {
+export async function handleOrchestratorAgent(task: JobTask, context: JobContext): Promise<{ output: OrchestratorAgentOutput; trace?: any; childTasks: any[] }> {
   const input = task.input as OrchestratorAgentInput | undefined;
 
   // Validate input
@@ -128,13 +128,13 @@ export async function handleOrchestratorAgent(task: JobTask, context: JobContext
         verbose,
         maxRetries,
         model,
-        aiAuditing: context.aiAuditing
+        enableTracing: context.enableTracing
       }
     );
 
     const phase1Output = phase1Result.output;
     const retriesUsed = phase1Result.retriesUsed;
-    const audit = phase1Result.audit;
+    const trace = phase1Result.trace;
 
     if (verbose) {
       console.log(`[OrchestratorAgent] Phase 1 completed on attempt ${retriesUsed}: ${phase1Output.subtasks.length} service agent(s) needed`);
@@ -181,17 +181,17 @@ export async function handleOrchestratorAgent(task: JobTask, context: JobContext
 
     // Return orchestration result
     // Orchestrator is a task-spawning agent with no actionable output
-    // Metadata is stored in audit field only when aiAuditing is enabled
+    // Metadata is stored in trace field only when enableTracing is enabled
     const output: OrchestratorAgentOutput = {};
 
-    const auditData = context.aiAuditing ? {
+    const traceData = context.enableTracing ? {
       reasoning: phase1Output.reasoning,
       childTaskIds: childTasks.map(ct => ct.id!), // Store just the IDs, full specs are in task registry
       retriesUsed,
       validationReport,
-      systemInstruction: audit?.systemInstruction || '',
-      userPrompt: audit?.userPrompt || '',
-      aiResponse: audit?.aiResponse || ''
+      systemInstruction: trace?.systemInstruction || '',
+      userPrompt: trace?.userPrompt || '',
+      aiResponse: trace?.aiResponse || ''
     } : undefined;
 
     if (verbose) {
@@ -200,7 +200,7 @@ export async function handleOrchestratorAgent(task: JobTask, context: JobContext
 
     return {
       output,
-      audit: auditData,
+      trace: traceData,
       childTasks // Return childTasks separately for job system to spawn
     };
 

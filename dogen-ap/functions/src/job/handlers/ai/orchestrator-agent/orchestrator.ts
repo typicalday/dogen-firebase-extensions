@@ -172,15 +172,15 @@ export async function runOrchestratorPhase(
     verbose?: boolean;
     maxRetries?: number;
     model?: string;
-    aiAuditing?: boolean;
+    enableTracing?: boolean;
   } = {}
-): Promise<{ output: OrchestratorOutput; retriesUsed: number; audit?: { systemInstruction: string; userPrompt: string; aiResponse: string } }> {
+): Promise<{ output: OrchestratorOutput; retriesUsed: number; trace?: { systemInstruction: string; userPrompt: string; aiResponse: string } }> {
   const maxTasks = options.maxTasks ?? DEFAULT_MAX_TASKS;
   const temperature = options.temperature ?? DEFAULT_TEMPERATURE;
   const verbose = options.verbose ?? false;
   const maxRetries = options.maxRetries ?? 3;
   const modelName = options.model ?? DEFAULT_MODEL;
-  const aiAuditing = options.aiAuditing ?? false;
+  const enableTracing = options.enableTracing ?? false;
 
   if (verbose) {
     console.log('[Phase 1: Orchestrator] Starting orchestration');
@@ -193,7 +193,7 @@ export async function runOrchestratorPhase(
   let previousResponse: any | undefined;
   let validationErrors: string[] = [];
 
-  // Track retry history for audit trail
+  // Track retry history for trace trail
   const retryHistory: Array<{
     attempt: number;
     timestamp: string;
@@ -267,8 +267,8 @@ export async function runOrchestratorPhase(
       } catch (parseError: any) {
         validationErrors = [`Failed to parse AI response as JSON: ${parseError.message}`];
         previousResponse = responseText;
-        // Capture failed attempt for audit
-        if (aiAuditing && attempt < maxRetries) {
+        // Capture failed attempt for trace
+        if (enableTracing && attempt < maxRetries) {
           retryHistory.push({
             attempt,
             timestamp: new Date().toISOString(),
@@ -289,8 +289,8 @@ export async function runOrchestratorPhase(
       // Validate structure with type guard
       if (!isOrchestratorOutput(orchestratorOutput)) {
         validationErrors = ["AI response does not match expected schema structure"];
-        // Capture failed attempt for audit
-        if (aiAuditing && attempt < maxRetries) {
+        // Capture failed attempt for trace
+        if (enableTracing && attempt < maxRetries) {
           retryHistory.push({
             attempt,
             timestamp: new Date().toISOString(),
@@ -312,8 +312,8 @@ export async function runOrchestratorPhase(
         if (verbose) {
           console.log(`[Phase 1: Orchestrator] Attempt ${attempt} - Validation failed:`, validationErrors);
         }
-        // Capture failed attempt for audit
-        if (aiAuditing && attempt < maxRetries) {
+        // Capture failed attempt for trace
+        if (enableTracing && attempt < maxRetries) {
           retryHistory.push({
             attempt,
             timestamp: new Date().toISOString(),
@@ -338,13 +338,13 @@ export async function runOrchestratorPhase(
         }
       }
 
-      const returnValue: { output: OrchestratorOutput; retriesUsed: number; audit?: { systemInstruction: string; userPrompt: string; aiResponse: string } } = {
+      const returnValue: { output: OrchestratorOutput; retriesUsed: number; trace?: { systemInstruction: string; userPrompt: string; aiResponse: string } } = {
         output: orchestratorOutput,
         retriesUsed: attempt
       };
 
-      if (aiAuditing) {
-        returnValue.audit = {
+      if (enableTracing) {
+        returnValue.trace = {
           systemInstruction,
           userPrompt,
           aiResponse: responseText,
@@ -368,8 +368,8 @@ export async function runOrchestratorPhase(
         console.log(`[Phase 1: Orchestrator] Attempt ${attempt} failed with error:`, error.message);
       }
       validationErrors = [error.message];
-      // Capture failed attempt for audit
-      if (aiAuditing && attempt < maxRetries) {
+      // Capture failed attempt for trace
+      if (enableTracing && attempt < maxRetries) {
         retryHistory.push({
           attempt,
           timestamp: new Date().toISOString(),

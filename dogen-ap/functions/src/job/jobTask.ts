@@ -28,7 +28,7 @@ export class JobTask {
   command: string;
   input?: Record<string, any>;
   output?: Record<string, any>;
-  audit?: Record<string, any>;
+  trace?: Record<string, any>;
   childTasks?: TaskSpec[];
   status?: FirebaseTaskStatus = FirebaseTaskStatus.Pending;
   startedAt?: Date;
@@ -42,7 +42,7 @@ export class JobTask {
     command,
     input,
     output,
-    audit,
+    trace,
     childTasks,
     status,
     startedAt,
@@ -56,7 +56,7 @@ export class JobTask {
     ref?: DocumentReference;
     input?: Record<string, any>;
     output?: Record<string, any>;
-    audit?: Record<string, any>;
+    trace?: Record<string, any>;
     childTasks?: TaskSpec[];
     status?: FirebaseTaskStatus;
     startedAt?: Date;
@@ -79,7 +79,7 @@ export class JobTask {
     this.command = command;
     this.input = input || {};
     this.output = output || (error ? { error } : {});
-    this.audit = audit;
+    this.trace = trace;
     this.childTasks = childTasks;
     this.status = status || (error ? FirebaseTaskStatus.Failed : FirebaseTaskStatus.Pending);
     this.startedAt = startedAt;
@@ -90,21 +90,21 @@ export class JobTask {
 
   update({
     output,
-    audit,
+    trace,
     childTasks,
     status,
     startedAt,
     completedAt,
   }: {
     output?: Record<string, any>;
-    audit?: Record<string, any>;
+    trace?: Record<string, any>;
     childTasks?: TaskSpec[];
     status?: FirebaseTaskStatus;
     startedAt?: Date;
     completedAt?: Date;
   }): JobTask {
     this.output = output || this.output;
-    this.audit = audit || this.audit;
+    this.trace = trace || this.trace;
     this.childTasks = childTasks || this.childTasks;
     this.status = status || this.status;
     this.startedAt = startedAt || this.startedAt;
@@ -120,7 +120,7 @@ export class JobTask {
       command: this.command,
       input: this.input,
       output: this.output,
-      audit: this.audit,
+      trace: this.trace,
       childTasks: this.childTasks,
       status: this.status,
       startedAt: this.startedAt ? Timestamp.fromDate(this.startedAt) : null,

@@ -36,7 +36,7 @@ describe("Status Propagation (Real Orchestrator)", function () {
     registerMockHandler("mock", "spawn-planned", spawnPlannedChildHandler());
     registerMockHandler("mock", "resource-modify", resourceModifyHandler);
 
-    // Setup: Task A spawns child that requires approval (aiPlanning mode)
+    // Setup: Task A spawns child that requires approval (requireApproval mode)
     //        Task B depends on Task A
     const taskA = createMockTask("0", "mock", "spawn-planned");
     const taskB = createMockTask("1", "mock", "noop", {}, ["0"]);
@@ -45,8 +45,8 @@ describe("Status Propagation (Real Orchestrator)", function () {
       maxTasks: 100,
       maxDepth: 10,
       verbose: false,
-      aiPlanning: true, // Enable planning mode
-      aiAuditing: false,
+      requireApproval: true, // Enable planning mode
+      enableTracing: false,
       abortOnFailure: true,
       jobName: "test-status-propagation",
       // Inject mock handler lookup for testing
@@ -90,8 +90,8 @@ describe("Status Propagation (Real Orchestrator)", function () {
       maxTasks: 100,
       maxDepth: 10,
       verbose: false,
-      aiPlanning: false,
-      aiAuditing: false,
+      requireApproval: false,
+      enableTracing: false,
       abortOnFailure: true,
       jobName: "test-abort-propagation",
       handlerLookup: (service: string, command: string) => {
@@ -137,8 +137,8 @@ describe("Status Propagation (Real Orchestrator)", function () {
       maxTasks: 100,
       maxDepth: 10,
       verbose: false,
-      aiPlanning: true,
-      aiAuditing: false,
+      requireApproval: true,
+      enableTracing: false,
       abortOnFailure: true,
       jobName: "test-cascading-propagation",
       handlerLookup: (service: string, command: string) => {
@@ -183,8 +183,8 @@ describe("Status Propagation (Real Orchestrator)", function () {
       maxTasks: 100,
       maxDepth: 10,
       verbose: false,
-      aiPlanning: false,
-      aiAuditing: false,
+      requireApproval: false,
+      enableTracing: false,
       abortOnFailure: true,
       jobName: "test-priority-propagation",
       handlerLookup: (service: string, command: string) => {
@@ -230,8 +230,8 @@ describe("Status Propagation (Real Orchestrator)", function () {
       maxTasks: 100,
       maxDepth: 10,
       verbose: false,
-      aiPlanning: true,
-      aiAuditing: false,
+      requireApproval: true,
+      enableTracing: false,
       abortOnFailure: true,
       jobName: "test-pending-only-propagation",
       handlerLookup: (service: string, command: string) => {

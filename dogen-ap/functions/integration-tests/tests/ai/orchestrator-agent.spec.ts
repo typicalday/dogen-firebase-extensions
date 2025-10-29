@@ -939,12 +939,12 @@ describe("Orchestrator Agent (Phase 1) - Service Selection & Task Decomposition"
         depth: 0
       });
 
-      const context = createMockJobContext({ aiAuditing: true });
+      const context = createMockJobContext({ enableTracing: true });
       const result = await handleOrchestratorAgent(task, context);
 
       expect(result).to.exist;
-      expect(result.audit).to.exist;
-      expect(result.audit!.retriesUsed).to.equal(2);
+      expect(result.trace).to.exist;
+      expect(result.trace!.retriesUsed).to.equal(2);
       expect(result.childTasks[0].input?.service).to.equal("firestore");
     });
   });
@@ -1060,23 +1060,23 @@ describe("Orchestrator Agent (Phase 1) - Service Selection & Task Decomposition"
         depth: 0
       });
 
-      const context = createMockJobContext({ aiAuditing: true });
+      const context = createMockJobContext({ enableTracing: true });
       const result = await handleOrchestratorAgent(task, context);
 
-      // Check output structure - orchestrator has no actionable output, only audit (when aiAuditing is enabled)
+      // Check output structure - orchestrator has no actionable output, only trace (when enableTracing is enabled)
       expect(result.output).to.exist;
-      expect(result.audit).to.exist;
-      expect(result.audit!.reasoning).to.equal("Test reasoning");
-      expect(result.audit!.retriesUsed).to.be.a("number");
-      expect(result.audit!.validationReport).to.exist;
-      expect(result.audit!.validationReport.isValid).to.be.true;
-      expect(result.audit!.validationReport.errors).to.be.an("array");
-      expect(result.audit!.validationReport.warnings).to.be.an("array");
-      expect(result.audit!.validationReport.tasksValidated).to.equal(1);
-      expect(result.audit!.childTaskIds).to.deep.equal(["orchestrator-0-task-0-service"]);
+      expect(result.trace).to.exist;
+      expect(result.trace!.reasoning).to.equal("Test reasoning");
+      expect(result.trace!.retriesUsed).to.be.a("number");
+      expect(result.trace!.validationReport).to.exist;
+      expect(result.trace!.validationReport.isValid).to.be.true;
+      expect(result.trace!.validationReport.errors).to.be.an("array");
+      expect(result.trace!.validationReport.warnings).to.be.an("array");
+      expect(result.trace!.validationReport.tasksValidated).to.equal(1);
+      expect(result.trace!.childTaskIds).to.deep.equal(["orchestrator-0-task-0-service"]);
     });
 
-    it("should include audit information when aiAuditing is enabled", async function() {
+    it("should include trace information when enableTracing is enabled", async function() {
       this.timeout(10000);
 
       VertexAI.prototype.getGenerativeModel = function() {
@@ -1112,18 +1112,18 @@ describe("Orchestrator Agent (Phase 1) - Service Selection & Task Decomposition"
         service: "ai",
         command: "orchestratorAgent",
         input: {
-          prompt: "Test audit"
+          prompt: "Test trace"
         },
         depth: 0
       });
 
-      const context = createMockJobContext({ aiAuditing: true });
+      const context = createMockJobContext({ enableTracing: true });
       const result = await handleOrchestratorAgent(task, context);
 
-      expect(result.audit).to.exist;
-      expect(result.audit?.systemInstruction).to.be.a("string");
-      expect(result.audit?.userPrompt).to.be.a("string");
-      expect(result.audit?.aiResponse).to.be.a("string");
+      expect(result.trace).to.exist;
+      expect(result.trace?.systemInstruction).to.be.a("string");
+      expect(result.trace?.userPrompt).to.be.a("string");
+      expect(result.trace?.aiResponse).to.be.a("string");
     });
   });
 

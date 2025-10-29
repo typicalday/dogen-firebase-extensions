@@ -26,10 +26,10 @@ export interface JobContext {
   readonly timeout?: number;
 
   /** Plan mode flag - when true, AI tasks can spawn children but final commands are marked as "planned" and don't execute */
-  readonly aiPlanning: boolean;
+  readonly requireApproval: boolean;
 
-  /** AI auditing flag - when true, AI tasks include full request/response details in their output for debugging and transparency */
-  readonly aiAuditing: boolean;
+  /** AI tracing flag - when true, AI tasks include full request/response details in their output for debugging and transparency */
+  readonly enableTracing: boolean;
 
   /**
    * Get a task by ID
@@ -46,11 +46,11 @@ export interface JobContext {
   getTaskOutput(taskId: string): Readonly<Record<string, any>> | undefined;
 
   /**
-   * Get the audit metadata of a task
-   * @param taskId - The task ID whose audit to retrieve
-   * @returns The task audit if found, undefined otherwise
+   * Get the trace metadata of a task
+   * @param taskId - The task ID whose trace to retrieve
+   * @returns The task trace if found, undefined otherwise
    */
-  getTaskAudit(taskId: string): Readonly<Record<string, any>> | undefined;
+  getTaskTrace(taskId: string): Readonly<Record<string, any>> | undefined;
 
   /**
    * Get all tasks in the job
@@ -90,8 +90,8 @@ export function createJobContext(
     maxTasks: job.maxTasks,
     maxDepth: job.maxDepth,
     timeout: job.timeout,
-    aiPlanning: job.aiPlanning,
-    aiAuditing: job.aiAuditing ?? false,
+    requireApproval: job.requireApproval,
+    enableTracing: job.enableTracing ?? false,
 
     // Task access methods
     getTask(taskId: string): Readonly<JobTask> | undefined {
@@ -103,9 +103,9 @@ export function createJobContext(
       return task?.output;
     },
 
-    getTaskAudit(taskId: string): Readonly<Record<string, any>> | undefined {
+    getTaskTrace(taskId: string): Readonly<Record<string, any>> | undefined {
       const task = taskRegistry.get(taskId);
-      return task?.audit;
+      return task?.trace;
     },
 
     getAllTasks(): ReadonlyArray<Readonly<JobTask>> {

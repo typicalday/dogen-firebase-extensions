@@ -40,7 +40,7 @@ const DEFAULT_TIMEOUT = 60000;
  * @param context - Job context
  * @returns Service agent output with selected command and refined prompt for command agent
  */
-export async function handleServiceAgent(task: JobTask, context: JobContext): Promise<{ output: ServiceAgentOutput; audit?: any; childTasks: any[] }> {
+export async function handleServiceAgent(task: JobTask, context: JobContext): Promise<{ output: ServiceAgentOutput; trace?: any; childTasks: any[] }> {
   const input = task.input as ServiceAgentInput;
 
   // Validate input
@@ -87,7 +87,7 @@ export async function handleServiceAgent(task: JobTask, context: JobContext): Pr
   let previousResponse: any | undefined;
   let validationErrors: string[] = [];
 
-  // Track retry history for audit trail
+  // Track retry history for trace trail
   const retryHistory: Array<{
     attempt: number;
     timestamp: string;
@@ -169,8 +169,8 @@ export async function handleServiceAgent(task: JobTask, context: JobContext): Pr
       } catch (parseError: any) {
         validationErrors = [`Failed to parse AI response as JSON: ${parseError.message}`];
         previousResponse = responseText;
-        // Capture failed attempt for audit
-        if (context.aiAuditing && attempt < maxRetries) {
+        // Capture failed attempt for trace
+        if (context.enableTracing && attempt < maxRetries) {
           retryHistory.push({
             attempt,
             timestamp: new Date().toISOString(),
@@ -191,8 +191,8 @@ export async function handleServiceAgent(task: JobTask, context: JobContext): Pr
       // Validate structure with type guard
       if (!isServiceAgentAIResponse(aiResponse)) {
         validationErrors = ["AI response does not match expected schema structure"];
-        // Capture failed attempt for audit
-        if (context.aiAuditing && attempt < maxRetries) {
+        // Capture failed attempt for trace
+        if (context.enableTracing && attempt < maxRetries) {
           retryHistory.push({
             attempt,
             timestamp: new Date().toISOString(),
@@ -214,8 +214,8 @@ export async function handleServiceAgent(task: JobTask, context: JobContext): Pr
         if (verbose) {
           console.log(`[ServiceAgent] Attempt ${attempt} - Validation failed:`, validationErrors);
         }
-        // Capture failed attempt for audit
-        if (context.aiAuditing && attempt < maxRetries) {
+        // Capture failed attempt for trace
+        if (context.enableTracing && attempt < maxRetries) {
           retryHistory.push({
             attempt,
             timestamp: new Date().toISOString(),
@@ -272,10 +272,10 @@ export async function handleServiceAgent(task: JobTask, context: JobContext): Pr
 
       // Construct the service agent output
       // Service-agent is a task-spawning agent with no actionable output
-      // Metadata is stored in audit field only when aiAuditing is enabled
+      // Metadata is stored in trace field only when enableTracing is enabled
       const serviceAgentOutput: ServiceAgentOutput = {};
 
-      const auditData = context.aiAuditing ? {
+      const traceData = context.enableTracing ? {
         selectedCommand: aiResponse.command,
         refinedPrompt: aiResponse.prompt,
         childTaskIds: [childTask.id], // Store just the child task ID, full specs are in task registry
@@ -288,7 +288,7 @@ export async function handleServiceAgent(task: JobTask, context: JobContext): Pr
 
       return {
         output: serviceAgentOutput,
-        audit: auditData,
+        trace: traceData,
         childTasks: [childTask]
       };
 
@@ -302,8 +302,8 @@ export async function handleServiceAgent(task: JobTask, context: JobContext): Pr
         console.log(`[ServiceAgent] Attempt ${attempt} failed with error:`, error.message);
       }
       validationErrors = [error.message];
-      // Capture failed attempt for audit
-      if (context.aiAuditing && attempt < maxRetries) {
+      // Capture failed attempt for trace
+      if (context.enableTracing && attempt < maxRetries) {
         retryHistory.push({
           attempt,
           timestamp: new Date().toISOString(),

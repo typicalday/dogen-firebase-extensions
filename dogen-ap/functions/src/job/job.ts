@@ -24,8 +24,8 @@ export class Job {
   maxDepth: number;
   timeout?: number;
   verbose: boolean;
-  aiPlanning: boolean;
-  aiAuditing: boolean;
+  requireApproval: boolean;
+  enableTracing: boolean;
 
   constructor({
     ref,
@@ -39,8 +39,8 @@ export class Job {
     maxDepth,
     timeout,
     verbose,
-    aiPlanning,
-    aiAuditing,
+    requireApproval,
+    enableTracing,
   }: {
     abortOnFailure: boolean;
     name: String;
@@ -54,8 +54,8 @@ export class Job {
     maxDepth?: number;
     timeout?: number;
     verbose?: boolean;
-    aiPlanning?: boolean;
-    aiAuditing?: boolean;
+    requireApproval?: boolean;
+    enableTracing?: boolean;
   }) {
     this.ref = ref ?? db.collection(utils.jobCollectionPath).doc();
     this.abortOnFailure = abortOnFailure;
@@ -64,8 +64,8 @@ export class Job {
     this.maxDepth = maxDepth ?? 10;
     this.timeout = timeout;
     this.verbose = verbose ?? false;
-    this.aiPlanning = aiPlanning ?? true; // Default to true for safety (human-in-the-loop)
-    this.aiAuditing = aiAuditing ?? false; // Default to false for performance
+    this.requireApproval = requireApproval ?? true; // Default to true for safety (human-in-the-loop)
+    this.enableTracing = enableTracing ?? false; // Default to false for performance
 
     // Auto-generate IDs for tasks without explicit IDs
     // Root tasks always have depth 0
@@ -112,8 +112,8 @@ export class Job {
       maxDepth: this.maxDepth,
       timeout: this.timeout,
       verbose: this.verbose,
-      aiPlanning: this.aiPlanning,
-      aiAuditing: this.aiAuditing,
+      requireApproval: this.requireApproval,
+      enableTracing: this.enableTracing,
       createdAt: Timestamp.fromDate(this.createdAt),
       updatedAt: Timestamp.fromDate(this.updatedAt),
     });

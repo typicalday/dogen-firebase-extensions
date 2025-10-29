@@ -28,7 +28,7 @@ export interface ServiceAgentInput {
 /**
  * Output from Service Agent
  * Service-agent is a task-spawning agent that has no actionable output.
- * The output object is empty - audit metadata is returned separately at handler level.
+ * The output object is empty - trace metadata is returned separately at handler level.
  */
 export interface ServiceAgentOutput {
   // Empty - service-agent has no actionable output

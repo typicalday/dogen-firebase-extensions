@@ -1211,7 +1211,7 @@ describe("Command Agent (Phase 3) - Parameter Construction & Schema Validation",
         depth: 0
       });
 
-      const context = createMockJobContext({ aiPlanning: true });
+      const context = createMockJobContext({ requireApproval: true });
       const result = await handleCommandAgent(task, context);
 
       expect(result.output).to.exist;
@@ -1266,16 +1266,16 @@ describe("Command Agent (Phase 3) - Parameter Construction & Schema Validation",
         depth: 0
       });
 
-      const context = createMockJobContext({ aiPlanning: true, aiAuditing: true });
+      const context = createMockJobContext({ requireApproval: true, enableTracing: true });
       const result = await handleCommandAgent(task, context);
 
       // In plan mode, parameters are validated AND spawned as childTasks (with "Planned" status)
-      // We can verify they were constructed by checking the audit trail
-      expect(result.audit).to.exist;
-      expect(result.audit!.constructedParameters).to.exist;
-      expect(result.audit!.constructedParameters.documentPath).to.exist;
-      expect(result.audit!.constructedParameters.documentData).to.exist;
-      expect(result.audit!.constructedParameters.documentData.name).to.equal("User");
+      // We can verify they were constructed by checking the trace trail
+      expect(result.trace).to.exist;
+      expect(result.trace!.constructedParameters).to.exist;
+      expect(result.trace!.constructedParameters.documentPath).to.exist;
+      expect(result.trace!.constructedParameters.documentData).to.exist;
+      expect(result.trace!.constructedParameters.documentData.name).to.equal("User");
       // Child tasks are spawned (will be marked as "Planned" status in processJob.ts)
       expect(result.childTasks).to.have.lengthOf(1);
       expect(result.childTasks![0].service).to.equal("firestore");
@@ -1283,8 +1283,8 @@ describe("Command Agent (Phase 3) - Parameter Construction & Schema Validation",
     });
   });
 
-  describe("AI Auditing", () => {
-    it("should include audit trail when aiAuditing is enabled", async function() {
+  describe("AI Tracing", () => {
+    it("should include trace trail when enableTracing is enabled", async function() {
       this.timeout(10000);
 
       const { handleCommandAgent } = await import("../../../src/job/handlers/ai/command-agent/handler");
@@ -1297,7 +1297,7 @@ describe("Command Agent (Phase 3) - Parameter Construction & Schema Validation",
                 content: {
                   parts: [{
                     text: JSON.stringify({
-                      documentPath: "firestore/default/data/audit/test1",
+                      documentPath: "firestore/default/data/trace/test1",
                       documentData: {
                         field: "value"
                       }
@@ -1323,23 +1323,23 @@ describe("Command Agent (Phase 3) - Parameter Construction & Schema Validation",
           id: "task-0",
           service: "firestore",
           command: "create-document",
-          prompt: "Create an audit document",
+          prompt: "Create an trace document",
           dependsOn: []
         },
         depth: 0
       });
 
-      const context = createMockJobContext({ aiAuditing: true });
+      const context = createMockJobContext({ enableTracing: true });
       const result = await handleCommandAgent(task, context);
 
-      expect(result.audit).to.exist;
-      expect(result.audit!.constructedParameters).to.exist;
-      expect(result.audit!.systemInstruction).to.be.a("string");
-      expect(result.audit!.userPrompt).to.be.a("string");
-      expect(result.audit!.aiResponse).to.be.a("string");
+      expect(result.trace).to.exist;
+      expect(result.trace!.constructedParameters).to.exist;
+      expect(result.trace!.systemInstruction).to.be.a("string");
+      expect(result.trace!.userPrompt).to.be.a("string");
+      expect(result.trace!.aiResponse).to.be.a("string");
     });
 
-    it("should not include audit trail when aiAuditing is disabled", async function() {
+    it("should not include trace trail when enableTracing is disabled", async function() {
       this.timeout(10000);
 
       VertexAI.prototype.getGenerativeModel = function() {
@@ -1382,10 +1382,10 @@ describe("Command Agent (Phase 3) - Parameter Construction & Schema Validation",
         depth: 0
       });
 
-      const context = createMockJobContext({ aiAuditing: false });
+      const context = createMockJobContext({ enableTracing: false });
       const result = await handleCommandAgent(task, context);
 
-      expect(result.audit).to.be.undefined;
+      expect(result.trace).to.be.undefined;
     });
   });
 });

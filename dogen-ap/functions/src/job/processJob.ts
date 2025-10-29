@@ -35,8 +35,8 @@ export const processJob = functions.https.onCall(async (data, context) => {
   const persistMode = data.persist ?? false;
   const abortOnFailure = data.abortOnFailure ?? true;
   const verbose = data.verbose ?? false;
-  const aiPlanning = data.aiPlanning ?? true; // Default to true for safety (human-in-the-loop)
-  const aiAuditing = data.aiAuditing ?? false; // Default to false for performance
+  const requireApproval = data.requireApproval ?? true; // Default to true for safety (human-in-the-loop)
+  const enableTracing = data.enableTracing ?? false; // Default to false for performance
   const tasksData = data.tasks;
   const maxTasks = data.maxTasks;
   const maxDepth = data.maxDepth;
@@ -97,8 +97,8 @@ export const processJob = functions.https.onCall(async (data, context) => {
     maxDepth: maxDepth,
     timeout: timeout,
     verbose: verbose,
-    aiPlanning: aiPlanning,
-    aiAuditing: aiAuditing,
+    requireApproval: requireApproval,
+    enableTracing: enableTracing,
     tasks: tasksData.map((taskData: any) => {
       const { service, command, input } = taskData;
       return new JobTask({ service, command, input, depth: 0 });
@@ -125,8 +125,8 @@ export const processJob = functions.https.onCall(async (data, context) => {
       maxDepth: job.maxDepth,
       timeout: job.timeout,
       verbose: job.verbose,
-      aiPlanning: job.aiPlanning,
-      aiAuditing: job.aiAuditing,
+      requireApproval: job.requireApproval,
+      enableTracing: job.enableTracing,
       abortOnFailure: job.abortOnFailure,
       jobName: String(job.name), // Convert to string primitive
     };

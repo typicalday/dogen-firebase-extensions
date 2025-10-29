@@ -39,7 +39,7 @@ export interface CommandAgentInput {
 /**
  * Output from Phase 3: Command Agent
  * Command-agent is a task-spawning agent that has no actionable output.
- * The output object is empty - audit metadata is returned separately at handler level.
+ * The output object is empty - trace metadata is returned separately at handler level.
  */
 export interface CommandAgentOutput {
   // Empty - command-agent has no actionable output

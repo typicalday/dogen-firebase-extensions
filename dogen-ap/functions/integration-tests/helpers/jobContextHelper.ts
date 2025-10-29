@@ -17,12 +17,12 @@ export function createMockJobContext(options?: Partial<JobContext>): JobContext 
     maxTasks: 1000,
     maxDepth: 10,
     timeout: undefined,
-    aiPlanning: false,
-    aiAuditing: false,
+    requireApproval: false,
+    enableTracing: false,
 
     getTask: () => undefined,
     getTaskOutput: () => undefined,
-    getTaskAudit: () => undefined,
+    getTaskTrace: () => undefined,
     getAllTasks: () => [],
     hasTask: () => false,
     isTaskCompleted: () => false,
@@ -48,7 +48,7 @@ export function createMockJobContext(options?: Partial<JobContext>): JobContext 
  */
 export function createMockJobContextWithTasks(
   tasks: JobTask[],
-  options?: Partial<Omit<JobContext, 'getTask' | 'getTaskOutput' | 'getTaskAudit' | 'getAllTasks' | 'hasTask' | 'isTaskCompleted'>>
+  options?: Partial<Omit<JobContext, 'getTask' | 'getTaskOutput' | 'getTaskTrace' | 'getAllTasks' | 'hasTask' | 'isTaskCompleted'>>
 ): JobContext {
   const taskMap = new Map<string, JobTask>();
   tasks.forEach(task => {
@@ -62,12 +62,12 @@ export function createMockJobContextWithTasks(
     maxTasks: options?.maxTasks ?? 1000,
     maxDepth: options?.maxDepth ?? 10,
     timeout: options?.timeout,
-    aiPlanning: options?.aiPlanning ?? false,
-    aiAuditing: options?.aiAuditing ?? false,
+    requireApproval: options?.requireApproval ?? false,
+    enableTracing: options?.enableTracing ?? false,
 
     getTask: (taskId: string) => taskMap.get(taskId),
     getTaskOutput: (taskId: string) => taskMap.get(taskId)?.output,
-    getTaskAudit: (taskId: string) => taskMap.get(taskId)?.audit,
+    getTaskTrace: (taskId: string) => taskMap.get(taskId)?.trace,
     getAllTasks: () => Array.from(taskMap.values()),
     hasTask: (taskId: string) => taskMap.has(taskId),
     isTaskCompleted: (taskId: string) => {

@@ -25,7 +25,7 @@ interface InferenceTaskOutput {
   response: string;
 }
 
-interface InferenceTaskAudit {
+interface InferenceTaskTrace {
   usage?: {
     promptTokenCount?: number;
     candidatesTokenCount?: number;
@@ -34,7 +34,7 @@ interface InferenceTaskAudit {
   generationConfig: any;
 }
 
-export async function handleProcessInference(task: JobTask, context: JobContext): Promise<{ output: InferenceTaskOutput; audit?: InferenceTaskAudit }> {
+export async function handleProcessInference(task: JobTask, context: JobContext): Promise<{ output: InferenceTaskOutput; trace?: InferenceTaskTrace }> {
   const input = task.input as InferenceTaskInput | undefined;
 
   if (!input?.prompt) {
@@ -153,8 +153,8 @@ export async function handleProcessInference(task: JobTask, context: JobContext)
       response: responseText
     };
 
-    // Add audit trail when aiAuditing is enabled
-    const audit: InferenceTaskAudit | undefined = context.aiAuditing ? {
+    // Add trace trail when enableTracing is enabled
+    const trace: InferenceTaskTrace | undefined = context.enableTracing ? {
       usage: response.usageMetadata ? {
         promptTokenCount: response.usageMetadata.promptTokenCount,
         candidatesTokenCount: response.usageMetadata.candidatesTokenCount,
@@ -163,7 +163,7 @@ export async function handleProcessInference(task: JobTask, context: JobContext)
       generationConfig
     } : undefined;
 
-    return { output, audit };
+    return { output, trace };
   } catch (error: any) {
     console.error('Error processing inference request:', error);
     throw new Error(`Inference processing failed: ${error.message}`);

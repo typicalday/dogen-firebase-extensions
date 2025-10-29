@@ -107,10 +107,10 @@ export interface HandlerDefinition {
   }>;
 
   /**
-   * Whether this command is safe to execute in plan mode (aiPlanning: true).
+   * Whether this command is safe to execute in plan mode (requireApproval: true).
    * Read-only operations and AI agents should set this to true.
    * Resource-modifying operations should leave this false (default).
-   * When true, the command will execute even when aiPlanning is enabled.
+   * When true, the command will execute even when requireApproval is enabled.
    * When false, the command will be blocked in plan mode.
    */
   allowInPlanMode?: boolean;
@@ -933,7 +933,7 @@ export const HANDLER_REGISTRY: HandlerRegistry = {
           input: {
             prompt: "Create an admin user with email admin@company.com and store their profile in Firestore",
           },
-          description: "Simple orchestration - AI determines services needed (authentication, firestore), spawns service agents, which spawn command agents. Job-level aiPlanning controls execution.",
+          description: "Simple orchestration - AI determines services needed (authentication, firestore), spawns service agents, which spawn command agents. Job-level requireApproval controls execution.",
         },
         {
           input: {

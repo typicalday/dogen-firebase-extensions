@@ -39,9 +39,9 @@ export interface OrchestrationConfig {
   /** Enable verbose logging */
   verbose: boolean;
   /** Enable AI planning mode (tasks require approval) */
-  aiPlanning: boolean;
-  /** Enable AI auditing (capture AI outputs) */
-  aiAuditing: boolean;
+  requireApproval: boolean;
+  /** Enable AI tracing (capture AI outputs) */
+  enableTracing: boolean;
   /** Abort all tasks when one fails */
   abortOnFailure: boolean;
   /** Job name for logging */
@@ -64,7 +64,7 @@ export interface OrchestrationResult {
     status: FirebaseTaskStatus;
     input?: Record<string, any>;
     output?: Record<string, any>;
-    audit?: Record<string, any>;
+    trace?: Record<string, any>;
     startedAt?: Date;
     completedAt?: Date;
     dependsOn?: string[];
@@ -301,11 +301,11 @@ export async function executeJobOrchestration(
                 }
 
                 // Determine initial status for child task
-                // - In aiPlanning mode, resource-modifying commands get "Planned" status
+                // - In requireApproval mode, resource-modifying commands get "Planned" status
                 // - Read-only commands and AI agents get "Pending" status (will execute)
-                // - Outside aiPlanning mode, all tasks get "Pending" status
+                // - Outside requireApproval mode, all tasks get "Pending" status
                 let initialStatus = FirebaseTaskStatus.Pending;
-                if (config.aiPlanning) {
+                if (config.requireApproval) {
                   // Use injected lookup for testing, or production registry
                   let allowInPlanMode = false;
                   if (config.allowInPlanModeLookup) {
@@ -496,12 +496,12 @@ export async function executeJobOrchestration(
               }
             }
 
-            // If handlerResult has a nested 'output' property (from agent handlers that return {output, childTasks, audit}),
+            // If handlerResult has a nested 'output' property (from agent handlers that return {output, childTasks, trace}),
             // unwrap it to avoid storing the childTasks array in task.output
             const taskOutput = (handlerResult as any).output !== undefined ? (handlerResult as any).output : handlerResult;
 
-            // Extract audit from handler return value if present (separate from output)
-            const taskAudit = (handlerResult as any).audit;
+            // Extract trace from handler return value if present (separate from output)
+            const taskTrace = (handlerResult as any).trace;
 
             // Store childTasks on the task for record-keeping (extracted from handler return value)
             const taskChildTasks = childTasksToSpawn;
@@ -509,7 +509,7 @@ export async function executeJobOrchestration(
             // Mark task as succeeded
             task.update({
               output: taskOutput,
-              audit: taskAudit,
+              trace: taskTrace,
               childTasks: taskChildTasks,
               status: FirebaseTaskStatus.Succeeded,
               completedAt: new Date(),
@@ -566,7 +566,7 @@ export async function executeJobOrchestration(
           status: task.status ?? FirebaseTaskStatus.Pending,
           input: task.input,
           output: task.output,
-          audit: task.audit,
+          trace: task.trace,
           childTasks: task.childTasks,
           startedAt: task.startedAt,
           completedAt: task.completedAt,
@@ -593,7 +593,7 @@ export async function executeJobOrchestration(
           status: task.status ?? FirebaseTaskStatus.Pending,
           input: task.input,
           output: task.output,
-          audit: task.audit,
+          trace: task.trace,
           childTasks: task.childTasks,
           startedAt: task.startedAt,
           completedAt: task.completedAt,
@@ -631,9 +631,9 @@ async function processTask(
   }
 
   // Create job context - pass taskRegistry and partial config
-  // createJobContext only needs taskRegistry and aiAuditing from the job
+  // createJobContext only needs taskRegistry and enableTracing from the job
   const partialJob = {
-    aiAuditing: config.aiAuditing,
+    enableTracing: config.enableTracing,
   } as Job;
 
   const context = createJobContext(taskRegistry, partialJob);

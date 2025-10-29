@@ -69,7 +69,7 @@ describe("Service Agent (Phase 2) - Command Selection & Prompt Refinement", () =
         depth: 0
       });
 
-      const context = createMockJobContext({ aiAuditing: true });
+      const context = createMockJobContext({ enableTracing: true });
       const result = await handleServiceAgent(task, context);
 
       expect(result).to.exist;
@@ -84,10 +84,10 @@ describe("Service Agent (Phase 2) - Command Selection & Prompt Refinement", () =
       expect(result.childTasks[0].input.service).to.equal("firestore");
       expect(result.childTasks[0].id).to.equal("task-0-command");
 
-      // Check output structure - service-agent has no actionable output, only audit (when aiAuditing is enabled)
+      // Check output structure - service-agent has no actionable output, only trace (when enableTracing is enabled)
       expect(result.output).to.exist;
-      expect(result.audit).to.exist;
-      expect(result.audit!.childTaskIds).to.deep.equal(["task-0-command"]);
+      expect(result.trace).to.exist;
+      expect(result.trace!.childTaskIds).to.deep.equal(["task-0-command"]);
     });
 
     it("should select appropriate authentication command", async function() {
@@ -969,16 +969,16 @@ describe("Service Agent (Phase 2) - Command Selection & Prompt Refinement", () =
         depth: 0
       });
 
-      const context = createMockJobContext({ aiAuditing: true });
+      const context = createMockJobContext({ enableTracing: true });
       const result = await handleServiceAgent(task, context);
 
-      // Check output structure - service-agent has no actionable output, only audit (when aiAuditing is enabled)
+      // Check output structure - service-agent has no actionable output, only trace (when enableTracing is enabled)
       expect(result.output).to.exist;
-      expect(result.audit).to.exist;
-      expect(result.audit!.childTaskIds).to.deep.equal(["task-0-command"]);
+      expect(result.trace).to.exist;
+      expect(result.trace!.childTaskIds).to.deep.equal(["task-0-command"]);
     });
 
-    it("should include audit information when aiAuditing is enabled", async function() {
+    it("should include trace information when enableTracing is enabled", async function() {
       this.timeout(10000);
 
       VertexAI.prototype.getGenerativeModel = function() {
@@ -1015,21 +1015,21 @@ describe("Service Agent (Phase 2) - Command Selection & Prompt Refinement", () =
         input: {
           id: "task-0-service",
           service: "firestore",
-          prompt: "Test audit",
+          prompt: "Test trace",
           dependsOn: []
         },
         depth: 0
       });
 
-      const context = createMockJobContext({ aiAuditing: true });
+      const context = createMockJobContext({ enableTracing: true });
       const result = await handleServiceAgent(task, context);
 
-      expect(result.audit).to.exist;
-      expect(result.audit?.selectedCommand).to.equal("create-document");
-      expect(result.audit?.refinedPrompt).to.be.a("string");
-      expect(result.audit?.systemInstruction).to.be.a("string");
-      expect(result.audit?.userPrompt).to.be.a("string");
-      expect(result.audit?.aiResponse).to.be.a("string");
+      expect(result.trace).to.exist;
+      expect(result.trace?.selectedCommand).to.equal("create-document");
+      expect(result.trace?.refinedPrompt).to.be.a("string");
+      expect(result.trace?.systemInstruction).to.be.a("string");
+      expect(result.trace?.userPrompt).to.be.a("string");
+      expect(result.trace?.aiResponse).to.be.a("string");
     });
   });
 

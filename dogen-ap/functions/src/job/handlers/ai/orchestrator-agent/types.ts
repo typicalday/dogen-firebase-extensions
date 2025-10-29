@@ -104,7 +104,7 @@ export interface OrchestratorAgentInput {
 /**
  * Output from orchestrator-agent task handler
  * Orchestrator is a task-spawning agent that has no actionable output.
- * The output object is empty - audit metadata is returned separately at handler level.
+ * The output object is empty - trace metadata is returned separately at handler level.
  */
 export interface OrchestratorAgentOutput {
   // Empty - orchestrator has no actionable output

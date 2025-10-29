@@ -54,7 +54,7 @@ const ajv = new Ajv({ allErrors: true, verbose: true });
  * @param context - Job context
  * @returns Command agent output with constructed parameters
  */
-export async function handleCommandAgent(task: JobTask, context: JobContext): Promise<{ output: CommandAgentOutput; audit?: any; childTasks?: any[] }> {
+export async function handleCommandAgent(task: JobTask, context: JobContext): Promise<{ output: CommandAgentOutput; trace?: any; childTasks?: any[] }> {
   const input = task.input as CommandAgentInput;
 
   // Validate input
@@ -95,7 +95,7 @@ export async function handleCommandAgent(task: JobTask, context: JobContext): Pr
   let previousResponse: any | undefined;
   let validationErrors: string[] = [];
 
-  // Track retry history for audit trail
+  // Track retry history for trace trail
   const retryHistory: Array<{
     attempt: number;
     timestamp: string;
@@ -176,8 +176,8 @@ export async function handleCommandAgent(task: JobTask, context: JobContext): Pr
       } catch (parseError: any) {
         validationErrors = [`Failed to parse AI response as JSON: ${parseError.message}`];
         previousResponse = responseText;
-        // Capture failed attempt for audit
-        if (context.aiAuditing && attempt < maxRetries) {
+        // Capture failed attempt for trace
+        if (context.enableTracing && attempt < maxRetries) {
           retryHistory.push({
             attempt,
             timestamp: new Date().toISOString(),
@@ -198,8 +198,8 @@ export async function handleCommandAgent(task: JobTask, context: JobContext): Pr
       // Validate that we got an object
       if (typeof aiParameters !== 'object' || aiParameters === null || Array.isArray(aiParameters)) {
         validationErrors = ["AI response must be a JSON object with the command parameters"];
-        // Capture failed attempt for audit
-        if (context.aiAuditing && attempt < maxRetries) {
+        // Capture failed attempt for trace
+        if (context.enableTracing && attempt < maxRetries) {
           retryHistory.push({
             attempt,
             timestamp: new Date().toISOString(),
@@ -224,8 +224,8 @@ export async function handleCommandAgent(task: JobTask, context: JobContext): Pr
           if (verbose) {
             console.log(`[CommandAgent] Attempt ${attempt} - Parameter validation failed:`, validationErrors);
           }
-          // Capture failed attempt for audit
-          if (context.aiAuditing && attempt < maxRetries) {
+          // Capture failed attempt for trace
+          if (context.enableTracing && attempt < maxRetries) {
             retryHistory.push({
               attempt,
               timestamp: new Date().toISOString(),
@@ -246,14 +246,14 @@ export async function handleCommandAgent(task: JobTask, context: JobContext): Pr
         console.log(`[CommandAgent] Successfully constructed parameters for ${input.service}/${input.command} on attempt ${attempt}`);
       }
 
-      // In aiPlanning mode:
+      // In requireApproval mode:
       // - Commands with allowInPlanMode=true will execute normally (AI agents, read-only operations)
       // - Commands with allowInPlanMode=false will be spawned with status "Planned" for user review
       // - All commands are always spawned as child tasks (status determined in processJob.ts)
       const handlerDefinition = getHandlerDefinition(input.service, input.command);
       const allowInPlanMode = handlerDefinition?.allowInPlanMode ?? false;
 
-      if (context.aiPlanning && !allowInPlanMode && verbose) {
+      if (context.requireApproval && !allowInPlanMode && verbose) {
         console.log(`[CommandAgent] Plan mode: Spawning resource-modifying command ${input.service}/${input.command} with status "Planned"`);
         console.log(`[CommandAgent] Command will be created with parameters:`, JSON.stringify(aiParameters, null, 2));
       }
@@ -284,10 +284,10 @@ export async function handleCommandAgent(task: JobTask, context: JobContext): Pr
 
       // Construct command agent output
       // Command-agent is a task-spawning agent with no actionable output
-      // Metadata is stored in audit field only when aiAuditing is enabled
+      // Metadata is stored in trace field only when enableTracing is enabled
       const commandAgentOutput: CommandAgentOutput = {};
 
-      const auditData = context.aiAuditing ? {
+      const traceData = context.enableTracing ? {
         constructedParameters: aiParameters,
         childTaskIds: [childTask.id], // Store just the child task ID, full specs are in task registry
         systemInstruction,
@@ -302,7 +302,7 @@ export async function handleCommandAgent(task: JobTask, context: JobContext): Pr
 
       return {
         output: commandAgentOutput,
-        audit: auditData,
+        trace: traceData,
         childTasks: [childTask]
       };
 
@@ -316,8 +316,8 @@ export async function handleCommandAgent(task: JobTask, context: JobContext): Pr
         console.log(`[CommandAgent] Attempt ${attempt} failed with error:`, error.message);
       }
       validationErrors = [error.message];
-      // Capture failed attempt for audit
-      if (context.aiAuditing && attempt < maxRetries) {
+      // Capture failed attempt for trace
+      if (context.enableTracing && attempt < maxRetries) {
         retryHistory.push({
           attempt,
           timestamp: new Date().toISOString(),
